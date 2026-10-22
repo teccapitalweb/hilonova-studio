@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 7
+> Rama: `dev/mvp-9-nov` · Commits: 10
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,65 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## feat(blocks): bloque Blusa clásica (7 piezas) y tallas S/M/L/XL
+
+- Commit: `bc7d31c`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: nuevo bloque paramétrico "blusa-clasica" con delantero, espalda, manga,
+cuello, pie de cuello, puño y vista (las piezas del concepto visual). Se agrega
+soporte de tallas alfabéticas (sizeSteps, compareSizes, ALPHA_SIZES) para que la
+graduación funcione con S/M/L/XL además de las numéricas (28-44). La blusa usa
+base M y gama S-XL. La app asigna colores a S/M/L/XL, ordena tallas con
+compareSizes, activa las tallas del documento al abrirlo (loadDoc) y reutiliza
+la silueta de medidas de playera. Reglas de graduación de la blusa: busto,
+cintura y cadera 4 cm/talla; hombro y cuello 1; sisa 0.8; torso y manga 1.
+Por qué: el concepto visual aprobado pide S/M/L/XL y una blusa clásica como
+pieza de ejemplo; el motor solo graduaba tallas numéricas con parseInt (NaN
+con letras).
+Verificación: tsc sin errores en blocks y web; build de producción con
+basePath de Pages OK; en el navegador (dev) se creó una blusa: 7 piezas, talla
+base M, nido de tallas S/M/L/XL superpuestas, Trazo con 13 piezas, 55 % de
+aprovechamiento, 1.22 m de largo. Limitaciones conocidas: el delantero
+izquierdo no se espeja en el trazo; las curvas de manga/cuello son base inicial
+a calibrar con una patronista; el DXF de la blusa no se probó en Gerber/Lectra.
+Archivos: packages/blocks/src/index.ts, apps/web/app/studio/store.ts,
+apps/web/app/studio/MeasurementSilhouette.tsx, apps/web/app/app/new/page.tsx
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: guardar concepto visual aprobado del software como referencia
+
+- Commit: `d3ff1a0`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: se agrega docs/concepto-visual.webp, la imagen de concepto entregada por
+HiloNova (Patronaje 2D, Graduación S/M/L/XL, Trazo con consumo por talla,
+Producción con ficha técnica, 3D opcional y variantes de modelo).
+Por qué: es el objetivo de producto contra el que se mide el MVP; debe vivir en
+el repo y no solo en un chat.
+Verificación: archivo presente en docs/ (254 KB).
+Archivos: docs/concepto-visual.webp
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `e60f4b3`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: primera generación de docs/COMMITS.md con el historial hasta el commit
+anterior.
+Por qué: dejar el registro documentado desde el inicio del trabajo en la rama
+dev/mvp-9-nov.
+Verificación: archivo generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## chore: agregar generador de bitácora de commits (docs/COMMITS.md)
 
