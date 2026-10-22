@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { signUp, type PlanId, findPlan } from "../../lib/auth";
 import AuthAside from "../AuthAside";
 import SsoButtons from "../SsoButtons";
@@ -10,7 +10,16 @@ import "../../(saas)/saas.css";
 
 const PLAN_SET = new Set(["taller", "maquila", "industrial"]);
 
+// useSearchParams (?plan=...) requiere Suspense en export estático.
 export default function SignUpPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignUpForm />
+    </Suspense>
+  );
+}
+
+function SignUpForm() {
   const router = useRouter();
   const params = useSearchParams();
   const planParam = params.get("plan");

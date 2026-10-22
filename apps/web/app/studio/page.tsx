@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Shell from "./Shell";
 import "./studio.css";
 
@@ -6,5 +7,10 @@ export const metadata = {
 };
 
 export default function StudioPage() {
-  return <Shell />;
+  // Shell usa useSearchParams (?id=...); en export estático necesita Suspense.
+  return (
+    <Suspense fallback={null}>
+      <Shell />
+    </Suspense>
+  );
 }
