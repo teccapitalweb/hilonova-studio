@@ -22,9 +22,9 @@ jobs:
       NEXT_PUBLIC_BASE_PATH: /hilonova-studio
     steps:
       - uses: actions/checkout@v4
+      # Sin `version`: pnpm/action-setup toma la version del `packageManager`
+      # declarado en package.json (actualmente 11.x).
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
       - uses: actions/setup-node@v4
         with:
           node-version: 22
