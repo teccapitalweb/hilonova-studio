@@ -54,8 +54,14 @@ Otros scripts:
 ```bash
 pnpm build        # build de todos los paquetes/apps
 pnpm typecheck    # typecheck del monorepo
+pnpm test         # pruebas automáticas (Vitest, carpeta tests/)
 pnpm format       # prettier
 ```
+
+Las pruebas cubren el motor y las 17 prendas (piezas completas, graduación,
+reglas de tallaje), el trazo (sin empalmes, dentro de la tela) y el DXF
+(estructura R12, margen de costura por fuera, tallas). Corre `pnpm test` antes
+de cada commit.
 
 Scripts útiles (en `/scripts`):
 

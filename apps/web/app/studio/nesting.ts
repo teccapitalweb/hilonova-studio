@@ -246,7 +246,9 @@ export function nestItems(items: readonly NestItem[], fabricWidth: number): Nest
       const spans = rasterSpans(o.outer, rows);
       let maxC = 0;
       for (const row of spans) for (const [, b] of row) if (b > maxC) maxC = b;
-      const wCells = maxC + 1;
+      // el ancho se toma de la extensión real del contorno (no del último centro de celda
+      // incluido), para que ninguna pieza sobresalga del borde de la tela
+      const wCells = Math.max(maxC + 1, Math.ceil(o.w / CELL - 1e-9));
 
       let found: { x: number; y: number } | null = null;
       if (wCells > widthCells) {
