@@ -5,6 +5,7 @@
 
 import {
   clonePiece,
+  contourRun,
   sizeSteps,
   emptyDoc,
   emptyPiece,
@@ -532,13 +533,10 @@ export function draftBlusaClasica(m: BodyMeasurements): PatternDoc {
   const wrist = cuffL + 1;               // abertura de manga (con fruncido leve)
   const sleeve = emptyPiece("Manga", 2);
   sleeve.fabric = FABRIC;
-  sleeve.nodes = [
-    node({ x: 0, y: 0 }, { notch: true, handleIn: { x: -bicep * 0.28, y: 0 }, handleOut: { x: bicep * 0.28, y: 0 } }),
-    node({ x: bicep / 2, y: capH }, { notch: true, handleIn: { x: -bicep * 0.05, y: -capH * 0.55 } }),
-    node({ x: wrist / 2, y: sleeveLen }),
-    node({ x: -wrist / 2, y: sleeveLen }),
-    node({ x: -bicep / 2, y: capH }, { notch: true, handleOut: { x: bicep * 0.05, y: -capH * 0.55 } }),
-  ];
+  // la cabeza mide la sisa (delantera + trasera) más 2.5 cm de holgura
+  const armLen = pathLen(front.nodes.slice(3, 6)) + pathLen(back.nodes.slice(2, 5));
+  sleeve.nodes = fitSleeve(bicep, sleeveLen, wrist, armLen + 2.5, sisa * 1.2);
+  void capH;
 
   // ── cuello camisero (hoja) y pie de cuello ────────────────────────────────
   const lc = cuello / 2 + 0.5;
@@ -664,6 +662,39 @@ function sleeveNodes(bicep: number, capH: number, len: number, wrist: number): N
   ];
 }
 
+/** Largo (cm) del contorno que recorren estos nodos, de uno a otro. */
+function pathLen(nodes: Node[]): number {
+  if (nodes.length < 2) return 0;
+  const tmp = { ...emptyPiece("tmp"), closed: false, nodes };
+  return contourRun(tmp, nodes[0]!.id, nodes[nodes.length - 1]!.id)?.length ?? 0;
+}
+
+/**
+ * Manga de una pieza cuya cabeza mide `target` cm (sisa + holgura). Ajusta la altura de la
+ * cabeza por bisección (más alta = cabeza más larga) sin pasar del 62 % del largo de la
+ * manga; si aun así no alcanza, ensancha la manga. Así encaja en la sisa de cualquier
+ * talla y medida, en vez de depender de una proporción fija.
+ */
+function fitSleeve(bicep: number, len: number, wrist: number, target: number, maxCap: number): Node[] {
+  // longitud de la cabeza (por arriba: sisa izquierda → cumbre → sisa derecha)
+  const capLen = (b: number, capH: number): number => {
+    const ns = sleeveNodes(b, capH, len, wrist);
+    return pathLen([ns[4]!, ns[0]!, ns[1]!]);
+  };
+  const lo = 0.5;
+  const hi = Math.min(maxCap, len * 0.62);
+  let b = bicep;
+  for (let i = 0; i < 120 && capLen(b, hi) < target; i++) b *= 1.01;
+  if (capLen(b, lo) > target) return sleeveNodes(b, lo, len, wrist);
+  let a = lo;
+  let c = hi;
+  for (let i = 0; i < 40; i++) {
+    const mid = (a + c) / 2;
+    if (capLen(b, mid) < target) a = mid; else c = mid;
+  }
+  return sleeveNodes(b, (a + c) / 2, len, wrist);
+}
+
 /** Hoja de cuello camisero completa (simétrica). */
 function collarNodes(lc: number, h: number): Node[] {
   return fullFromHalf([
@@ -740,7 +771,8 @@ export function draftChamarraMezclilla(m: BodyMeasurements): PatternDoc {
 
   const bicep = t.busto * 0.3 + 8;
   const wrist = 24;
-  const sleeve = mk("Manga", 2, F, sleeveNodes(bicep, under * 0.55, t.largoManga - 7, wrist));
+  const armLen = pathLen(armholeNodes(sx, 4.5, t.qF, under, 1)) + pathLen(armholeNodes(sx, 4.2, t.qB, under, 0.8));
+  const sleeve = mk("Manga", 2, F, fitSleeve(bicep, t.largoManga - 7, wrist, armLen + 3, under * 1.2));
   const collar = mk("Cuello", 2, F, collarNodes(t.cuello / 2 + 1, 7.5));
   const cuff = rectPiece("Puño", { x: 0, y: 0 }, { x: wrist, y: 7 });
   cuff.quantity = 2; cuff.fabric = F;
@@ -996,7 +1028,8 @@ export function draftSudadera(m: BodyMeasurements): PatternDoc {
   ]));
 
   const wrist = 20;
-  const sleeve = mk("Manga", 2, F, sleeveNodes(t.busto * 0.3 + 12, under * 0.38, t.largoManga - 8, wrist));
+  const armLen = pathLen(armholeNodes(sx, 3, t.qF, under, 1.5)) + pathLen(armholeNodes(sx, 2.8, t.qB, under, 1.3));
+  const sleeve = mk("Manga", 2, F, fitSleeve(t.busto * 0.3 + 12, t.largoManga - 8, wrist, armLen, under * 1.2));
 
   const s = t.cuello / 38;               // la capucha crece con el cuello
   const hood = pieceFromPoints(
@@ -1077,9 +1110,16 @@ function draftCamisa(m: BodyMeasurements, name: string, short: boolean): Pattern
 
   const bicep = t.busto * 0.285 + 8;
   const wrist = short ? bicep * 0.82 : 25;
+  const backArm = [
+    node({ x: sx, y: 4.4 }, { handleOut: { x: -0.3, y: 2 } }),
+    node({ x: sx - 0.6, y: yokeY }),
+    node({ x: sx - 1.2, y: yokeY + (under - yokeY) * 0.5 }, { handleIn: { x: 0, y: -2 }, handleOut: { x: 0, y: 2.5 } }),
+    node({ x: t.qB, y: under }, { handleIn: { x: -2.5, y: -1.5 } }),
+  ];
+  const armLen = pathLen(armholeNodes(sx, 4.8, t.qF, under, 1)) + pathLen(backArm);
   const sleeve = mk(
     "Manga", 2, F,
-    sleeveNodes(bicep, under * 0.6, short ? 24 : t.largoManga - 6.5, wrist),
+    fitSleeve(bicep, short ? 24 : t.largoManga - 6.5, wrist, armLen + 2.5, under * 1.2),
   );
   const lc = t.cuello / 2 + 1.5;
   const collar = mk("Cuello", 2, F, collarNodes(lc, 7));
@@ -1142,7 +1182,8 @@ export function draftPolo(m: BodyMeasurements): PatternDoc {
 
   const bicep = t.busto * 0.3 + 6;
   const wrist = bicep * 0.92;
-  const sleeve = mk("Manga", 2, F, sleeveNodes(bicep, t.sisa * 0.5, 22, wrist));
+  const armLen = pathLen(armholeNodes(sx, 3.5, t.qF, t.sisa, 1.2)) + pathLen(armholeNodes(sx, 3.3, t.qB, t.sisa, 1));
+  const sleeve = mk("Manga", 2, F, fitSleeve(bicep, 22, wrist, armLen + 0.5, t.sisa * 1.2));
   const cuff = rectPiece("Puño de manga", { x: 0, y: 0 }, { x: wrist * 0.85, y: 6 });
   cuff.quantity = 2; cuff.fabric = RIB;
   const L = t.cuello + 2;

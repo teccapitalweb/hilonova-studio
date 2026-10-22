@@ -30,6 +30,10 @@ import {
   rotatePieceAbout,
   piecesCenter,
   addDart,
+  contourRun,
+  makeSeamRun,
+  type SeamCheck,
+  type SeamRun,
   addLabelToPiece,
   updateLabel,
   moveLabel,
@@ -83,7 +87,7 @@ export const SIZE_COLORS: Record<string, string> = {
 
 export type Tool =
   | "select" | "pan" | "notch"
-  | "line" | "curve" | "rect" | "circle" | "addnode" | "measure" | "text" | "dart";
+  | "line" | "curve" | "rect" | "circle" | "addnode" | "measure" | "text" | "dart" | "seam";
 
 /** Trazo en construcción (todavía no es parte del documento). */
 export type Draft =
@@ -92,7 +96,16 @@ export type Draft =
   | { kind: "circle"; c: Vec2; r: number }
   | { kind: "measure"; a: Vec2; b: Vec2 }
   | { kind: "marquee"; a: Vec2; b: Vec2 }
-  | { kind: "dart"; pieceId: string; segIndex: number; t: number; base: Vec2; dir: Vec2 };
+  | { kind: "dart"; pieceId: string; segIndex: number; t: number; base: Vec2; dir: Vec2 }
+  | {
+      kind: "seam";
+      /** lado al que se agregan los tramos que se elijan */
+      side: "a" | "b";
+      a: SeamRun[];
+      b: SeamRun[];
+      /** primer punto elegido de un tramo, a la espera del segundo */
+      pending: { pieceId: string; nodeId: string } | null;
+    };
 export type View =
   | "proyectos" | "editor" | "graduacion" | "trazo" | "produccion"
   | "materiales" | "libreria" | "reportes" | "config";
@@ -109,6 +122,14 @@ interface EditorState {
   selectedPieceId: string | null;
   /** piezas seleccionadas además de la principal (selección múltiple) */
   multi: string[];
+  /** comprobación de costura resaltada en el lienzo */
+  activeSeam: string | null;
+  setActiveSeam(id: string | null): void;
+  seamPick(pieceId: string, nodeId: string): void;
+  seamSide(side: "a" | "b"): void;
+  seamCreate(): boolean;
+  patchSeamCheck(id: string, patch: Partial<Pick<SeamCheck, "name" | "ease">>): void;
+  deleteSeamCheck(id: string): void;
   /** ancho de la boca de la pinza, cm */
   dartWidth: number;
   setDartWidth(w: number): void;
@@ -283,6 +304,82 @@ export const useEditor = create<EditorState>((set, get) => ({
   selectedPieceId: null,
   multi: [],
   selectedLabel: null,
+  activeSeam: null,
+  setActiveSeam: (id) => set({ activeSeam: id }),
+  seamPick: (pieceId, nodeId) => {
+    const st = get();
+    const cur = st.draft?.kind === "seam" ? st.draft : null;
+    const d = cur ?? { kind: "seam" as const, side: "a" as const, a: [], b: [], pending: null };
+    if (!d.pending) {
+      set({ draft: { ...d, pending: { pieceId, nodeId } }, notice: null });
+      return;
+    }
+    if (d.pending.pieceId !== pieceId) {
+      set({ notice: "Los dos puntos de un tramo deben estar en la misma pieza." });
+      return;
+    }
+    if (d.pending.nodeId === nodeId) {
+      set({ notice: "Elige un segundo punto distinto del primero." });
+      return;
+    }
+    const piece = st.history.present.pieces.find((p) => p.id === pieceId);
+    if (!piece || !contourRun(piece, d.pending.nodeId, nodeId)) {
+      set({ notice: "No se pudo medir ese tramo." });
+      return;
+    }
+    const run = makeSeamRun(piece, d.pending.nodeId, nodeId);
+    set({
+      draft: d.side === "a" ? { ...d, a: [...d.a, run], pending: null } : { ...d, b: [...d.b, run], pending: null },
+      notice: null,
+    });
+  },
+  seamSide: (side) =>
+    set((s) => (s.draft?.kind === "seam" ? { draft: { ...s.draft, side, pending: null } } : s)),
+  seamCreate: () => {
+    const { draft, history, saved } = get();
+    if (draft?.kind !== "seam") return false;
+    if (!draft.a.length || !draft.b.length) {
+      set({ notice: "Hace falta al menos un tramo en el lado A y uno en el lado B." });
+      return false;
+    }
+    const doc = history.present;
+    const check: SeamCheck = {
+      id: makeId("sc"),
+      name: `Costura ${(doc.seamChecks?.length ?? 0) + 1}`,
+      a: draft.a,
+      b: draft.b,
+      ease: 0,
+    };
+    set({
+      history: hCommit(history, { ...doc, seamChecks: [...(doc.seamChecks ?? []), check] }),
+      draft: null,
+      activeSeam: check.id,
+      tool: "select",
+      notice: null,
+      saved: { ...saved, dirty: true },
+    });
+    return true;
+  },
+  patchSeamCheck: (id, patch) => {
+    const { history, saved } = get();
+    const doc = history.present;
+    set({
+      history: hCommit(history, {
+        ...doc,
+        seamChecks: (doc.seamChecks ?? []).map((c) => (c.id === id ? { ...c, ...patch } : c)),
+      }),
+      saved: { ...saved, dirty: true },
+    });
+  },
+  deleteSeamCheck: (id) => {
+    const { history, saved, activeSeam } = get();
+    const doc = history.present;
+    set({
+      history: hCommit(history, { ...doc, seamChecks: (doc.seamChecks ?? []).filter((c) => c.id !== id) }),
+      activeSeam: activeSeam === id ? null : activeSeam,
+      saved: { ...saved, dirty: true },
+    });
+  },
   dartWidth: 2.5,
   setDartWidth: (w) => set({ dartWidth: Math.max(0.5, Math.min(12, w)) }),
   notice: null,
@@ -799,6 +896,7 @@ export const useEditor = create<EditorState>((set, get) => ({
       ...(cur.techPack ? { techPack: cur.techPack } : {}),
       ...(cur.variants ? { variants: cur.variants } : {}),
       ...(cur.activeVariant ? { activeVariant: cur.activeVariant } : {}),
+      ...(cur.seamChecks ? { seamChecks: cur.seamChecks } : {}),
     };
     set({
       measurements: { ...m },

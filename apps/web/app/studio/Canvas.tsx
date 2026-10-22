@@ -25,6 +25,9 @@ import {
   bounds,
   labelPosition,
   labelBox,
+  contourRun,
+  resolveSeamRun,
+  type SeamRun,
 } from "@hilonova/geometry";
 import { useEditor, SIZE_COLORS, selectionOf, type Tool } from "./store";
 import { buildNest } from "./nest";
@@ -36,7 +39,7 @@ const EDGE_PX = 10;
 
 const TOOL_KEYS: Record<string, Tool> = {
   v: "select", h: "pan", n: "notch", l: "line", c: "curve",
-  r: "rect", o: "circle", a: "addnode", m: "measure", t: "text", p: "dart",
+  r: "rect", o: "circle", a: "addnode", m: "measure", t: "text", p: "dart", s: "seam",
 };
 
 type Drag =
@@ -54,7 +57,7 @@ export default function Canvas() {
   const draw = useEditor((s) => s);
   const {
     zoom, pan, gridStep, snapGrid, showSeam, showNest, activeSizes, measurements, tool,
-    selectedPieceId, selectedNodeId, blockKind, draft, cursor, multi, selectedLabel, dartWidth,
+    selectedPieceId, selectedNodeId, blockKind, draft, cursor, multi, selectedLabel, dartWidth, activeSeam,
     setCursor, setPan, setZoom, selectNode, selectPiece, clearSelection, toggleNotch, toggleSelectPiece,
   } = draw;
   const doc = useEditor((s) => s.history.present);
@@ -268,6 +271,44 @@ export default function Canvas() {
       }
     }
 
+    // tramos de la comprobación de costura activa y de la que se está armando
+    const SEAM_A = "#3FD0C9";
+    const SEAM_B = "#E04FA8";
+    const drawRuns = (runs: readonly SeamRun[], color: string) => {
+      for (const r of runs) {
+        const loc = resolveSeamRun(doc, r);
+        const run = loc ? contourRun(loc.piece, loc.n1, loc.n2) : null;
+        if (!run) continue;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 4;
+        ctx.globalAlpha = 0.85;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        run.points.forEach((p, i) => {
+          const q = toPx(p);
+          if (i === 0) ctx.moveTo(q.x, q.y); else ctx.lineTo(q.x, q.y);
+        });
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.lineCap = "butt";
+      }
+    };
+    const activeCheck = doc.seamChecks?.find((c) => c.id === activeSeam);
+    if (activeCheck) { drawRuns(activeCheck.a, SEAM_A); drawRuns(activeCheck.b, SEAM_B); }
+    if (draft?.kind === "seam") {
+      drawRuns(draft.a, SEAM_A);
+      drawRuns(draft.b, SEAM_B);
+      if (draft.pending) {
+        const piece = doc.pieces.find((p) => p.id === draft.pending!.pieceId);
+        const node = piece?.nodes.find((n) => n.id === draft.pending!.nodeId);
+        if (node) {
+          const q = toPx(node.at);
+          ctx.fillStyle = draft.side === "a" ? SEAM_A : SEAM_B;
+          ctx.beginPath(); ctx.arc(q.x, q.y, 7, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+    }
+
     // ─── trazo en construcción ────────────────────────────────────────────────
     if (draft) {
       ctx.save();
@@ -341,7 +382,7 @@ export default function Canvas() {
         ctx.setLineDash([]);
         ctx.font = "11px ui-monospace, monospace";
         ctx.fillText(`radio ${draft.r.toFixed(1)} cm`, c.x + draft.r * zoom + 8, c.y);
-      } else {
+      } else if (draft.kind === "measure") {
         const a = toPx(draft.a), b = toPx(draft.b);
         ctx.strokeStyle = "#7DE3FF"; ctx.fillStyle = "#7DE3FF";
         ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
@@ -355,7 +396,7 @@ export default function Canvas() {
       }
       ctx.restore();
     }
-  }, [doc, zoom, pan, gridStep, selectedPieceId, selectedNodeId, showSeam, showNest, activeSizes, measurements, blockKind, draft, cursor, multi, selectedLabel, dartWidth]);
+  }, [doc, zoom, pan, gridStep, selectedPieceId, selectedNodeId, showSeam, showNest, activeSizes, measurements, blockKind, draft, cursor, multi, selectedLabel, dartWidth, activeSeam]);
 
   // ─── resize observer (redraw al cambiar tamaño) ──────────────────────────
   useEffect(() => {
@@ -444,6 +485,22 @@ export default function Canvas() {
       const p = snapPoint(world);
       st.setDraft({ kind: "measure", a: p, b: p });
       dragState.current = { kind: "measure", startPx: pxStart, origin: p };
+      return;
+    }
+    if (tool === "seam") {
+      // elegir los dos extremos de cada tramo: clic en un nodo y luego en otro de la misma pieza
+      let hp: string | null = null;
+      let hn: string | null = null;
+      let bd = HIT_PX + 4;
+      for (const p of doc.pieces) {
+        for (const n of p.nodes) {
+          const q = toScreen(n.at);
+          const dd = Math.hypot(q.x - cx, q.y - cy);
+          if (dd < bd) { bd = dd; hp = p.id; hn = n.id; }
+        }
+      }
+      if (hp && hn) st.seamPick(hp, hn);
+      else st.setNotice("Haz clic en un nodo (punto) de la pieza donde empieza o termina la costura.");
       return;
     }
     if (tool === "dart") {

@@ -11,7 +11,7 @@ import Canvas from "./Canvas";
 import Trazo from "./Trazo";
 import ExportModal from "./ExportModal";
 import { useEditor, SIZE_COLORS, selectionOf, type Tool, type View } from "./store";
-import { bounds, samplePath, type Piece } from "@hilonova/geometry";
+import { bounds, samplePath, gradeDoc, seamResult, type Piece } from "@hilonova/geometry";
 import {
   findBlock,
   PIECE_LIBRARY,
@@ -316,6 +316,9 @@ function ToolRail() {
           <path d="M12 3v6M9 6h6" {...st} />
         </svg>
       </RailBtn>
+      <RailBtn active={tool === "seam"} onClick={() => setTool("seam")} title="Verificar costuras: elige tramos del contorno y compara cuánto miden (S)">
+        <svg {...ic}><path d="M4 8h16M4 16h16M7 5v6M17 13v6" {...st} /></svg>
+      </RailBtn>
       <RailBtn active={tool === "dart"} onClick={() => setTool("dart")} title="Pinza: clic en el contorno (boca) y luego dentro de la pieza (punta) (P)">
         <svg {...ic}><path d="M4 6h5l3 12 3-12h5" {...st} /></svg>
       </RailBtn>
@@ -616,6 +619,94 @@ function PieceThumb({ piece }: { piece: Piece }) {
 
 // ─── Panel de propiedades ────────────────────────────────────────────────────
 
+/** Verificación de costuras: compara la medida de tramos de contorno. */
+function SeamPanel() {
+  const doc = useEditor((s) => s.history.present);
+  const tool = useEditor((s) => s.tool);
+  const setTool = useEditor((s) => s.setTool);
+  const draft = useEditor((s) => s.draft);
+  const active = useEditor((s) => s.activeSeam);
+  const setActive = useEditor((s) => s.setActiveSeam);
+  const side = useEditor((s) => s.seamSide);
+  const create = useEditor((s) => s.seamCreate);
+  const patch = useEditor((s) => s.patchSeamCheck);
+  const del = useEditor((s) => s.deleteSeamCheck);
+  const setDraft = useEditor((s) => s.setDraft);
+  const checks = doc.seamChecks ?? [];
+  if (tool !== "seam" && checks.length === 0) return null;
+  const seam = draft?.kind === "seam" ? draft : null;
+  const fmt = (v: number) => v.toFixed(1);
+
+  return (
+    <div className="st-group">
+      <div className="st-label">Costuras</div>
+      {tool === "seam" ? (
+        <>
+          <p className="st-hint" style={{ marginTop: 0 }}>
+            Marca cada tramo con dos clics en nodos de una pieza. El lado A es la referencia; el lado B
+            es lo que debe coserse contra A. Un lado puede sumar varios tramos (p. ej. la sisa del
+            delantero y de la espalda contra la cabeza de la manga).
+          </p>
+          <div className="st-seg" style={{ marginBottom: 8 }}>
+            <button className={(seam?.side ?? "a") === "a" ? "on" : ""} onClick={() => side("a")}>Lado A · {seam?.a.length ?? 0}</button>
+            <button className={seam?.side === "b" ? "on" : ""} onClick={() => side("b")}>Lado B · {seam?.b.length ?? 0}</button>
+          </div>
+          {seam?.pending && <p className="st-hint">Elige el segundo punto del tramo.</p>}
+          <div className="st-actions" style={{ marginTop: 0 }}>
+            <button className="st-act on" onClick={() => create()}>Crear comparación</button>
+            <button className="st-act" onClick={() => { setDraft(null); setTool("select"); }}>Cancelar</button>
+          </div>
+        </>
+      ) : (
+        <button className="st-act" style={{ marginTop: 0 }} onClick={() => setTool("seam")}>+ Nueva comprobación</button>
+      )}
+      {checks.map((c) => {
+        const r = seamResult(doc, c);
+        const isActive = active === c.id;
+        return (
+          <div key={c.id} className={`st-seam${isActive ? " on" : ""}`}>
+            <div className="st-seam-h" onClick={() => setActive(isActive ? null : c.id)}>
+              <TextInput value={c.name} onCommit={(v) => patch(c.id, { name: v || c.name })} />
+              <button className="st-act danger" style={{ marginTop: 0 }} onClick={(e) => { e.stopPropagation(); del(c.id); }} title="Eliminar comprobación">✕</button>
+            </div>
+            {r ? (
+              <div className="st-seam-body">
+                <div className={r.ok ? "st-seam-ok" : "st-seam-bad"}>
+                  {r.ok ? "✓ Coinciden" : "⚠ Revisar"} · A {fmt(r.a)} cm · B {fmt(r.b)} cm · B − A = {r.diff >= 0 ? "+" : ""}{fmt(r.diff)} cm
+                </div>
+                <EditField name="Holgura prevista">
+                  <NumInput value={c.ease} step={0.5} min={-10} max={10} unit="cm" onCommit={(v) => patch(c.id, { ease: v })} />
+                </EditField>
+                {isActive && (
+                  <table className="st-grade-table" style={{ marginTop: 6 }}>
+                    <thead><tr><th>Talla</th><th>A</th><th>B</th><th>B − A</th><th /></tr></thead>
+                    <tbody>
+                      {doc.sizes.map((sz) => {
+                        const rs = seamResult(gradeDoc(doc, sz), c);
+                        return (
+                          <tr key={sz}>
+                            <td>{sz}</td>
+                            <td className="mono">{rs ? fmt(rs.a) : "—"}</td>
+                            <td className="mono">{rs ? fmt(rs.b) : "—"}</td>
+                            <td className="mono">{rs ? `${rs.diff >= 0 ? "+" : ""}${fmt(rs.diff)}` : "—"}</td>
+                            <td className={rs?.ok ? "st-seam-ok" : "st-seam-bad"}>{rs ? (rs.ok ? "✓" : "⚠") : ""}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            ) : (
+              <div className="st-seam-bad" style={{ padding: "4px 10px 8px" }}>No se encontró alguno de los tramos (¿se borró una pieza?).</div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 /** Rotar a cualquier ángulo: se escribe el ángulo y se elige el sentido. */
 function RotateRow({ rotate }: { rotate: (deg: number) => void }) {
   const [angle, setAngle] = useState(15);
@@ -689,6 +780,7 @@ function PropsPanel() {
       <div className="st-side-h">
         <span>Propiedades</span>
       </div>
+      <SeamPanel />
       {tool === "dart" && (
         <div className="st-group">
           <div className="st-label">Pinza</div>
@@ -893,6 +985,7 @@ const TOOL_HINT: Record<Tool, string> = {
   addnode: "Clic sobre un contorno para agregar un nodo",
   measure: "Arrastra para medir una distancia",
   text: "Clic sobre una pieza para agregar un texto (nota, medida, instrucción)",
+  seam: "Costura: clic en dos nodos de una pieza para marcar un tramo · repite para sumar tramos · luego cambia al lado B",
   dart: "Pinza: 1.º clic en el contorno (la boca) · 2.º clic dentro de la pieza (la punta) · el ancho se cambia a la derecha",
 };
 

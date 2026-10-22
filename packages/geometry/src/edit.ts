@@ -3,7 +3,7 @@
 // herramientas de dibujo (línea, curva, rectángulo, círculo), agregar/quitar
 // nodos, espejar, rotar y duplicar.
 
-import { makeId, node as makeNode, type Node, type PatternDoc, type Piece, type PieceLabel } from "./doc";
+import { makeId, node as makeNode, type Node, type PatternDoc, type Piece, type PieceLabel, type SeamCheck, type SeamRun } from "./doc";
 import { evalBezier, segmentBezier } from "./bezier";
 import { bounds, samplePath } from "./piece";
 import { dist, lerp, normalize, sub, type Vec2 } from "./vec";
@@ -454,4 +454,122 @@ export function addDart(piece: Piece, segIndex: number, t: number, width: number
   const tip = makeNode(apex, hasGrade ? { grade: { dx: (ga.dx + gb.dx) / 2, dy: (ga.dy + gb.dy) / 2 } } : undefined);
   nodes.splice(segIndex + 2, 0, tip);
   return { ...piece, nodes };
+}
+
+// ─── verificación de costuras ────────────────────────────────────────────────
+
+/** Diferencia máxima (cm) para dar por buena una costura. */
+export const SEAM_TOLERANCE = 0.5;
+
+export interface ContourRun {
+  length: number;
+  /** índices de los segmentos que forman el tramo */
+  segments: number[];
+  /** puntos del tramo (para dibujarlo) */
+  points: Vec2[];
+}
+
+/**
+ * Tramo del contorno entre dos nodos. En una pieza cerrada hay dos caminos y se toma
+ * el más corto (una costura casi nunca recorre más de la mitad de la pieza).
+ */
+export function contourRun(piece: Piece, n1: string, n2: string): ContourRun | null {
+  const n = piece.nodes.length;
+  const i = piece.nodes.findIndex((x) => x.id === n1);
+  const j = piece.nodes.findIndex((x) => x.id === n2);
+  if (i < 0 || j < 0 || i === j) return null;
+
+  const path = (from: number, to: number): number[] => {
+    const segs: number[] = [];
+    for (let k = from; k !== to; k = (k + 1) % n) segs.push(k);
+    return segs;
+  };
+  let segs: number[];
+  if (piece.closed) {
+    const fwd = path(i, j);
+    const back = path(j, i);
+    const len = (ss: number[]) => ss.reduce((acc, k) => acc + segmentLength(piece, k), 0);
+    segs = len(fwd) <= len(back) ? fwd : back;
+  } else {
+    const lo = Math.min(i, j), hi = Math.max(i, j);
+    segs = [];
+    for (let k = lo; k < hi; k++) segs.push(k);
+  }
+
+  let length = 0;
+  const points: Vec2[] = [];
+  for (const k of segs) {
+    const a = piece.nodes[k]!;
+    const b = piece.nodes[(k + 1) % n]!;
+    const c = segmentBezier(a.at, b.at, a.handleOut, b.handleIn);
+    let prev = c.p0;
+    if (points.length === 0) points.push(prev);
+    for (let s = 1; s <= 16; s++) {
+      const q = evalBezier(c, s / 16);
+      length += dist(prev, q);
+      points.push(q);
+      prev = q;
+    }
+  }
+  return { length, segments: segs, points };
+}
+
+/** Crea un tramo con respaldo por nombre de pieza e índices de nodo. */
+export function makeSeamRun(piece: Piece, n1: string, n2: string): SeamRun {
+  return {
+    pieceId: piece.id,
+    n1,
+    n2,
+    pieceName: piece.name,
+    i1: piece.nodes.findIndex((n) => n.id === n1),
+    i2: piece.nodes.findIndex((n) => n.id === n2),
+  };
+}
+
+/**
+ * Ubica un tramo en el documento: primero por ids; si el patrón se redibujó, por el
+ * nombre de la pieza y la posición de los nodos.
+ */
+export function resolveSeamRun(doc: PatternDoc, r: SeamRun): { piece: Piece; n1: string; n2: string } | null {
+  const byId = doc.pieces.find((p) => p.id === r.pieceId);
+  if (byId && byId.nodes.some((n) => n.id === r.n1) && byId.nodes.some((n) => n.id === r.n2)) {
+    return { piece: byId, n1: r.n1, n2: r.n2 };
+  }
+  const byName = r.pieceName ? doc.pieces.find((p) => p.name === r.pieceName) : undefined;
+  if (byName && r.i1 !== undefined && r.i2 !== undefined) {
+    const a = byName.nodes[r.i1];
+    const b = byName.nodes[r.i2];
+    if (a && b) return { piece: byName, n1: a.id, n2: b.id };
+  }
+  return null;
+}
+
+/** Suma de los tramos de un lado; null si alguna pieza o nodo ya no existe. */
+export function sideLength(doc: PatternDoc, runs: readonly SeamRun[]): number | null {
+  let total = 0;
+  for (const r of runs) {
+    const loc = resolveSeamRun(doc, r);
+    const run = loc ? contourRun(loc.piece, loc.n1, loc.n2) : null;
+    if (!run) return null;
+    total += run.length;
+  }
+  return total;
+}
+
+export interface SeamResult {
+  a: number;
+  b: number;
+  /** B − A */
+  diff: number;
+  /** ¿la diferencia coincide con la holgura prevista (± tolerancia)? */
+  ok: boolean;
+}
+
+/** Evalúa una comprobación de costura sobre un documento (p. ej. ya graduado a una talla). */
+export function seamResult(doc: PatternDoc, check: SeamCheck): SeamResult | null {
+  const a = sideLength(doc, check.a);
+  const b = sideLength(doc, check.b);
+  if (a === null || b === null) return null;
+  const diff = b - a;
+  return { a, b, diff, ok: Math.abs(diff - check.ease) <= SEAM_TOLERANCE };
 }

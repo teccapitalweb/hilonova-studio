@@ -62,6 +62,30 @@ export interface TechPackMeta {
   notes?: string;         // notas libres
 }
 
+/** Tramo del contorno de una pieza entre dos nodos (por el camino más corto). */
+export interface SeamRun {
+  pieceId: string;
+  n1: string;
+  n2: string;
+  /** respaldo por si el patrón se redibuja (cambio de medidas) y los ids cambian */
+  pieceName?: string;
+  i1?: number;
+  i2?: number;
+}
+
+/**
+ * Comprobación de costura: la suma de los tramos del lado A (referencia) se compara
+ * con la del lado B. `ease` es cuánto más largo debe ser B a propósito (p. ej. la
+ * cabeza de manga frente a la sisa lleva holgura).
+ */
+export interface SeamCheck {
+  id: string;
+  name: string;
+  a: SeamRun[];
+  b: SeamRun[];
+  ease: number;
+}
+
 /** Estado de un patrón que cambia entre variantes de modelo. */
 export interface VariantSnapshot {
   pieces: Piece[];
@@ -103,6 +127,8 @@ export interface PatternDoc {
   gradeSteps?: Record<string, number>;
   /** Medidas de la talla base con las que se dibujó el patrón (cm). */
   measurements?: Record<string, number>;
+  /** Comprobaciones de costuras guardadas. */
+  seamChecks?: SeamCheck[];
   /** Variantes de modelo guardadas y cuál está activa. */
   variants?: ModelVariant[];
   activeVariant?: string;

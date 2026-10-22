@@ -1151,3 +1151,11 @@ select.st-input { text-align: left; }
 /* desplegables nativos legibles en el tema oscuro */
 select.st-input { color-scheme: dark; background-color: #1a2540; color: var(--t-hi); }
 select.st-input option { background-color: #1a2540; color: #EAF2FF; }
+
+/* ─── Verificación de costuras ─── */
+.st-seam { border: 1px solid var(--hair); border-radius: 10px; margin-top: 10px; background: rgba(255,255,255,.02); }
+.st-seam.on { border-color: var(--accent); }
+.st-seam-h { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 8px 10px 4px; cursor: pointer; }
+.st-seam-body { padding: 2px 10px 10px; font-size: 12.5px; }
+.st-seam-ok { color: #8fd99b; }
+.st-seam-bad { color: #ffb08a; }
