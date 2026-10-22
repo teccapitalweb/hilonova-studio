@@ -175,7 +175,7 @@ function RulesCard() {
           <thead>
             <tr>
               <th>Medida (cm)</th>
-              <th title="Cuántos cm crece la medida por cada talla">+/talla</th>
+              <th title="Cuántos cm crece la medida de una talla a la siguiente (normal: 1 a 6)">cm/talla</th>
               {doc.sizes.map((s) => (
                 <th key={s} className={s === doc.baseSize ? "base" : ""}>{s}</th>
               ))}
@@ -189,6 +189,8 @@ function RulesCard() {
                   <NumInput
                     value={rules[f] ?? 0}
                     step={0.1}
+                    min={0}
+                    max={12}
                     width={52}
                     onCommit={(v) => setGradeStep(f, v)}
                   />
@@ -204,7 +206,7 @@ function RulesCard() {
         </table>
       </div>
       <p className="st-hint">
-        Cambia "+/talla" y todas las piezas se re-gradúan. La talla base ({doc.baseSize}) sale de tus medidas.
+        Cambia "cm/talla" (cuánto crece la medida de una talla a la siguiente, normalmente de 1 a 6 cm; máximo 12) y todas las piezas se re-gradúan. Para cambiar el busto de la talla base ({doc.baseSize}) usa el botón "Medidas" de la barra superior.
       </p>
     </section>
   );

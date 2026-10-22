@@ -410,6 +410,7 @@ function MeasurementsPanel({ onClose }: { onClose: () => void }) {
   const apply = useEditor((s) => s.applyMeasurements);
   const blockKind = useEditor((s) => s.blockKind);
   const docName = useEditor((s) => s.history.present.name);
+  const baseSize = useEditor((s) => s.history.present.baseSize);
   const meta = findBlock(blockKind);
   const [m, setM] = useState<BodyMeasurements>({ ...current });
   const [activeField, setActiveField] = useState<keyof BodyMeasurements | null>(null);
@@ -462,7 +463,7 @@ function MeasurementsPanel({ onClose }: { onClose: () => void }) {
         <div className="st-m-h">
           <div>
             <div className="st-label" style={{ marginBottom: 2 }}>Bloque paramétrico</div>
-            <strong style={{ color: "var(--t-hi)" }}>{docName} · talla 32</strong>
+            <strong style={{ color: "var(--t-hi)" }}>{docName} · talla {baseSize}</strong>
           </div>
           <button className="st-ic" onClick={onClose} title="Cerrar">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>

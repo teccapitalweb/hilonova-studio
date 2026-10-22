@@ -1147,3 +1147,7 @@ select.st-input { text-align: left; }
   .st-table-card { border: 1px solid #ccc; background: #fff; }
   .st-page-h h1, .st-page h2, .st-data-table td, .st-data-table th, .st-page-h p { color: #000 !important; }
 }
+
+/* desplegables nativos legibles en el tema oscuro */
+select.st-input { color-scheme: dark; background-color: #1a2540; color: var(--t-hi); }
+select.st-input option { background-color: #1a2540; color: #EAF2FF; }
