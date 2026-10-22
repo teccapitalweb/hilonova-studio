@@ -65,6 +65,9 @@ export interface PatternDoc {
   blockKind?: string;
   /** Opcional: metadata del Tech Pack. */
   techPack?: TechPackMeta;
+  /** Opcional: reglas de tallaje editadas por el usuario (cm por talla por medida);
+   *  pisan las reglas por defecto del bloque. */
+  gradeSteps?: Record<string, number>;
 }
 
 // ─── id generator ────────────────────────────────────────────────────────────

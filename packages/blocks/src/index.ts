@@ -5,6 +5,7 @@
 
 import {
   clonePiece,
+  sizeSteps,
   emptyDoc,
   emptyPiece,
   node,
@@ -16,34 +17,9 @@ import {
 } from "@hilonova/geometry";
 
 // ─── tallas ──────────────────────────────────────────────────────────────────
-
-/** Escala alfabética de tallas (un paso de graduación por talla). */
-export const ALPHA_SIZES: readonly string[] = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL"];
-
-const alphaIndex = (size: string): number => ALPHA_SIZES.indexOf(size.toUpperCase());
-
-/**
- * Pasos de graduación entre una talla y la base.
- * - Tallas alfabéticas (S, M, L, XL): 1 paso por talla.
- * - Tallas numéricas (28, 30, 32…): 1 paso cada 2 números.
- */
-export function sizeSteps(size: string, baseSize: string): number {
-  const a = alphaIndex(size);
-  const b = alphaIndex(baseSize);
-  if (a >= 0 && b >= 0) return a - b;
-  return (parseInt(size, 10) - parseInt(baseSize, 10)) / 2;
-}
-
-/** Orden de tallas para listas y UI (S < M < L < XL; 28 < 30 < 32). */
-export function compareSizes(a: string, b: string): number {
-  const ia = alphaIndex(a);
-  const ib = alphaIndex(b);
-  if (ia >= 0 && ib >= 0) return ia - ib;
-  const na = parseInt(a, 10);
-  const nb = parseInt(b, 10);
-  if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
-  return a.localeCompare(b);
-}
+// Las utilidades de tallas viven en @hilonova/geometry (las usa también la
+// graduación del motor); se reexportan aquí por compatibilidad.
+export { ALPHA_SIZES, sizeSteps, compareSizes } from "@hilonova/geometry";
 
 // ─── medidas de cuerpo ───────────────────────────────────────────────────────
 
@@ -695,7 +671,7 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
 /** Punto de entrada por tipo de prenda.
  *  Marca el `blockKind` en el documento para que el editor sepa qué
  *  draft usar al cambiar medidas. */
-export function draftBlock(kind: BlockKind, m: BodyMeasurements): PatternDoc {
+function draftBlockRaw(kind: BlockKind, m: BodyMeasurements): PatternDoc {
   let doc: PatternDoc;
   switch (kind) {
     case "pantalon-denim":  doc = draftPantalonDenim(m); break;
@@ -708,13 +684,80 @@ export function draftBlock(kind: BlockKind, m: BodyMeasurements): PatternDoc {
   return doc;
 }
 
+/**
+ * Dibuja el bloque y le adjunta las reglas de graduación de cada nodo.
+ * La regla se deriva dibujando el bloque una talla más grande y midiendo cuánto
+ * se movió cada nodo, relativo al primer nodo de su pieza (que queda fijo como
+ * ancla). `rules` son los cm por talla editados por el usuario (pisan los del bloque).
+ */
+export function draftBlock(
+  kind: BlockKind,
+  m: BodyMeasurements,
+  rules?: Deltas,
+): PatternDoc {
+  const base = draftBlockRaw(kind, m);
+  const up = draftBlockRaw(kind, measurementsForSteps(kind, m, 1, rules));
+  base.pieces = base.pieces.map((piece, i) => {
+    const upPiece = up.pieces[i];
+    if (!upPiece || upPiece.nodes.length !== piece.nodes.length) return piece;
+    const o0 = piece.nodes[0]!.at;
+    const o1 = upPiece.nodes[0]!.at;
+    const ax = o1.x - o0.x;
+    const ay = o1.y - o0.y;
+    return {
+      ...piece,
+      nodes: piece.nodes.map((n, j) => {
+        const u = upPiece.nodes[j]!.at;
+        const dx = round2(u.x - n.at.x - ax);
+        const dy = round2(u.y - n.at.y - ay);
+        return dx === 0 && dy === 0 ? n : { ...n, grade: { dx, dy } };
+      }),
+    };
+  });
+  if (rules && Object.keys(rules).length) base.gradeSteps = { ...rules } as Record<string, number>;
+  return base;
+}
+
+const round2 = (v: number): number => Math.round(v * 100) / 100;
+
+/**
+ * Vuelve a derivar las reglas de graduación de un documento ya existente
+ * (tras editar las reglas de tallaje o las medidas) sin perder piezas dibujadas:
+ * las piezas se emparejan por nombre y solo se actualizan si siguen teniendo el
+ * mismo número de nodos.
+ */
+export function rederiveGrades(
+  doc: PatternDoc,
+  kind: BlockKind,
+  m: BodyMeasurements,
+  rules?: Deltas,
+): PatternDoc {
+  const fresh = draftBlock(kind, m, rules);
+  return {
+    ...doc,
+    ...(fresh.gradeSteps ? { gradeSteps: fresh.gradeSteps } : { gradeSteps: undefined }),
+    pieces: doc.pieces.map((piece) => {
+      const match = fresh.pieces.find((f) => f.name === piece.name);
+      if (!match || match.nodes.length !== piece.nodes.length) return piece;
+      return {
+        ...piece,
+        nodes: piece.nodes.map((n, j) => {
+          const { grade: _old, ...rest } = n;
+          const g = match.nodes[j]!.grade;
+          return g ? { ...rest, grade: g } : rest;
+        }),
+      };
+    }),
+  };
+}
+
 // ─── graduación por bloque ──────────────────────────────────────────────────
 
-type Deltas = Partial<Record<keyof BodyMeasurements, number>>;
+export type Deltas = Partial<Record<keyof BodyMeasurements, number>>;
 
 /** Reglas de graduación por bloque: cuánto crece cada medida por "paso"
  *  (= salto estándar entre dos tallas consecutivas, p.ej. 30 → 32). */
-const GRADE_RULES: Record<BlockKind, Deltas> = {
+export const GRADE_RULES: Record<BlockKind, Deltas> = {
   "pantalon-denim": {
     cintura: 4, cadera: 4, tiro: 0.5, largo: 1, muslo: 2, bajo: 1,
   },
@@ -734,23 +777,37 @@ const GRADE_RULES: Record<BlockKind, Deltas> = {
   },
 };
 
-/** Devuelve las medidas para una talla aplicando las reglas del bloque. */
-export function measurementsForBlockSize(
+/** Reglas efectivas (cm por talla) de un bloque: las de fábrica con las editadas encima. */
+export function gradeRulesFor(kind: BlockKind, custom?: Deltas): Deltas {
+  return { ...GRADE_RULES[kind], ...(custom ?? {}) };
+}
+
+/** Medidas tras `steps` pasos de talla respecto a las medidas base. */
+export function measurementsForSteps(
   kind: BlockKind,
-  size: string,
   base: BodyMeasurements,
-  baseSize: string,
+  steps: number,
+  custom?: Deltas,
 ): BodyMeasurements {
-  const steps = sizeSteps(size, baseSize);
-  const rules = GRADE_RULES[kind];
   const out: BodyMeasurements = { ...base };
-  for (const [key, delta] of Object.entries(rules) as [keyof BodyMeasurements, number][]) {
+  for (const [key, delta] of Object.entries(gradeRulesFor(kind, custom)) as [keyof BodyMeasurements, number][]) {
     const current = base[key];
     if (typeof current === "number") {
       (out[key] as number) = current + steps * delta;
     }
   }
   return out;
+}
+
+/** Devuelve las medidas para una talla aplicando las reglas del bloque. */
+export function measurementsForBlockSize(
+  kind: BlockKind,
+  size: string,
+  base: BodyMeasurements,
+  baseSize: string,
+  custom?: Deltas,
+): BodyMeasurements {
+  return measurementsForSteps(kind, base, sizeSteps(size, baseSize), custom);
 }
 
 /** Gradúa cualquier bloque para una lista de tallas. */
