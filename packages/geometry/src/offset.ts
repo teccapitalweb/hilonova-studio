@@ -17,12 +17,27 @@ const leftNormal = (v: Vec2): Vec2 => ({ x: -v.y, y: v.x });
  * del contorno, sin importar el sentido en que se trazó la pieza.
  */
 export function offsetPolyline(
-  points: readonly Vec2[],
+  input: readonly Vec2[],
   distance: number,
   closed: boolean,
 ): Vec2[] {
+  if (input.length < 2 || distance === 0) return input.slice();
+
+  // Se quitan puntos repetidos seguidos (y el que cierra el contorno repitiendo el
+  // primero): con una tangente de largo cero la normal se descontrola y el margen
+  // sale con un pico justo en ese vértice.
+  const points: Vec2[] = [];
+  for (const p of input) {
+    const last = points[points.length - 1];
+    if (!last || Math.hypot(p.x - last.x, p.y - last.y) > 1e-6) points.push(p);
+  }
+  if (closed && points.length > 1) {
+    const f = points[0]!;
+    const l = points[points.length - 1]!;
+    if (Math.hypot(f.x - l.x, f.y - l.y) <= 1e-6) points.pop();
+  }
   const n = points.length;
-  if (n < 2 || distance === 0) return points.slice();
+  if (n < 2) return input.slice();
 
   // En una pieza cerrada, "positivo = hacia fuera" no debe depender del sentido
   // en que se dibujó el contorno: se detecta con el área con signo y se corrige.
