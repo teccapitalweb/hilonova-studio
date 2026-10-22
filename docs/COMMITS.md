@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 10
+> Rama: `dev/mvp-9-nov` · Commits: 13
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,71 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## feat(studio): herramientas de dibujo, biblioteca de piezas y propiedades editables
+
+- Commit: `8c29e9a`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: la barra de herramientas ahora dibuja polilíneas, curvas suaves,
+rectángulos y círculos; agrega nodos sobre un contorno; mide distancias y mueve
+piezas, nodos y handles Bézier arrastrando (un arrastre = un deshacer). Atajos:
+V H N L C R O A M, Enter cierra, doble clic deja línea abierta, Esc cancela,
+Supr borra, Ctrl+D duplica. Imán a nodos existentes y a rejilla. Panel de
+piezas con "+ Biblioteca" que inserta piezas centradas en la vista. Panel de
+propiedades editable: nombre, cantidad, tela, margen de costura, hilo de tela,
+duplicar, espejar, rotar 90°, eliminar y, por nodo, X/Y, vértice/curva y
+piquete. El hilo de tela respeta su ángulo. Las líneas internas (abiertas) se
+dibujan punteadas y no entran al trazo. Estado de herramienta visible en la
+barra inferior.
+Por qué: el concepto pide "herramientas de dibujo profesionales" y biblioteca de
+piezas; el editor solo permitía mover nodos de 4 prendas.
+Verificación: tsc sin errores; build de producción con basePath de Pages OK; en
+el navegador se dibujó un rectángulo y una curva cerrada (Pieza 3 y 4), se
+insertaron cuello y manga de la biblioteca, se agregó un nodo y se arrastró una
+pieza con un solo Ctrl+Z para revertirla. Limitación conocida: el nido de tallas
+se desactiva si el patrón ya no coincide con el bloque paramétrico; se resuelve
+con la graduación por reglas (siguiente etapa).
+Archivos: apps/web/app/studio/{Canvas,Shell,store,nest,nesting}.ts(x), studio.css
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## feat(engine): operaciones de edición y biblioteca de piezas
+
+- Commit: `b413bea`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: nuevo módulo packages/geometry/src/edit.ts con funciones puras para crear
+piezas (polilínea, curva suave, rectángulo, elipse), insertar nodos dividiendo
+la curva con de Casteljau, quitar nodos, alternar vértice/curva, mover handles,
+duplicar, espejar y rotar piezas, y consultas (segmento más cercano, punto
+dentro de pieza). history.ts suma checkpoint/replacePresent para que un
+arrastre cuente como una sola entrada de deshacer. @hilonova/blocks suma
+PIECE_LIBRARY (delanteros, espaldas, mangas, cuello, pie de cuello, puño, vista,
+bolsillos, pretina, trabilla) y LIBRARY_CATEGORIES.
+Por qué: el producto pide CAD 2D con herramientas de dibujo y una biblioteca de
+piezas; el motor solo sabía mover nodos y marcar piquetes.
+Verificación: tsc sin errores en geometry, blocks, export y web.
+Archivos: packages/geometry/src/edit.ts, history.ts, index.ts,
+packages/blocks/src/index.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `bc48272`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md con los commits de la blusa clásica y del
+concepto visual.
+Por qué: mantener el registro de commits al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## feat(blocks): bloque Blusa clásica (7 piezas) y tallas S/M/L/XL
 
