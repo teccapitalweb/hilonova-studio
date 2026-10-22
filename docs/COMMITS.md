@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 42
+> Rama: `dev/mvp-9-nov` · Commits: 45
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,70 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## feat(studio): vista 3D de la prenda armada
+
+- Commit: `9b5f94b`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: nueva pestaña Producción → Vista 3D. Arma el patrón sobre un cuerpo para
+girarlo, acercarlo y verlo de frente, lado o espalda, en cada talla (S/M/L/XL o
+la numeración de la prenda) y en 7 colores de tela, con o sin contornos de las
+piezas. Cada pieza plana se envuelve alrededor de una sección elíptica cuya
+circunferencia es el ancho del delantero más el de la espalda a cada altura;
+las mangas van como tubos, el pantalón como dos piernas y las faldas como un
+tronco. Al armar la prenda se cierran las pinzas (se quita la punta de la V) y
+el ancho se suaviza para que no marque un pliegue en la axila. three.js se carga
+solo al abrir esta pestaña.
+Por qué: el encargo pedía una vista 3D opcional de la prenda en producción.
+Verificación: 482 pruebas (61 de la vista 3D: familias de prenda, mallas sin
+huecos ni NaN, tallas más grandes dan prendas más anchas, pinzas cerradas),
+tipos sin errores en los 4 paquetes y build de producción correcto; revisada en
+la app con blusa, camisa, falda en A y pantalón cargo. Es una vista aproximada:
+no dibuja cuellos, puños ni bolsillos y no es una simulación de tela.
+Archivos: apps/web/app/studio/drape.ts, apps/web/app/studio/Vista3D.tsx,
+apps/web/app/studio/Produccion.tsx, apps/web/app/studio/studio.css,
+apps/web/package.json, pnpm-lock.yaml, tests/drape.test.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## feat(blocks): pinzas puestas en los patrones base
+
+- Commit: `aa74a43`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: los patrones base ahora traen pinzas paramétricas, que se redibujan con las
+medidas y se gradúan con las tallas: falda recta (cintura, delantero y espalda),
+falda en A (2 en el delantero, 1 por mitad en la espalda), vestido básico
+(pinza de busto a cada lado desde el costado), blusa clásica (pinza de busto
+en el costado) y bermuda y pantalón cargo (pinza trasera de cintura). El ancho de
+la pinza sale de las medidas: las de cintura reparten la diferencia con la cadera
+(40 % delantero, 55 % espalda) y la de busto crece con el contorno de busto
+(≈2.6 cm con busto 92). El margen de costura limita las puntas agudas a 2 ×
+el margen (antes hasta 5 ×) para que no se dispare en el vértice de una pinza.
+Por qué: faltaban las pinzas en las prendas que las necesitan.
+Verificación: 421 pruebas (10 nuevas: cada prenda trae sus pinzas en las 4 tallas,
+boca entre 0.8 y 7 cm, la playera no trae, más busto = pinza más ancha); en la app
+el vestido muestra las dos pinzas de busto.
+Archivos: packages/blocks/src/index.ts, packages/geometry/src/offset.ts,
+tests/blocks.test.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `c57ba3b`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md con exportar trazo y herramientas de edición.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## feat(studio): verificar costuras y mangas que encajan en la sisa
 
