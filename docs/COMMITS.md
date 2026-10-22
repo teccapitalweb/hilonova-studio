@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 27
+> Rama: `dev/mvp-9-nov` · Commits: 29
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,45 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## feat(blocks): camisa de hombre, camisa manga corta, polo, chaleco y pantalón cargo
+
+- Commit: `4cc3837`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: cinco prendas nuevas con reglas de graduación y medidas de arranque
+propias. Camisa de hombre (9 piezas: delantero, espalda, canesú, manga, cuello,
+pie de cuello, puño, tapeta, bolsillo de pecho) y Camisa manga corta (8, sin
+puño). Playera polo (7: delantero, espalda, manga, cuello de polo, puño de rib,
+tapeta y una línea interna de abertura sobre el delantero). Chaleco (5: escote
+en V, bajo en punta, forro y vivos de bolsillo). Pantalón cargo (7: delantero,
+espalda, pretina, bolsillo cargo con solapa, bolsillo trasero, trabillas). Las
+piezas abiertas (líneas internas) ya no llevan margen de costura. La biblioteca
+suma 19 piezas de estas prendas (canesú, tapeta, cuello de polo, bolsillo cargo,
+etc.).
+Por qué: el usuario pidió estas prendas después de las siete anteriores.
+Verificación: tsc y build de producción OK; en el navegador cada prenda se crea
+con el número de piezas esperado y la camisa manga corta gradúa S/M/L/XL
+(busto 96-100-104-108). Limitaciones: patrones base sin pinzas ni fuelles
+detallados; calibrar curvas con una patronista.
+Archivos: packages/blocks/src/index.ts,
+apps/web/app/studio/MeasurementSilhouette.tsx
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `2c54d9e`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md con los commits de las prendas nuevas.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## feat(studio): la galería usa las medidas propias de cada prenda y soporta los nuevos bloques
 
