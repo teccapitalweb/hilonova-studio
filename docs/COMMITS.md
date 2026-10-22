@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 16
+> Rama: `dev/mvp-9-nov` · Commits: 19
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,63 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## feat(export): DXF graduado con todas las tallas y hilo con ángulo
+
+- Commit: `cb71565`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: exportDxfGraded genera un DXF con todas las tallas del documento, una
+franja por talla, con la talla en el rótulo de cada pieza y las reglas de
+graduación de los nodos. El hilo de tela del DXF respeta el ángulo de la pieza
+y no se dibuja en líneas internas. El modal de exportación suma la opción
+"Todas las tallas (graduado)".
+Por qué: el DXF solo exportaba la talla base; la industria necesita el set
+graduado para continuar en Gerber/Lectra.
+Verificación: tsc y build OK; con una blusa S-M-L-XL el DXF trae 56 polilíneas
+y 28 rótulos (7 piezas × 4 tallas). No se probó la apertura en Gerber/Lectra.
+Archivos: packages/export/src/dxf.ts, apps/web/app/studio/ExportModal.tsx
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## feat(studio): trazo por contorno real con consumo por talla y costo de tela
+
+- Commit: `455c90b`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: el trazo deja de acomodar cajas rectangulares. Cada pieza (con margen de
+costura) se rasteriza en una rejilla de 1 cm y se coloca en la primera posición
+libre, probando giro de 180° (respeta el hilo) y espejo en copias pares
+(izquierda/derecha), así encaja piezas curvas entre sí. La vista Trazo ahora
+tiene una pestaña por talla y un trazo "Combinado" (una prenda de cada talla),
+consumo por talla con barras, aprovechamiento (dona), merma, aviso si una pieza
+no cabe a lo ancho, precio de tela por metro y costo de tela por prenda. Las
+piezas se colorean por tipo (o por talla en el combinado).
+Por qué: el concepto pide trazo inteligente con consumo por talla y porcentaje
+de aprovechamiento; el trazo anterior no rotaba, no espejaba y calculaba una
+sola talla.
+Verificación: tsc y build OK. Con la blusa: S 1.06 m (51 %), M 1.08 m (52 %),
+L 1.10 m (54 %), XL 1.12 m (55 %); combinado 3.23 m, 72 % de aprovechamiento,
+52 piezas, 0.81 m por prenda. Limitación: acomodo voraz en rejilla de 1 cm; no
+reemplaza a un optimizador industrial.
+Archivos: apps/web/app/studio/{nesting.ts,Trazo.tsx,store.ts,studio.css}
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `434ddf3`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md con los commits de graduación.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## feat(studio): vista Graduación con tabla de tallaje y graduación manual
 
