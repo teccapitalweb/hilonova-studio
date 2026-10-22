@@ -110,6 +110,9 @@ interface EditorState {
   view: View;
   /** ancho de la tela en cm (para el trazo) */
   fabricWidth: number;
+  /** precio de la tela por metro (MXN), para el costo de tela por prenda */
+  fabricPrice: number;
+  setFabricPrice(v: number): void;
   /** mostrar nido de tallas superpuesto */
   showNest: boolean;
   /** qué tallas incluir en el nido (debe contener la base) */
@@ -207,6 +210,8 @@ export const useEditor = create<EditorState>((set, get) => ({
   showSeam: true,
   view: "editor",
   fabricWidth: 150, // cm (ancho estándar denim)
+  fabricPrice: 0,
+  setFabricPrice: (fabricPrice) => set({ fabricPrice: Math.max(0, fabricPrice) }),
   showNest: false,
   activeSizes: ["28", "30", "32", "34", "36"],
   measurements: { ...DEFAULT_MEASUREMENTS },

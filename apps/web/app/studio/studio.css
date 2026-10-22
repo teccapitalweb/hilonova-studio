@@ -988,3 +988,30 @@
 .st-grade-table .base { color: #fff; background: rgba(240,102,44,.14); }
 select.st-input { text-align: left; }
 @media (max-width: 1080px) { .st-grad { grid-template-columns: 1fr; } .st-grad-side { border-left: 0; border-top: 1px solid var(--hair); } }
+
+/* ─── Trazo por talla ─── */
+.st-trazo-tabs {
+  position: absolute; top: 12px; left: 14px; z-index: 2;
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.st-trazo-tabs button {
+  font-size: 12.5px; font-weight: 600; cursor: pointer;
+  color: var(--t); background: rgba(10,20,36,.85);
+  border: 1px solid var(--hair); border-radius: 999px; padding: 5px 13px;
+}
+.st-trazo-tabs button:hover { color: var(--t-hi); border-color: var(--t-faint); }
+.st-trazo-tabs button.on { background: var(--accent); border-color: transparent; color: #fff; }
+.st-bars { display: grid; gap: 6px; }
+.st-bar-row {
+  display: grid; grid-template-columns: 26px 1fr 58px 34px; gap: 8px; align-items: center;
+  background: transparent; border: 1px solid transparent; border-radius: 8px;
+  padding: 5px 6px; cursor: pointer; color: var(--t);
+}
+.st-bar-row:hover { background: rgba(255,255,255,.04); }
+.st-bar-row.on { border-color: var(--accent); background: rgba(240,102,44,.08); }
+.st-bar-size { font-weight: 700; font-size: 12.5px; color: var(--t-hi); text-align: left; }
+.st-bar-track { height: 8px; border-radius: 99px; background: rgba(255,255,255,.07); overflow: hidden; }
+.st-bar-track i { display: block; height: 100%; border-radius: 99px; }
+.st-bar-val { font-size: 12px; color: var(--t-hi); text-align: right; }
+.st-bar-pct { font-size: 11.5px; color: var(--t-faint); text-align: right; }
+.st-warn { font-size: 12px; color: #ffb08a; margin: 8px 0 0; line-height: 1.4; }

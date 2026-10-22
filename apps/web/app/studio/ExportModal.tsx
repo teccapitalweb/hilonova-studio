@@ -5,7 +5,7 @@
 "use client";
 
 import { useState } from "react";
-import { exportDxfAama, exportSvg, renderPdfTiled, renderTechPack } from "@hilonova/export";
+import { exportDxfAama, exportDxfGraded, exportSvg, renderPdfTiled, renderTechPack } from "@hilonova/export";
 import type { PatternDoc } from "@hilonova/geometry";
 import { measurementsForBlockSize, findBlock, type BlockKind, type BodyMeasurements } from "@hilonova/blocks";
 import { useEditor } from "./store";
@@ -58,14 +58,19 @@ export default function ExportModal({ onClose }: { onClose: () => void }) {
   const [format, setFormat] = useState<Format>("dxf");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<string | null>(null);
+  const [graded, setGraded] = useState(doc.sizes.length > 1);
 
   async function handleExport() {
     setBusy(true);
     setDone(null);
     try {
       const meta = FORMATS.find((f) => f.id === format)!;
-      const blob = await buildBlob(format, doc, meta.mime, measurements, blockKind);
-      const fname = sanitize(doc.name) + (format === "techpack" ? "-techpack" : "") + "." + meta.ext;
+      const blob = await buildBlob(format, doc, meta.mime, measurements, blockKind, graded);
+      const fname =
+        sanitize(doc.name) +
+        (format === "techpack" ? "-techpack" : "") +
+        (format === "dxf" && graded && doc.sizes.length > 1 ? "-graduado" : "") +
+        "." + meta.ext;
       download(blob, fname);
       setDone(fname);
     } catch (err) {
@@ -108,6 +113,19 @@ export default function ExportModal({ onClose }: { onClose: () => void }) {
             </label>
           ))}
         </div>
+        {format === "dxf" && doc.sizes.length > 1 && (
+          <label className="st-exp-opt on" style={{ margin: "0 16px 12px", cursor: "pointer" }}>
+            <input type="checkbox" checked={graded} onChange={(e) => setGraded(e.target.checked)} />
+            <div className="st-exp-info">
+              <div className="st-exp-label"><span>Todas las tallas (graduado)</span></div>
+              <div className="st-exp-blurb">
+                {graded
+                  ? `Incluye ${doc.sizes.join(" · ")} en una franja por talla, con las reglas de graduación.`
+                  : `Solo la talla base (${doc.baseSize}).`}
+              </div>
+            </div>
+          </label>
+        )}
         <div className="st-m-foot">
           {done && (
             <span className="st-exp-ok mono">
@@ -132,8 +150,11 @@ const FIELD_LABELS: Record<string, string> = {
   bajo: "Abertura bajo", largoFalda: "Largo falda",
 };
 
-async function buildBlob(fmt: Format, doc: PatternDoc, mime: string, measurements: BodyMeasurements, blockKind: BlockKind): Promise<Blob> {
-  if (fmt === "dxf") return new Blob([exportDxfAama(doc)], { type: mime });
+async function buildBlob(fmt: Format, doc: PatternDoc, mime: string, measurements: BodyMeasurements, blockKind: BlockKind, graded: boolean): Promise<Blob> {
+  if (fmt === "dxf") {
+    const dxf = graded && doc.sizes.length > 1 ? exportDxfGraded(doc) : exportDxfAama(doc);
+    return new Blob([dxf], { type: mime });
+  }
   if (fmt === "svg") return new Blob([exportSvg(doc)], { type: mime });
   if (fmt === "pdf" || fmt === "techpack") {
     // import dinámico para no cargar jsPDF hasta que se use

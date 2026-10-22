@@ -1,25 +1,78 @@
-// Vista "Trazo" — acomodo en tela + consumo. Fase 5.
-// La tela se dibuja horizontal; las piezas (incluidas las copias) se
-// posicionan con el nesting simple y se muestran en el canvas con el panel
-// de métricas al lado derecho.
+// Vista "Trazo" — acomodo en tela + consumo por talla.
+// La tela se dibuja horizontal; las piezas (incluidas las copias) se acomodan
+// siguiendo su contorno real. Se puede ver el trazo de cada talla o un trazo
+// combinado con una prenda de cada talla.
 
 "use client";
 
-import { useEffect, useRef } from "react";
-import { useEditor } from "./store";
-import { nestPieces, placedPath } from "./nesting";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { gradeDoc } from "@hilonova/geometry";
+import { useEditor, SIZE_COLORS } from "./store";
+import { nestItems, placedPath, type NestingResult, type PlacedPiece } from "./nesting";
+import { NumInput } from "./fields";
+
+const ALL = "all";
+const PIECE_COLORS = ["#7FB3FF", "#8FD99B", "#C79BFF", "#F2C879", "#FF9B8A", "#6FD3D0", "#E58BC4", "#B7C4DD"];
 
 export default function Trazo() {
   const doc = useEditor((s) => s.history.present);
   const fabricWidth = useEditor((s) => s.fabricWidth);
   const setFabricWidth = useEditor((s) => s.setFabricWidth);
+  const fabricPrice = useEditor((s) => s.fabricPrice);
+  const setFabricPrice = useEditor((s) => s.setFabricPrice);
+  const [sel, setSel] = useState<string>(doc.baseSize);
 
-  const result = nestPieces(doc.pieces, fabricWidth);
+  const sizes = doc.sizes;
+  const current = sel === ALL || sizes.includes(sel) ? sel : doc.baseSize;
+
+  // un trazo por talla + uno combinado (una prenda de cada talla)
+  const { perSize, combined } = useMemo(() => {
+    const graded = sizes.map((size) => ({ size, doc: gradeDoc(doc, size) }));
+    return {
+      perSize: graded.map(({ size, doc: d }) => ({
+        size,
+        result: nestItems(d.pieces.map((piece) => ({ piece, size })), fabricWidth),
+      })),
+      combined: nestItems(
+        graded.flatMap(({ size, doc: d }) => d.pieces.map((piece) => ({ piece, size }))),
+        fabricWidth,
+      ),
+    };
+  }, [doc, sizes, fabricWidth]);
+
+  const result: NestingResult =
+    current === ALL ? combined : perSize.find((r) => r.size === current)?.result ?? combined;
+  const garments = current === ALL ? Math.max(1, sizes.length) : 1;
+  const perGarmentM = result.markerLength / garments / 100;
+  const maxLen = Math.max(1, ...perSize.map((r) => r.result.markerLength));
 
   return (
     <div className="st-trazo">
       <div className="st-trazo-stage">
-        <TrazoCanvas result={result} fabricWidth={fabricWidth} />
+        <div className="st-trazo-tabs" role="tablist" aria-label="Talla del trazo">
+          {sizes.map((s) => (
+            <button
+              key={s}
+              role="tab"
+              aria-selected={current === s}
+              className={current === s ? "on" : ""}
+              style={{ ["--size-color" as string]: SIZE_COLORS[s] ?? "#8A91FF" }}
+              onClick={() => setSel(s)}
+            >
+              {s}
+            </button>
+          ))}
+          <button
+            role="tab"
+            aria-selected={current === ALL}
+            className={current === ALL ? "on" : ""}
+            onClick={() => setSel(ALL)}
+            title="Una prenda de cada talla en el mismo trazo"
+          >
+            Combinado
+          </button>
+        </div>
+        <TrazoCanvas result={result} fabricWidth={fabricWidth} bySize={current === ALL} />
       </div>
       <aside className="st-trazo-side">
         <div className="st-group" style={{ borderTop: 0 }}>
@@ -41,16 +94,52 @@ export default function Trazo() {
               <span className="st-m-unit">cm</span>
             </div>
           </div>
+          <div className="st-field" style={{ marginTop: 10 }}>
+            <span>Precio por metro</span>
+            <NumInput value={fabricPrice} step={1} min={0} unit="MXN" onCommit={setFabricPrice} width={64} />
+          </div>
         </div>
 
         <div className="st-group">
-          <div className="st-label">Aprovechamiento</div>
+          <div className="st-label">
+            Aprovechamiento · {current === ALL ? "todas las tallas" : `talla ${current}`}
+          </div>
           <Donut percent={result.utilization * 100} />
           <ul className="st-metric">
-            <li><span>Piezas</span><b>{fmtArea(result.piecesArea)}</b></li>
+            <li><span>Piezas (con costura)</span><b>{fmtArea(result.piecesArea)}</b></li>
             <li><span>Rollo usado</span><b>{fmtArea(result.rollArea)}</b></li>
             <li><span>Merma</span><b>{fmtArea(result.rollArea - result.piecesArea)}</b></li>
           </ul>
+          {result.oversize.length > 0 && (
+            <p className="st-warn">
+              No caben a lo ancho de la tela: {result.oversize.join(", ")}. Aumenta el ancho del rollo.
+            </p>
+          )}
+        </div>
+
+        <div className="st-group">
+          <div className="st-label">Consumo por talla</div>
+          <div className="st-bars">
+            {perSize.map(({ size, result: r }) => (
+              <button
+                key={size}
+                className={`st-bar-row${current === size ? " on" : ""}`}
+                onClick={() => setSel(size)}
+              >
+                <span className="st-bar-size">{size}</span>
+                <span className="st-bar-track">
+                  <i
+                    style={{
+                      width: `${(r.markerLength / maxLen) * 100}%`,
+                      background: SIZE_COLORS[size] ?? "#8A91FF",
+                    }}
+                  />
+                </span>
+                <span className="st-bar-val mono">{(r.markerLength / 100).toFixed(2)} m</span>
+                <span className="st-bar-pct mono">{(r.utilization * 100).toFixed(0)}%</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="st-group">
@@ -59,23 +148,11 @@ export default function Trazo() {
             <li><span>Largo del trazo</span><b>{(result.markerLength / 100).toFixed(2)} m</b></li>
             <li><span>Ancho útil</span><b>{(fabricWidth / 100).toFixed(2)} m</b></li>
             <li><span>Piezas colocadas</span><b>{result.placed.length}</b></li>
-          </ul>
-        </div>
-
-        <div className="st-group">
-          <div className="st-label">Por prenda</div>
-          <ul className="st-metric">
-            {(() => {
-              const totalCopies = doc.pieces.reduce((s, p) => s + p.quantity, 0);
-              const prendas = totalCopies > 0 ? Math.ceil(totalCopies / doc.pieces.length) : 1;
-              const perPrenda = result.markerLength / Math.max(1, prendas);
-              return (
-                <>
-                  <li><span>Consumo / prenda</span><b>{(perPrenda / 100).toFixed(2)} m</b></li>
-                  <li><span>Costo estim.</span><b className="mono">—</b></li>
-                </>
-              );
-            })()}
+            <li><span>Consumo / prenda</span><b>{perGarmentM.toFixed(2)} m</b></li>
+            <li>
+              <span>Costo de tela / prenda</span>
+              <b className="mono">{fabricPrice > 0 ? `$${(perGarmentM * fabricPrice).toFixed(2)}` : "—"}</b>
+            </li>
           </ul>
         </div>
       </aside>
@@ -85,7 +162,9 @@ export default function Trazo() {
 
 // ─── canvas del rollo con las piezas acomodadas ──────────────────────────────
 
-function TrazoCanvas({ result, fabricWidth }: { result: ReturnType<typeof nestPieces>; fabricWidth: number }) {
+function TrazoCanvas({
+  result, fabricWidth, bySize,
+}: { result: NestingResult; fabricWidth: number; bySize: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -93,81 +172,116 @@ function TrazoCanvas({ result, fabricWidth }: { result: ReturnType<typeof nestPi
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = Math.round(rect.width * dpr);
-    canvas.height = Math.round(rect.height * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const W = rect.width, H = rect.height;
+    const draw = () => {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const W = rect.width, H = rect.height;
 
-    // fondo (ambiente del taller)
-    ctx.fillStyle = "#0a1324";
-    ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = "#0a1324";
+      ctx.fillRect(0, 0, W, H);
 
-    // zoom para que el rollo quepa cómodo
-    const pad = 36;
-    const rollW = fabricWidth;
-    const rollH = Math.max(result.markerLength, fabricWidth * 0.3);
-    const zoomX = (W - pad * 2) / rollW;
-    const zoomY = (H - pad * 2) / rollH;
-    const zoom = Math.min(zoomX, zoomY);
-    const offX = (W - rollW * zoom) / 2;
-    const offY = (H - rollH * zoom) / 2;
-    const toPx = (x: number, y: number) => ({ x: offX + x * zoom, y: offY + y * zoom });
+      // zoom para que el rollo quepa cómodo
+      const padX = 36, padTop = 56, padBottom = 28;
+      const rollW = fabricWidth;
+      const rollH = Math.max(result.markerLength, fabricWidth * 0.3);
+      const zoom = Math.min((W - padX * 2) / rollW, (H - padTop - padBottom) / rollH);
+      const offX = (W - rollW * zoom) / 2;
+      const offY = padTop + (H - padTop - padBottom - rollH * zoom) / 2;
+      const toPx = (x: number, y: number) => ({ x: offX + x * zoom, y: offY + y * zoom });
 
-    // rollo de tela (denim)
-    const r0 = toPx(0, 0);
-    const r1 = toPx(rollW, rollH);
-    ctx.fillStyle = "#13263A";
-    ctx.fillRect(r0.x, r0.y, r1.x - r0.x, r1.y - r0.y);
-    // textura rayada
-    ctx.strokeStyle = "rgba(255,255,255,0.03)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    for (let x = 0; x < W; x += 10) { ctx.moveTo(r0.x + x, r0.y); ctx.lineTo(r0.x + x, r1.y); }
-    ctx.stroke();
-
-    // selvedge superior e inferior
-    const sel = 10;
-    ctx.fillStyle = "rgba(10,20,34,.9)";
-    ctx.fillRect(r0.x, r0.y - sel, r1.x - r0.x, sel);
-    ctx.fillRect(r0.x, r1.y, r1.x - r0.x, sel);
-
-    // piezas
-    for (const pp of result.placed) {
-      const pts = placedPath(pp);
-      if (pts.length < 2) continue;
+      const r0 = toPx(0, 0);
+      const r1 = toPx(rollW, rollH);
+      ctx.fillStyle = "#13263A";
+      ctx.fillRect(r0.x, r0.y, r1.x - r0.x, r1.y - r0.y);
+      ctx.strokeStyle = "rgba(255,255,255,0.03)";
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      pts.forEach((p, i) => {
-        const q = toPx(p.x, p.y);
-        if (i === 0) ctx.moveTo(q.x, q.y); else ctx.lineTo(q.x, q.y);
-      });
-      ctx.closePath();
-      ctx.fillStyle = "rgba(240,102,44,0.09)";
-      ctx.fill();
-      ctx.strokeStyle = "#EAF2FF";
-      ctx.lineWidth = 1.6;
-      ctx.lineJoin = "round";
+      for (let x = 0; x < W; x += 10) { ctx.moveTo(r0.x + x, r0.y); ctx.lineTo(r0.x + x, r1.y); }
       ctx.stroke();
-      // etiqueta chica
-      const anchor = toPx(pp.offset.x + 1, pp.offset.y + 4);
-      ctx.fillStyle = "rgba(10,20,34,0.7)";
-      ctx.fillRect(anchor.x - 2, anchor.y - 10, Math.max(44, pp.piece.name.length * 5.5), 14);
-      ctx.fillStyle = "#C4CEE2";
-      ctx.font = "10px 'IBM Plex Mono', monospace";
-      ctx.fillText(`${pp.piece.name} #${pp.copy + 1}`, anchor.x, anchor.y);
-    }
 
-    // reglas
-    ctx.fillStyle = "#7F8CA8";
-    ctx.font = "10px 'IBM Plex Mono', monospace";
-    ctx.fillText(`${fabricWidth} cm`, r0.x, r0.y - sel - 6);
-    ctx.save();
-    ctx.translate(r1.x + 12, (r0.y + r1.y) / 2);
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText(`${(result.markerLength / 100).toFixed(2)} m`, 0, 0);
-    ctx.restore();
-  }, [result, fabricWidth]);
+      // orillos
+      const sel = 8;
+      ctx.fillStyle = "rgba(10,20,34,.9)";
+      ctx.fillRect(r0.x, r0.y - sel, r1.x - r0.x, sel);
+      ctx.fillRect(r0.x, r1.y, r1.x - r0.x, sel);
+
+      // largo usado
+      const used = toPx(0, result.markerLength);
+      ctx.strokeStyle = "rgba(240,102,44,.7)";
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.moveTo(r0.x, used.y); ctx.lineTo(r1.x, used.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // piezas
+      const nameIndex = new Map<string, number>();
+      const colorOf = (pp: PlacedPiece): string => {
+        if (bySize && pp.size) return SIZE_COLORS[pp.size] ?? "#8A91FF";
+        if (!nameIndex.has(pp.piece.name)) nameIndex.set(pp.piece.name, nameIndex.size);
+        return PIECE_COLORS[nameIndex.get(pp.piece.name)! % PIECE_COLORS.length]!;
+      };
+      for (const pp of result.placed) {
+        const color = colorOf(pp);
+        const path = (pts: ReadonlyArray<{ x: number; y: number }>) => {
+          ctx.beginPath();
+          pts.forEach((p, i) => {
+            const q = toPx(p.x, p.y);
+            if (i === 0) ctx.moveTo(q.x, q.y); else ctx.lineTo(q.x, q.y);
+          });
+          ctx.closePath();
+        };
+        path(placedPath(pp));
+        ctx.globalAlpha = 0.3;
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.4;
+        ctx.lineJoin = "round";
+        ctx.stroke();
+        // línea de la pieza (sin margen de costura)
+        path(pp.inner);
+        ctx.strokeStyle = "rgba(234,242,255,.55)";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // etiqueta
+        if (pp.width * zoom > 46 && pp.height * zoom > 26) {
+          const label = `${pp.piece.name}${bySize && pp.size ? ` ${pp.size}` : ""}`;
+          const c = toPx(pp.offset.x + pp.width / 2, pp.offset.y + pp.height / 2);
+          ctx.fillStyle = "rgba(10,20,34,0.72)";
+          const tw = Math.min(pp.width * zoom - 6, label.length * 5.6 + 8);
+          ctx.fillRect(c.x - tw / 2, c.y - 8, tw, 15);
+          ctx.fillStyle = "#EAF2FF";
+          ctx.font = "10px 'IBM Plex Mono', monospace";
+          ctx.textAlign = "center";
+          ctx.fillText(label.slice(0, Math.floor(tw / 5.6)), c.x, c.y + 3);
+          ctx.textAlign = "left";
+        }
+      }
+
+      // reglas
+      ctx.fillStyle = "#7F8CA8";
+      ctx.font = "10px 'IBM Plex Mono', monospace";
+      ctx.fillText(`${fabricWidth} cm`, r0.x, r0.y - sel - 6);
+      ctx.save();
+      ctx.translate(r1.x + 14, (r0.y + r1.y) / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = "center";
+      ctx.fillText(`${(result.markerLength / 100).toFixed(2)} m`, 0, 0);
+      ctx.restore();
+    };
+    draw();
+    const ro = new ResizeObserver(draw);
+    ro.observe(canvas);
+    return () => ro.disconnect();
+  }, [result, fabricWidth, bySize]);
 
   return <canvas ref={ref} className="st-canvas" />;
 }
