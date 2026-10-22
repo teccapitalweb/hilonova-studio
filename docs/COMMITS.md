@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 22
+> Rama: `dev/mvp-9-nov` · Commits: 24
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,40 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## fix(studio): desplegables legibles, límite en cm/talla y talla base real
+
+- Commit: `54ca202`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: los desplegables (Material en el Trazo, Tipo en Materiales, Talla base en
+Graduación, Paso de rejilla) usaban letra clara sobre fondo blanco y la lista
+parecía vacía; ahora tienen fondo oscuro y letra clara. El campo de graduación
+se renombra "cm/talla", se limita a 0-12 y explica que el busto de la talla base
+se cambia en "Medidas". La ventana de medidas mostraba "talla 32" fijo; ahora
+muestra la talla base real del patrón (M en la blusa).
+Por qué: un usuario puso 40 en el campo de graduación creyendo que era el busto
+y el patrón se deformó; y en su navegador la lista de materiales se veía vacía.
+Verificación: tsc y build OK; en el navegador el desplegable lista 5 materiales
+con colores legibles y elegir "Mezclilla 12 oz" fija ancho 150 cm, precio $120/m
+y costo de tela de $129.74 por prenda.
+Archivos: apps/web/app/studio/{Graduacion.tsx,Shell.tsx,studio.css}
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `46ba40b`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md con los commits del menú y las vistas.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## feat(studio): menú lateral, Proyectos, Materiales, Librería, Reportes, Configuración y Producción
 
