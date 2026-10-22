@@ -680,6 +680,7 @@ function mk(name: string, qty: number, fabric: string, nodes: Node[], closed = t
   p.fabric = fabric;
   p.nodes = nodes;
   p.closed = closed;
+  if (!closed) p.seamAllowance = 0;
   return p;
 }
 
@@ -1022,6 +1023,228 @@ export function draftSudadera(m: BodyMeasurements): PatternDoc {
   return doc;
 }
 
+// ─── camisa de hombre, polo, chaleco y pantalón cargo ───────────────────────
+
+/** Pie de cuello completo (simétrico). */
+function standNodes(lc: number): Node[] {
+  return fullFromHalf([
+    node({ x: 0, y: 0 }, { notch: true, handleOut: { x: lc * 0.5, y: 0.2 } }),
+    node({ x: lc + 1.5, y: -0.3 }),
+    node({ x: lc + 1.5, y: 3.2 }),
+    node({ x: 0, y: 3.5 }, { notch: true, handleIn: { x: lc * 0.5, y: 0.1 } }),
+  ]);
+}
+
+/** Camisa de hombre con canesú, tapeta, cuello con pie, bolsillo y, si es larga, puño. */
+function draftCamisa(m: BodyMeasurements, name: string, short: boolean): PatternDoc {
+  const doc = withSml(emptyDoc(name));
+  const F = "oxford 130 g";
+  const t = torsoOf(m, 16);
+  const sx = t.hombro / 2;
+  const nF = t.cuello / 6 + 0.8;
+  const dF = nF + 1.5;
+  const nB = nF + 0.3;
+  const dB = 2;
+  const yokeY = 9;                       // altura del canesú
+  const hemY = t.largoT + 30;
+  const under = t.sisa;
+
+  const front = mk("Delantero", 2, F, [
+    node({ x: 0, y: dF }, { notch: true, handleOut: { x: nF * 0.55, y: 0 } }),
+    node({ x: nF, y: 0 }, { notch: true, handleIn: { x: 0, y: dF * 0.55 } }),
+    ...armholeNodes(sx, 4.8, t.qF, under, 1),
+    node({ x: t.qF, y: hemY }),
+    node({ x: 0, y: hemY }, { notch: true }),
+  ]);
+  const yoke = mk("Canesú", 2, F, fullFromHalf([
+    node({ x: 0, y: dB }, { notch: true, handleOut: { x: nB * 0.55, y: 0 } }),
+    node({ x: nB, y: 0 }, { notch: true, handleIn: { x: 0, y: dB * 0.55 } }),
+    node({ x: sx, y: 4.4 }, { handleOut: { x: -0.3, y: 2 } }),
+    node({ x: sx - 0.6, y: yokeY }),
+    node({ x: 0, y: yokeY }, { notch: true }),
+  ]));
+  const back = mk("Espalda", 1, F, fullFromHalf([
+    node({ x: 0, y: yokeY }, { notch: true }),
+    node({ x: sx - 0.6, y: yokeY }),
+    node(
+      { x: sx - 1.2, y: yokeY + (under - yokeY) * 0.5 },
+      { handleIn: { x: 0, y: -2 }, handleOut: { x: 0, y: 2.5 } },
+    ),
+    node({ x: t.qB, y: under }, { notch: true, handleIn: { x: -2.5, y: -1.5 } }),
+    node({ x: t.qB, y: hemY }),
+    node({ x: 0, y: hemY }, { notch: true }),
+  ]));
+
+  const bicep = t.busto * 0.285 + 8;
+  const wrist = short ? bicep * 0.82 : 25;
+  const sleeve = mk(
+    "Manga", 2, F,
+    sleeveNodes(bicep, under * 0.6, short ? 24 : t.largoManga - 6.5, wrist),
+  );
+  const lc = t.cuello / 2 + 1.5;
+  const collar = mk("Cuello", 2, F, collarNodes(lc, 7));
+  const stand = mk("Pie de cuello", 2, F, standNodes(lc));
+  const placket = rectPiece("Tapeta", { x: 0, y: 0 }, { x: 4.5, y: hemY - dF });
+  placket.quantity = 2; placket.fabric = F;
+  const pocket = pieceFromPoints(
+    "Bolsillo de pecho",
+    [{ x: 0, y: 0 }, { x: 11, y: 0 }, { x: 11, y: 11 }, { x: 5.5, y: 12.5 }, { x: 0, y: 11 }],
+    { closed: true, smooth: false },
+  );
+  pocket.fabric = F;
+
+  const row2: Piece[] = [yoke, collar, stand, placket, pocket];
+  if (!short) {
+    const cuff = rectPiece("Puño", { x: 0, y: 0 }, { x: wrist, y: 6.5 });
+    cuff.quantity = 2; cuff.fabric = F;
+    row2.splice(3, 0, cuff);
+  }
+  doc.pieces = layoutRows([[front, back, sleeve], row2]);
+  return doc;
+}
+
+/** Camisa de hombre manga larga con puño. 9 piezas. */
+export function draftCamisaHombre(m: BodyMeasurements): PatternDoc {
+  return draftCamisa(m, "Camisa de hombre · desde medidas", false);
+}
+
+/** Camisa de hombre manga corta. 8 piezas. */
+export function draftCamisaMangaCorta(m: BodyMeasurements): PatternDoc {
+  return draftCamisa(m, "Camisa manga corta · desde medidas", true);
+}
+
+/** Playera polo: cuello de polo, abertura con tapeta, manga corta con puño de rib. 7 piezas. */
+export function draftPolo(m: BodyMeasurements): PatternDoc {
+  const doc = withSml(emptyDoc("Playera polo · desde medidas"));
+  const F = "piqué 200 gsm";
+  const RIB = "rib 1x1";
+  const t = torsoOf(m, 12);
+  const sx = t.hombro / 2;
+  const nF = t.cuello / 6 + 1.2;
+  const dF = nF + 5;
+  const dB = 2;
+  const hemY = t.largoT + 22;
+
+  const front = mk("Delantero", 1, F, fullFromHalf([
+    node({ x: 0, y: dF }, { notch: true, handleOut: { x: nF * 0.55, y: 0 } }),
+    node({ x: nF, y: 0 }, { notch: true, handleIn: { x: 0, y: dF * 0.55 } }),
+    ...armholeNodes(sx, 3.5, t.qF, t.sisa, 1.2),
+    node({ x: t.qF, y: hemY }),
+    node({ x: 0, y: hemY }, { notch: true }),
+  ]));
+  const back = mk("Espalda", 1, F, fullFromHalf([
+    node({ x: 0, y: dB }, { notch: true, handleOut: { x: nF * 0.55, y: 0 } }),
+    node({ x: nF, y: 0 }, { notch: true, handleIn: { x: 0, y: dB * 0.55 } }),
+    ...armholeNodes(sx, 3.3, t.qB, t.sisa, 1),
+    node({ x: t.qB, y: hemY }),
+    node({ x: 0, y: hemY }, { notch: true }),
+  ]));
+
+  const bicep = t.busto * 0.3 + 6;
+  const wrist = bicep * 0.92;
+  const sleeve = mk("Manga", 2, F, sleeveNodes(bicep, t.sisa * 0.5, 22, wrist));
+  const cuff = rectPiece("Puño de manga", { x: 0, y: 0 }, { x: wrist * 0.85, y: 6 });
+  cuff.quantity = 2; cuff.fabric = RIB;
+  const L = t.cuello + 2;
+  const collar = pieceFromPoints(
+    "Cuello de polo",
+    [{ x: 0, y: 0 }, { x: L, y: 0 }, { x: L - 2.5, y: 9 }, { x: 2.5, y: 9 }],
+    { closed: true, smooth: false },
+  );
+  collar.fabric = F;
+  const placket = rectPiece("Tapeta de abertura", { x: 0, y: 0 }, { x: 3.5, y: 16 });
+  placket.quantity = 2; placket.fabric = F;
+
+  doc.pieces = layoutRows([[front, back, sleeve], [collar, cuff, placket]]);
+
+  // línea de la abertura (interna, abierta) sobre el delantero, ya colocado
+  const anchor = front.nodes[0]!.at;
+  const slit = mk(
+    "Abertura del cuello", 1, F,
+    [node({ x: anchor.x, y: anchor.y }), node({ x: anchor.x, y: anchor.y + 14 })],
+    false,
+  );
+  doc.pieces.push(slit);
+  return doc;
+}
+
+/** Chaleco con forro, escote en V, bajo en punta y vivos de bolsillo. 5 piezas. */
+export function draftChaleco(m: BodyMeasurements): PatternDoc {
+  const doc = withSml(emptyDoc("Chaleco · desde medidas"));
+  const F = "casimir";
+  const LIN = "forro de poliéster";
+  const t = torsoOf(m, 8);
+  const sx = t.hombro / 2 - 2;
+  const nF = t.cuello / 6 + 1;
+  const nB = nF + 0.3;
+  const dB = 2.5;
+  const vY = 22;                         // dónde termina el escote en V
+  const ext = 2;
+  const under = t.sisa + 1;
+  const hemY = t.largoT + 8;
+
+  const frontPiece = (name: string, fabric: string): Piece =>
+    mk(name, 2, fabric, [
+      node({ x: -ext, y: vY }),
+      node({ x: nF, y: 0 }, { notch: true }),
+      ...armholeNodes(sx, 3.8, t.qF, under, 2.2),
+      node({ x: t.qF, y: hemY }),
+      node({ x: t.qF * 0.45, y: hemY + 2 }),
+      node({ x: -ext, y: hemY + 5 }, { notch: true }),
+    ]);
+  const backPiece = (name: string, fabric: string): Piece =>
+    mk(name, 1, fabric, fullFromHalf([
+      node({ x: 0, y: dB }, { notch: true, handleOut: { x: nB * 0.55, y: 0 } }),
+      node({ x: nB, y: 0 }, { notch: true, handleIn: { x: 0, y: dB * 0.55 } }),
+      ...armholeNodes(sx, 3.5, t.qB, under, 2),
+      node({ x: t.qB, y: hemY }),
+      node({ x: 0, y: hemY + 1.5 }, { notch: true }),
+    ]));
+
+  const welt = rectPiece("Vivo de bolsillo", { x: 0, y: 0 }, { x: 15, y: 4 });
+  welt.quantity = 4; welt.fabric = F;
+
+  doc.pieces = layoutRows([
+    [frontPiece("Delantero", F), backPiece("Espalda", F)],
+    [frontPiece("Forro delantero", LIN), backPiece("Forro espalda", LIN), welt],
+  ]);
+  return doc;
+}
+
+/** Pantalón cargo: pierna recta con bolsillos de fuelle y solapa, pretina y trabillas. */
+export function draftPantalonCargo(m: BodyMeasurements): PatternDoc {
+  const F = "twill 8 oz";
+  return draftTrouser(m, {
+    name: "Pantalón cargo · desde medidas",
+    fabric: F,
+    hipEase: 6,
+    thighEase: 6,
+    extras: ({ cintura }) => [
+      withQty(rectPiece("Pretina", { x: 0, y: 0 }, { x: cintura + 4, y: 8 }), 1, F),
+      withQty(rectPiece("Bolsillo cargo", { x: 0, y: 0 }, { x: 20, y: 22 }), 2, F),
+      withQty(
+        pieceFromPoints(
+          "Solapa cargo",
+          [{ x: 0, y: 0 }, { x: 20, y: 0 }, { x: 20, y: 5 }, { x: 10, y: 7 }, { x: 0, y: 5 }],
+          { closed: true, smooth: false },
+        ),
+        2,
+        F,
+      ),
+      withQty(
+        pieceFromPoints(
+          "Bolsillo trasero",
+          [{ x: 0, y: 0 }, { x: 15, y: 0 }, { x: 15, y: 13 }, { x: 7.5, y: 17 }, { x: 0, y: 13 }],
+          { closed: true, smooth: false },
+        ),
+        2,
+        F,
+      ),
+      withQty(rectPiece("Trabilla", { x: 0, y: 0 }, { x: 9, y: 2.5 }), 6, F),
+    ],
+  });
+}
+
 // ─── catálogo de bloques (fuente de verdad para la UI) ──────────────────────
 
 export type BlockKind =
@@ -1036,7 +1259,12 @@ export type BlockKind =
   | "vestido-basico"
   | "sudadera-capucha"
   | "falda-a"
-  | "pants-jogger";
+  | "pants-jogger"
+  | "camisa-hombre"
+  | "camisa-manga-corta"
+  | "polo"
+  | "chaleco"
+  | "pantalon-cargo";
 
 export interface BlockMeta {
   kind: BlockKind;
@@ -1166,6 +1394,56 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
     iconPath: "M8 3h8l1 7-1 10-3 1-1-8-1 8-3-1-1-10z",
     defaults: { largo: 100, muslo: 62, bajo: 17 },
   },
+  {
+    kind: "camisa-hombre",
+    name: "Camisa de hombre",
+    tag: "camisa · oxford",
+    blurb: "Manga larga con canesú, tapeta, cuello con pie, puño y bolsillo. 9 piezas.",
+    pieces: 9,
+    fields: ["busto", "cintura", "hombro", "sisa", "largoTorso", "largoManga", "cuello"],
+    iconPath: "M4 6l5-3 3 2 3-2 5 3-2 5-2-1v10H8V10l-2 1z M12 5v15",
+    defaults: { busto: 100, cintura: 88, cadera: 102, hombro: 46, cuello: 39, sisa: 25, largoTorso: 44, largoManga: 64 },
+  },
+  {
+    kind: "camisa-manga-corta",
+    name: "Camisa manga corta",
+    tag: "camisa · oxford",
+    blurb: "Igual que la camisa de hombre con manga corta sin puño. 8 piezas.",
+    pieces: 8,
+    fields: ["busto", "cintura", "hombro", "sisa", "largoTorso", "cuello"],
+    iconPath: "M4 7l5-3 3 2 3-2 5 3-1 4-3-1v10H8V10l-3 1z M12 6v14",
+    defaults: { busto: 100, cintura: 88, cadera: 102, hombro: 46, cuello: 39, sisa: 25, largoTorso: 44 },
+  },
+  {
+    kind: "polo",
+    name: "Playera polo",
+    tag: "polo · piqué",
+    blurb: "Cuello de polo, abertura con tapeta y manga corta con puño. 7 piezas.",
+    pieces: 7,
+    fields: ["busto", "cintura", "hombro", "sisa", "largoTorso", "cuello"],
+    iconPath: "M4 6l5-3 3 3 3-3 5 3-1 4-3-1v10H8V9l-3 1z M12 6v6",
+    defaults: { busto: 100, cintura: 90, hombro: 45, cuello: 38, sisa: 24, largoTorso: 43 },
+  },
+  {
+    kind: "chaleco",
+    name: "Chaleco",
+    tag: "chaleco · casimir",
+    blurb: "Escote en V y bajo en punta, con forro y vivos de bolsillo. 5 piezas.",
+    pieces: 5,
+    fields: ["busto", "cintura", "hombro", "sisa", "largoTorso", "cuello"],
+    iconPath: "M7 3l5 7 5-7 2 3-2 3v12H7V9L5 6z",
+    defaults: { busto: 100, cintura: 88, hombro: 44, cuello: 39, sisa: 25, largoTorso: 43 },
+  },
+  {
+    kind: "pantalon-cargo",
+    name: "Pantalón cargo",
+    tag: "pantalón · twill",
+    blurb: "Pierna recta con bolsillos de fuelle y solapa, pretina y trabillas. 7 piezas.",
+    pieces: 7,
+    fields: ["cintura", "cadera", "tiro", "largo", "muslo", "bajo"],
+    iconPath: "M8 3h8l1 8-1 10h-3l-1-8-1 8H8L7 11z M9 12h2v3H9z",
+    defaults: { cintura: 84, cadera: 104, tiro: 27, largo: 104, muslo: 62, bajo: 24 },
+  },
 ] as const;
 
 /** Medidas de arranque de una prenda: las de fábrica con las propias del bloque encima. */
@@ -1192,6 +1470,11 @@ function draftBlockRaw(kind: BlockKind, m: BodyMeasurements): PatternDoc {
     case "sudadera-capucha": doc = draftSudadera(m); break;
     case "falda-a":         doc = draftFaldaA(m); break;
     case "pants-jogger":    doc = draftPantsJogger(m); break;
+    case "camisa-hombre":   doc = draftCamisaHombre(m); break;
+    case "camisa-manga-corta": doc = draftCamisaMangaCorta(m); break;
+    case "polo":            doc = draftPolo(m); break;
+    case "chaleco":         doc = draftChaleco(m); break;
+    case "pantalon-cargo":  doc = draftPantalonCargo(m); break;
   }
   doc.blockKind = kind;
   return doc;
@@ -1302,6 +1585,15 @@ export const GRADE_RULES: Record<BlockKind, Deltas> = {
   },
   "falda-a": { cintura: 4, cadera: 4, largoFalda: 0.5 },
   "pants-jogger": { cintura: 4, cadera: 4, tiro: 0.5, largo: 1, muslo: 2, bajo: 0.5 },
+  "camisa-hombre": {
+    busto: 4, cintura: 4, cadera: 4, hombro: 1, sisa: 0.8, largoTorso: 1, largoManga: 1, cuello: 1,
+  },
+  "camisa-manga-corta": {
+    busto: 4, cintura: 4, cadera: 4, hombro: 1, sisa: 0.8, largoTorso: 1, cuello: 1,
+  },
+  polo: { busto: 4, cintura: 4, hombro: 1, sisa: 0.8, largoTorso: 1, cuello: 1 },
+  chaleco: { busto: 4, cintura: 4, hombro: 1, sisa: 0.8, largoTorso: 1, cuello: 1 },
+  "pantalon-cargo": { cintura: 4, cadera: 4, tiro: 0.5, largo: 1, muslo: 2, bajo: 1 },
 };
 
 /** Reglas efectivas (cm por talla) de un bloque: las de fábrica con las editadas encima. */
@@ -1437,6 +1729,25 @@ export const PIECE_LIBRARY: readonly LibraryEntry[] = [
   fromBlock("vestido-basico", "Vista de escote delantera", "Vista de escote", "Puños y vistas", "Vestido básico"),
   fromBlock("pants-jogger", "Puño de tobillo", "Puño de tobillo", "Complementos", "Pants jogger"),
   fromBlock("pants-jogger", "Pretina elástica", "Pretina elástica", "Complementos", "Pants jogger"),
+  fromBlock("camisa-hombre", "Delantero", "Delantero de camisa", "Delanteros", "Camisa de hombre"),
+  fromBlock("camisa-hombre", "Espalda", "Espalda de camisa", "Espaldas", "Camisa de hombre"),
+  fromBlock("camisa-hombre", "Canesú", "Canesú", "Espaldas", "Camisa de hombre"),
+  fromBlock("camisa-hombre", "Manga", "Manga de camisa", "Mangas", "Camisa de hombre"),
+  fromBlock("camisa-manga-corta", "Manga", "Manga corta de camisa", "Mangas", "Camisa manga corta"),
+  fromBlock("polo", "Manga", "Manga de polo", "Mangas", "Playera polo"),
+  fromBlock("camisa-hombre", "Cuello", "Cuello de camisa", "Cuellos", "Camisa de hombre"),
+  fromBlock("camisa-hombre", "Pie de cuello", "Pie de cuello de camisa", "Cuellos", "Camisa de hombre"),
+  fromBlock("polo", "Cuello de polo", "Cuello de polo", "Cuellos", "Playera polo"),
+  fromBlock("camisa-hombre", "Puño", "Puño de camisa de hombre", "Puños y vistas", "Camisa de hombre"),
+  fromBlock("camisa-hombre", "Tapeta", "Tapeta de camisa", "Puños y vistas", "Camisa de hombre"),
+  fromBlock("polo", "Tapeta de abertura", "Tapeta de polo", "Puños y vistas", "Playera polo"),
+  fromBlock("chaleco", "Delantero", "Delantero de chaleco", "Delanteros", "Chaleco"),
+  fromBlock("chaleco", "Espalda", "Espalda de chaleco", "Espaldas", "Chaleco"),
+  fromBlock("chaleco", "Vivo de bolsillo", "Vivo de bolsillo", "Bolsillos", "Chaleco"),
+  fromBlock("pantalon-cargo", "Bolsillo cargo", "Bolsillo cargo (fuelle)", "Bolsillos", "Pantalón cargo"),
+  fromBlock("pantalon-cargo", "Solapa cargo", "Solapa de bolsillo cargo", "Bolsillos", "Pantalón cargo"),
+  fromBlock("pantalon-cargo", "Delantero", "Delantero de pantalón cargo", "Delanteros", "Pantalón cargo"),
+  fromBlock("pantalon-cargo", "Espalda", "Espalda de pantalón cargo", "Espaldas", "Pantalón cargo"),
   {
     id: "generico:bolsillo-parche",
     name: "Bolsillo parche",
@@ -1490,4 +1801,4 @@ export const LIBRARY_CATEGORIES: readonly LibraryCategory[] = [
   "Complementos",
 ];
 
-export const VERSION = "0.6.0";
+export const VERSION = "0.7.0";
