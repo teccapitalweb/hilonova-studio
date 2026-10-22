@@ -13,6 +13,10 @@ import { samplePath, offsetPolyline, gradeDoc, compareSizes } from "@hilonova/ge
 
 const UNIT_CODE: Record<string, number> = { cm: 5, mm: 4, in: 1 };
 
+/** DXF R12 es ASCII: se quitan acentos y símbolos ("Puño" → "Puno", "×" → "x"). */
+const ascii = (t: string): string =>
+  t.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/×/g, "x").replace(/[^ -~]/g, "-");
+
 /** Línea DXF: pair de código+valor en dos líneas de texto. */
 const pair = (code: number, value: string | number): string =>
   `${code}\n${value}\n`;
@@ -54,12 +58,17 @@ function tables(): string {
   return out;
 }
 
+/** Polilínea en formato R12 (POLYLINE + VERTEX + SEQEND), el que leen todos los CAD. */
 function polyline(points: readonly Vec2[], layer: string, closed: boolean): string {
-  let out = pair(0, "LWPOLYLINE") +
+  let out =
+    pair(0, "POLYLINE") +
     pair(8, layer) +
-    pair(90, points.length) +
+    pair(66, 1) +
     pair(70, closed ? 1 : 0);
-  for (const p of points) out += pair(10, fmt(p.x)) + pair(20, fmt(-p.y));
+  for (const p of points) {
+    out += pair(0, "VERTEX") + pair(8, layer) + pair(10, fmt(p.x)) + pair(20, fmt(-p.y));
+  }
+  out += pair(0, "SEQEND") + pair(8, layer);
   return out;
 }
 // invertimos Y para que el DXF salga en el espacio de dibujo tradicional (+Y arriba)
@@ -124,7 +133,7 @@ function pieceEntities(piece: Piece, offset: Vec2, label = ""): string {
   // 8 - Text (nombre y cantidad arriba del centro)
   out += text(
     { x: cx - h * 0.08, y: minY - 1.5 },
-    `${piece.name.toUpperCase()} ×${piece.quantity}${label}`,
+    ascii(`${piece.name.toUpperCase()} x${piece.quantity}${label}`),
     Math.max(1.2, h * 0.025),
     "8_Text",
   );
@@ -178,7 +187,7 @@ export function exportDxfGraded(doc: PatternDoc, opts: DxfOptions = {}): string 
       const w = Math.max(...pts.map((p) => p.x)) - minX;
       const h = Math.max(...pts.map((p) => p.y)) - minY;
       // cada pieza se normaliza a su esquina para que las tallas no se encimen
-      entities += pieceEntities(piece, { x: cursorX - minX, y: cursorY - minY }, ` · talla ${size}`);
+      entities += pieceEntities(piece, { x: cursorX - minX, y: cursorY - minY }, ` - talla ${size}`);
       cursorX += w + gap;
       maxH = Math.max(maxH, h);
     }

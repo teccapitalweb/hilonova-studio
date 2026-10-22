@@ -12,9 +12,9 @@ const leftNormal = (v: Vec2): Vec2 => ({ x: -v.y, y: v.x });
 
 /**
  * Devuelve una polilínea desplazada `distance` unidades. Positiva = hacia el
- * "exterior" según el sentido de recorrido (CCW → fuera, CW → dentro).
- * Para una pieza de patrón trazada CW, pasa `distance` positivo para obtener
- * el margen de costura por fuera del contorno.
+ * "exterior". En polilíneas cerradas el exterior se detecta por el área con
+ * signo, así que `distance` positivo siempre da el margen de costura por fuera
+ * del contorno, sin importar el sentido en que se trazó la pieza.
  */
 export function offsetPolyline(
   points: readonly Vec2[],
@@ -23,6 +23,18 @@ export function offsetPolyline(
 ): Vec2[] {
   const n = points.length;
   if (n < 2 || distance === 0) return points.slice();
+
+  // En una pieza cerrada, "positivo = hacia fuera" no debe depender del sentido
+  // en que se dibujó el contorno: se detecta con el área con signo y se corrige.
+  if (closed) {
+    let area2 = 0;
+    for (let i = 0; i < n; i++) {
+      const a = points[i]!;
+      const b = points[(i + 1) % n]!;
+      area2 += a.x * b.y - b.x * a.y;
+    }
+    if (area2 > 0) distance = -distance;
+  }
 
   const out: Vec2[] = new Array(n);
   for (let i = 0; i < n; i++) {
