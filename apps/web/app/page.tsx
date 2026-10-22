@@ -1,5 +1,6 @@
 import Link from "next/link";
 import ScrollReveal from "./components/ScrollReveal";
+import { NavCta, HeroCta } from "./LandingAuthCta";
 
 /** path reutilizable del delantero de pantalón */
 const PANT =
@@ -54,10 +55,7 @@ export default function HomePage() {
             <a href="#recursos">Recursos</a>
           </div>
           <span className="sp" />
-          <div className="nav-cta">
-            <Link className="nav-login" href="/auth/signin">Iniciar sesión</Link>
-            <Link className="btn btn-dark" href="/auth/signup">Crear cuenta</Link>
-          </div>
+          <NavCta />
         </div>
       </nav>
 
@@ -76,12 +74,7 @@ export default function HomePage() {
                 DXF-AAMA listo para tu Gerber o Lectra. Todo en un solo lugar.
               </p>
               <div className="hero-cta">
-                <Link className="btn btn-accent" href="/auth/signup">
-                  Crear cuenta
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </Link>
+                <HeroCta />
                 <Link className="btn btn-ghost" href="/studio">Ver el editor</Link>
               </div>
               <div className="hero-stats">
@@ -442,12 +435,7 @@ export default function HomePage() {
           <h2>Lleva tu patronaje al estándar de la industria.</h2>
           <p>Diseña, gradúa y traza en un solo lugar, y entrega a tu maquila justo lo que necesita.</p>
           <div className="hero-cta center">
-            <Link className="btn btn-accent" href="/auth/signup">
-              Crear cuenta
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </Link>
+            <HeroCta />
             <Link className="btn btn-ghost" href="/studio">Ver el editor</Link>
           </div>
         </div>

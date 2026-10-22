@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signUp, type PlanId, findPlan } from "../../lib/auth";
 import AuthAside from "../AuthAside";
 import SsoButtons from "../SsoButtons";
@@ -23,6 +23,14 @@ export default function SignUpPage() {
   const [accept, setAccept] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Si ya hay sesión, saltar al dashboard — no reautenticar.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (localStorage.getItem("hilonova.session.v1")) router.replace("/app");
+    }, 50);
+    return () => clearTimeout(t);
+  }, [router]);
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
