@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 47
+> Rama: `dev/mvp-9-nov` · Commits: 49
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,38 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## revert: quitar la vista 3D
+
+- Commit: `2f3cc2a`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: se elimina la pestaña Producción → Vista 3D, su código (drape.ts, Vista3D.tsx),
+sus 61 pruebas, los estilos y la dependencia three.js. Producción vuelve a tener
+Ficha técnica y Variantes de modelo.
+Por qué: el resultado (piezas planas envueltas en un cuerpo) no tiene la calidad
+que se pidió, que es una vista realista de la prenda con cuello, botones, puños
+y pliegues; eso requiere otro enfoque, no un ajuste de este.
+Verificación: 433 pruebas pasan, tipos sin errores y build de producción correcto.
+Se conserva la corrección del pantalón de mezclilla y de vestir (commit 23ee69a).
+Archivos: apps/web/app/studio/{Produccion.tsx,studio.css,Vista3D.tsx,drape.ts},
+apps/web/package.json, pnpm-lock.yaml, tests/drape.test.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `feb0425`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md con la corrección del pantalón.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## fix(blocks): entrepierna y bajo del pantalón de mezclilla y de vestir
 
