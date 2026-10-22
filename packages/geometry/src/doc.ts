@@ -49,6 +49,26 @@ export interface TechPackMeta {
   notes?: string;         // notas libres
 }
 
+/** Estado de un patrón que cambia entre variantes de modelo. */
+export interface VariantSnapshot {
+  pieces: Piece[];
+  sizes: string[];
+  baseSize: string;
+  gradeSteps?: Record<string, number>;
+  measurements?: Record<string, number>;
+  blockKind?: string;
+}
+
+/** Variante de modelo: otra versión del mismo diseño (manga 3/4, cuello mao…). */
+export interface ModelVariant {
+  id: string;
+  name: string;
+  /** color de referencia para distinguirla */
+  color: string;
+  note?: string;
+  snapshot: VariantSnapshot;
+}
+
 /** Documento completo. `schema` controla migraciones futuras. */
 export interface PatternDoc {
   schema: 1;
@@ -68,6 +88,11 @@ export interface PatternDoc {
   /** Opcional: reglas de tallaje editadas por el usuario (cm por talla por medida);
    *  pisan las reglas por defecto del bloque. */
   gradeSteps?: Record<string, number>;
+  /** Medidas de la talla base con las que se dibujó el patrón (cm). */
+  measurements?: Record<string, number>;
+  /** Variantes de modelo guardadas y cuál está activa. */
+  variants?: ModelVariant[];
+  activeVariant?: string;
 }
 
 // ─── id generator ────────────────────────────────────────────────────────────

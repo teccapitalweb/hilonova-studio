@@ -715,6 +715,7 @@ export function draftBlock(
     };
   });
   if (rules && Object.keys(rules).length) base.gradeSteps = { ...rules } as Record<string, number>;
+  base.measurements = { ...m } as Record<string, number>;
   return base;
 }
 
