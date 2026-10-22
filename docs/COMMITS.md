@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 13
+> Rama: `dev/mvp-9-nov` · Commits: 16
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,64 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## feat(studio): vista Graduación con tabla de tallaje y graduación manual
+
+- Commit: `1648caf`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: nueva pestaña "Graduación" entre Editor y Trazo. Gama de tallas con
+presets (S-M-L-XL, XS-XXL, 28-36), tallas incluidas y talla base editables,
+tabla de tallaje con "+/talla" editable por medida y valores por talla,
+botón Restablecer, y graduación manual por nodo (Δx/Δy por talla con tabla de
+resultado). El nido usa gradeDoc, por lo que funciona también con piezas
+agregadas o dibujadas. Los campos de entrada pasan a fields.tsx. Cambiar
+medidas ya no borra la ficha técnica ni la gama de tallas.
+Por qué: el concepto pide pantalla de Graduación con control de medidas y
+reglas de tallaje, automática o manual.
+Verificación: tsc y build de producción OK; en el navegador, con una blusa:
+cambiar busto de 4 a 6 cm/talla dio 86-92-98-104; un nodo del delantero mostró
+su regla (0.5, -0.17) y sus desplazamientos por talla.
+Limitación: el DXF aún exporta solo la talla base.
+Archivos: apps/web/app/studio/{Graduacion,fields,Shell,store,nest,Canvas,
+TechPack,ExportModal}.ts(x), studio.css
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## feat(engine): graduación por reglas de nodo y reglas de tallaje editables
+
+- Commit: `a0b5166`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: cada nodo guarda su regla de graduación (dx, dy por talla) y gradeDoc(doc,
+talla) gradúa cualquier patrón. Las tallas (S/M/L/XL y numéricas) pasan a
+@hilonova/geometry (sizes.ts) con presets. draftBlock deriva las reglas de cada
+nodo dibujando el bloque una talla más grande (el primer nodo de cada pieza
+queda como ancla), así las piezas de la biblioteca y las prendas ya traen
+reglas. Se pueden editar los cm por talla de cada medida (gradeSteps en el
+documento) y rederiveGrades re-gradúa sin perder piezas dibujadas.
+Por qué: la graduación solo funcionaba regenerando las 4 prendas originales; el
+producto pide graduación automática y manual con reglas de tallaje.
+Verificación: tsc sin errores en todos los paquetes.
+Archivos: packages/geometry/src/{sizes,grade,doc,index}.ts,
+packages/blocks/src/index.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `760b7ec`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md con los commits de herramientas de dibujo.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## feat(studio): herramientas de dibujo, biblioteca de piezas y propiedades editables
 
