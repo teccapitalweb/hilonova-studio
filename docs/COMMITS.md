@@ -1,0 +1,205 @@
+# Bitácora de commits — Hilonova Studio
+
+> Generado con `node scripts/commit-log.mjs`. No editar a mano.
+> Rama: `dev/mvp-9-nov` · Commits: 7
+
+## Cómo se documenta un commit
+
+El mensaje de cada commit es la documentación. Formato:
+
+```
+tipo(alcance): resumen corto en español
+
+Qué: qué cambió, en una o dos frases.
+Por qué: el problema o la necesidad.
+Verificación: cómo se comprobó (build, typecheck, prueba manual...).
+Archivos: los principales.
+```
+
+Tipos: `feat`, `fix`, `chore`, `style`, `docs`, `refactor`, `test`.
+Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
+bitácora como `docs: actualizar bitácora`.
+
+---
+
+## chore: agregar generador de bitácora de commits (docs/COMMITS.md)
+
+- Commit: `f2eb3be`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: script scripts/commit-log.mjs que publica el historial de git, con el
+cuerpo de cada commit, en docs/COMMITS.md.
+Por qué: se requiere documentar todos los commits; generarlo desde git evita
+que la bitácora se desincronice del historial real.
+Verificación: ejecutado con node, genera el archivo sin errores.
+Archivos: scripts/commit-log.mjs
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## fix(web): envolver useSearchParams en Suspense para que compile el build
+
+- Commit: `2cce0c6`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: /studio y /auth/signup ahora renderizan su contenido dentro de <Suspense>.
+Por qué: `next build` (export estático) fallaba con "useSearchParams() should be
+wrapped in a suspense boundary at page /studio", lo que impedía publicar en
+GitHub Pages; por eso el sitio publicado estaba desactualizado (/pricing = 404).
+Verificación: `pnpm --filter @hilonova/web build` con
+NEXT_PUBLIC_BASE_PATH=/hilonova-studio termina OK, 11/11 páginas estáticas.
+Archivos: apps/web/app/studio/page.tsx, apps/web/app/auth/signup/page.tsx
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## fix(auth): flujo de sesion bien conectado en toda la landing
+
+- Commit: `1958844`
+- Fecha: 2026-10-22
+- Autor: TEC Capital web
+
+- /auth/signin y /auth/signup: redirigen a /app si ya hay sesion activa,
+  en vez de dejar que el usuario reautentique sin razon.
+- Nav de la landing: nuevo componente client LandingAuthCta que lee la
+  sesion. Sin sesion muestra "Iniciar sesion / Crear cuenta"; con sesion
+  muestra el nombre del usuario (link a /account) + "Entrar al estudio"
+  (link a /app).
+- CTA del hero (arriba y abajo): mismo cambio, "Crear cuenta" se vuelve
+  "Entrar al estudio" cuando ya hay sesion.
+
+Resultado: ya no te manda a crear otra cuenta cuando ya tienes una, y
+el camino desde la landing al dashboard es un solo click.
+
+Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>
+
+## feat: fases 1-12 — motor, SaaS shell y Tech Pack editor
+
+- Commit: `4e82124`
+- Fecha: 2026-10-22
+- Autor: TEC Capital web
+
+Entrega end-to-end del software de patronaje B2B: del bloque paramétrico
+al PDF Tech Pack listo para la maquila.
+
+Motor (@hilonova/geometry):
+- vec/bezier/doc/piece/history/offset: TS puro, serializable, sin UI
+- Undo/redo inmutable encima del documento
+- Curvas Bézier cúbicas con samplePath, bounds, offset de costura
+
+Bloques (@hilonova/blocks):
+- 4 bloques paramétricos reales: pantalón denim slim, pantalón vestir,
+  playera básica (3 piezas: delantero/espalda/manga), falda recta
+- BLOCK_CATALOG como fuente de verdad para la UI
+- Reglas de graduación por bloque (deltas industriales mexicanos)
+- draftBlock + graduateBlock + measurementsForBlockSize
+- blockKind marcado en el PatternDoc para que el editor sepa qué draft
+  usar al cambiar medidas
+
+Export (@hilonova/export):
+- DXF-AAMA (layers 1_Boundary, 4_Notch, 5_Grainline, 8_Text, 15_SeamAllowance)
+- SVG limpio, PDF A4 mosaico tiled
+- Tech Pack PDF multi-página (portada + medidas + flats + BOM)
+- ExportModal usa doc.techPack como fuente de verdad
+
+Editor /studio:
+- 3 vistas: Editor (canvas CAD), Trazo (nesting), Ficha (Tech Pack)
+- Canvas 2D con pan/zoom/snap, selección y edición de nodos, piquetes
+- Panel de medidas visual con silueta SVG por bloque y highlight al hover
+- HUD flotante "Nido de tallas" con chips de colores y toggle por talla
+- Tech Pack editor con form (encabezado, BOM, specs, notas) + preview A4
+  en vivo que simula las 4 páginas del PDF
+- Trazo con shelf-packing y % de aprovechamiento
+
+SaaS shell (apps/web):
+- Landing con hero, bloques y pricing (todos los CTAs atados a /auth/*)
+- Signin/Signup con mock localStorage + Google/Apple SSO mock
+- AuthAside premium: gradiente navy + stitch animado + hilos ondulantes
+- Dashboard /app con biblioteca de patrones y thumbnails
+- /app/new: galería "elige tu bloque"
+- /account, /pricing con los 3 planes (Taller/Maquila/Industrial)
+
+Docs:
+- README actualizado con el estado real
+- HANDOFF.md con guía completa para el próximo compañero
+
+Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>
+
+## style(web): responsive bien atado para movil, tablet y breakpoints intermedios
+
+- Commit: `c4d05af`
+- Fecha: 2026-10-22
+- Autor: TEC Capital web
+
+Problemas observados en vivo:
+- 768-1024 (tablet): "Iniciar sesion" se envolvia a 2 lineas y empujaba el
+  boton "Solicitar demo" fuera del pill del nav.
+- Mobile: pcards con aspect 3/3.4 ocupaban casi todo el alto; sc-body con
+  columnas fijas rompia el showcase; testimonial con grid "auto 1fr" no
+  cambiaba a bloque; hero con padding fijo + tipografia muy grande; footer
+  en 2 columnas incomodo.
+
+Correcciones (todo en el bloque RESPONSIVE de globals.css):
+
+- Nuevo breakpoint 1024px: oculta nav-links y nav-login antes de que el pill
+  del nav se desborde. Entre 1024 y mobile solo se ve logo + boton demo.
+- 940px (ya existia): se agregan hero-prod centrado, sc-body a 2 columnas
+  ocultando sc-panel (el panel lateral del showcase no cabe), y testimonial
+  pasa a bloque vertical.
+- 720px (reescrito): strip con padding superior para no colisionar con el
+  nav sticky; hero mas denso (padding, h1, sub, CTAs, stats); secciones y
+  h2 reducidos; pcards a 1 columna con aspect 5/4; vcard/stepc/plan con
+  padding menor; CTA band mas chico; footer a 1 columna; marca del nav
+  escalada.
+- Nuevo breakpoint 420px (iPhone SE): nav-in con padding ajustado; hero
+  card aun mas compacto; --gut baja a 14px; .sec a 40px.
+
+Revisado en vivo contra el dev local a 375 / 768 / 1280 y las secciones
+hero, strip, pcards, flow steps, pricing, testimonial, CTA y footer.
+
+Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>
+
+## ci: pnpm action-setup toma la version del packageManager (sin pinnearla al 9)
+
+- Commit: `09ca2dc`
+- Fecha: 2026-10-22
+- Autor: TEC Capital web
+
+El primer run de Pages fallo con "Multiple versions of pnpm specified" porque
+el workflow pedia 9 y el repo declara 11.11.0 en package.json. Al quitar
+`version` del paso, pnpm/action-setup usa la del packageManager.
+
+Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>
+
+## chore: primer commit — landing, design system y monorepo base
+
+- Commit: `c5eef48`
+- Fecha: 2026-10-22
+- Autor: TEC Capital web
+
+Monorepo pnpm + Turborepo con:
+- apps/web: Next.js 15 (App Router) + TypeScript. Landing con hero, flujo de
+  trabajo, pricing y testimonial. Puerto dev 4321.
+- packages/ui: design system (tokens + componentes base).
+- packages/geometry, packages/blocks, packages/export: esqueletos del motor
+  de patronaje para las fases siguientes.
+
+Despliegue:
+- Landing como sitio estatico (output: 'export') publicado en GitHub Pages
+  via .github/workflows/pages.yml.
+- next.config.mjs usa NEXT_PUBLIC_BASE_PATH para que las rutas /img, /brand y
+  /video se sirvan bajo /hilonova-studio/ en Pages y en la raiz en dev local.
+- Un helper asset() en app/page.tsx prefija los <img>/<video> absolutos, y
+  layout.tsx expone --brand-mark como variable CSS con el basePath correcto
+  para que el background-image de la marca tambien se resuelva.
+
+Nav: el contenedor exterior lleva ahora el gutter y la pila (.nav-in) se
+centra con margin:auto, en lugar de quedar pegada a la izquierda.
+
+Testimonial: la seccion existia con placeholder; se puso contenido realista
+marcado "Piloto en pruebas" y "nombre y cargo por confirmar" (comentario
+visible en el JSX avisa que debe reemplazarse por un testimonio real con
+autorizacion por escrito antes de citarlo como cliente).
+
+Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>
+
