@@ -55,8 +55,8 @@ export default function HomePage() {
           </div>
           <span className="sp" />
           <div className="nav-cta">
-            <a className="nav-login" href="#">Iniciar sesión</a>
-            <a className="btn btn-dark" href="#">Solicitar demo</a>
+            <Link className="nav-login" href="/auth/signin">Iniciar sesión</Link>
+            <Link className="btn btn-dark" href="/auth/signup">Crear cuenta</Link>
           </div>
         </div>
       </nav>
@@ -76,12 +76,12 @@ export default function HomePage() {
                 DXF-AAMA listo para tu Gerber o Lectra. Todo en un solo lugar.
               </p>
               <div className="hero-cta">
-                <a className="btn btn-accent" href="#">
-                  Solicitar demo
+                <Link className="btn btn-accent" href="/auth/signup">
+                  Crear cuenta
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
-                </a>
+                </Link>
                 <Link className="btn btn-ghost" href="/studio">Ver el editor</Link>
               </div>
               <div className="hero-stats">
@@ -153,7 +153,7 @@ export default function HomePage() {
             <span className="eyebrow">Librería de bloques</span>
             <h2>Prendas listas para arrancar.</h2>
           </div>
-          <a className="btn btn-light" href="#">Ver todas</a>
+          <Link className="btn btn-light" href="/pricing">Ver todas</Link>
         </div>
         <div className="pcards">
           <div className="pcard">
@@ -388,7 +388,7 @@ export default function HomePage() {
             <div className="pd">Para talleres en producción constante.</div>
             <div className="price"><span className="amt mono">$1,290</span><span className="per">/ mes</span></div>
             <div className="note">MXN · anual: 2 meses gratis</div>
-            <button className="pcta fill">Solicitar demo</button>
+            <button className="pcta fill">Crear cuenta</button>
             <ul className="feats">
               <li><Check /> 8 usuarios con roles</li>
               <li><Check /> Export DXF-AAMA</li>
@@ -442,12 +442,12 @@ export default function HomePage() {
           <h2>Lleva tu patronaje al estándar de la industria.</h2>
           <p>Diseña, gradúa y traza en un solo lugar, y entrega a tu maquila justo lo que necesita.</p>
           <div className="hero-cta center">
-            <a className="btn btn-accent" href="#">
-              Solicitar demo
+            <Link className="btn btn-accent" href="/auth/signup">
+              Crear cuenta
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-            </a>
+            </Link>
             <Link className="btn btn-ghost" href="/studio">Ver el editor</Link>
           </div>
         </div>
@@ -485,7 +485,7 @@ export default function HomePage() {
               <h4>Empresa</h4>
               <a href="#">Hilonova</a>
               <a href="#">Contacto</a>
-              <a href="#">Demos</a>
+              <a href="#">Blog</a>
             </div>
             <div className="foot-col">
               <h4>Legal</h4>

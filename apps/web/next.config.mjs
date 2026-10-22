@@ -7,7 +7,7 @@ const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: ["@hilonova/ui"],
+  transpilePackages: ["@hilonova/ui", "@hilonova/geometry", "@hilonova/blocks", "@hilonova/export"],
   // Static export para GitHub Pages (sin servidor Node).
   output: "export",
   // Carpetas con slash final para que GH Pages sirva /ruta/ correctamente.
