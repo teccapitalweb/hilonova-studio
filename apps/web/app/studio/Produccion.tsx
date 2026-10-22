@@ -5,20 +5,13 @@
 
 "use client";
 
-import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { useEditor, snapshotOf } from "./store";
 import TechPack from "./TechPack";
 import { PiecesThumb } from "./thumbs";
 import { nestPieces } from "./nesting";
 
-// three.js solo se descarga al abrir esta pestaña
-const Vista3D = dynamic(() => import("./Vista3D"), {
-  ssr: false,
-  loading: () => <div className="st-empty-big" style={{ margin: 24 }}>Cargando vista 3D…</div>,
-});
-
-type Tab = "ficha" | "variantes" | "vista3d";
+type Tab = "ficha" | "variantes";
 
 const COLORS = ["#7FB3FF", "#8FD99B", "#C79BFF", "#F2C879", "#FF9B8A", "#6FD3D0"];
 
@@ -36,12 +29,9 @@ export default function Produccion() {
         <button role="tab" aria-selected={tab === "variantes"} className={tab === "variantes" ? "on" : ""} onClick={() => setTab("variantes")}>
           Variantes de modelo{count > 0 ? ` · ${count}` : ""}
         </button>
-        <button role="tab" aria-selected={tab === "vista3d"} className={tab === "vista3d" ? "on" : ""} onClick={() => setTab("vista3d")}>
-          Vista 3D
-        </button>
       </div>
       <div className="st-prod-body">
-        {tab === "ficha" ? <TechPack /> : tab === "variantes" ? <Variantes /> : <Vista3D />}
+        {tab === "ficha" ? <TechPack /> : <Variantes />}
       </div>
     </div>
   );
