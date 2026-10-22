@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 31
+> Rama: `dev/mvp-9-nov` · Commits: 33
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,38 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## fix(engine): el margen de costura ya no tiene un pico de 5 cm en el primer vértice
+
+- Commit: `c5b1f3d`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: offsetPolyline descarta los puntos repetidos seguidos y el que cierra el
+contorno repitiendo el primero antes de calcular las normales.
+Por qué: el muestreo de una pieza cerrada repite su primer punto al final; la
+tangente de largo cero descontrolaba la normal y el margen salía con un pico de
+5 cm en ese vértice, en todas las piezas (se vio en un DXF descargado). Eso
+también agrandaba artificialmente el alto de cada pieza en el trazo.
+Verificación: tsc y build OK. DXF graduado de la falda en A regenerado y revisado:
+24 polilíneas cerradas, sin observaciones; distancia máxima del margen al contorno
+1.56 cm (antes 5.00 cm) y 0 piezas con picos (antes 12 de 12).
+Archivos: packages/geometry/src/offset.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `fb811ca`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md con la corrección del margen de costura.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## fix(engine): margen de costura siempre hacia afuera y DXF compatible con R12
 
