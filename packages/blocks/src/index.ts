@@ -89,14 +89,18 @@ export function draftPantalonDenim(m: BodyMeasurements): PatternDoc {
   // cuartos (una pieza es media delantera/espalda, y la cintura/cadera se dividen entre lados)
   const qCintura = cinturaE / 4;
   const qCadera = caderaE / 4;
-  const qMuslo = musloE / 4;
-  const qBajo = bajoE / 2;              // el bajo abre a la mitad en cada pierna
+  // contorno total de la pierna a la altura del muslo y del bajo; delantero 47 %, espalda 53 %
+  const hemTotal = bajoE * 2;
 
   const tiro = m.tiro ?? 25;
   const largo = m.largo ?? 104;
   const yCadera = tiro * 0.78;          // altura de cadera relativa al tiro
   const yEntrepierna = tiro;
   const yRodilla = largo * 0.56;
+  const kneeTotal = hemTotal + (musloE - hemTotal) * 0.45;
+  // el costado va recto de la cadera al bajo: se interpola para ubicar la rodilla
+  const outerAt = (xHip: number, xHem: number, y: number) =>
+    xHip + (xHem - xHip) * ((y - yCadera) / (largo - yCadera));
 
   // ── delantero ─────────────────────────────────────────────────────────────
   const front = emptyPiece("Delantero", 2);
@@ -119,19 +123,19 @@ export function draftPantalonDenim(m: BodyMeasurements): PatternDoc {
     // bajo exterior
     node({ x: qCadera - 1, y: largo }),
     // bajo interior
-    node({ x: qCadera - 1 - qBajo, y: largo }),
+    node({ x: qCadera - 1 - hemTotal * 0.47, y: largo }),
     // rodilla interior (ligera curva para muslo)
     node(
-      { x: qMuslo - qBajo * 0.9, y: yRodilla },
+      { x: outerAt(qCadera, qCadera - 1, yRodilla) - kneeTotal * 0.47, y: yRodilla },
       {
         handleIn: { x: 0.5, y: (largo - yRodilla) * 0.4 },
         handleOut: { x: -0.5, y: -(yRodilla - yEntrepierna) * 0.4 },
       },
     ),
-    // entrepierna (ancho de muslo delantero)
+    // entrepierna (el delantero toma el 47 % del contorno del muslo; sale hacia afuera del centro)
     node(
-      { x: qMuslo - qCintura * 0.3, y: yEntrepierna },
-      { handleIn: { x: 1, y: (yEntrepierna - yCadera) * 0.3 }, handleOut: { x: -2, y: -4 } },
+      { x: qCadera - musloE * 0.47, y: yEntrepierna },
+      { handleIn: { x: 1, y: (yEntrepierna - yCadera) * 0.3 }, handleOut: { x: 0.5, y: -4 } },
     ),
     // tiro delantero (curva del tiro al bajar de cintura centro)
     node(
@@ -160,17 +164,17 @@ export function draftPantalonDenim(m: BodyMeasurements): PatternDoc {
       { handleIn: { x: 0, y: -yCadera * 0.3 }, handleOut: { x: 1, y: yCadera * 0.4 } },
     ),                                                                   // cadera lado
     node({ x: bOff + qCadera - 1, y: largo }),                           // bajo exterior
-    node({ x: bOff + qCadera - 1 - qBajo, y: largo }),                   // bajo interior
+    node({ x: bOff + qCadera - 1 - hemTotal * 0.53, y: largo }),         // bajo interior
     node(
-      { x: bOff + qMuslo - qBajo * 0.9 - 1, y: yRodilla },
+      { x: bOff + outerAt(qCadera + 1, qCadera - 1, yRodilla) - kneeTotal * 0.53, y: yRodilla },
       {
         handleIn: { x: 0.5, y: (largo - yRodilla) * 0.4 },
         handleOut: { x: -0.5, y: -(yRodilla - yEntrepierna) * 0.4 },
       },
     ),                                                                   // rodilla interior
     node(
-      { x: bOff + qMuslo + 1, y: yEntrepierna },
-      { handleIn: { x: 1, y: (yEntrepierna - yCadera) * 0.3 }, handleOut: { x: -3, y: -6 } },
+      { x: bOff + qCadera + 1 - musloE * 0.53, y: yEntrepierna },
+      { handleIn: { x: 1, y: (yEntrepierna - yCadera) * 0.3 }, handleOut: { x: 1.5, y: -6 } },
     ),                                                                   // entrepierna espalda (más abierta)
     node(
       { x: bOff - 2, y: yCadera * 0.85 },
@@ -417,8 +421,9 @@ export function draftFaldaRecta(m: BodyMeasurements): PatternDoc {
 
 /** Variante del pantalón: bajo recto parejo al muslo (vestir) en lugar de slim. */
 export function draftPantalonVestir(m: BodyMeasurements): PatternDoc {
-  // Reutilizamos el denim pero con `bajo` igualado al muslo (= pierna recta)
-  const bajoRecto = ((m.muslo ?? m.cadera * 0.56) * 0.95);
+  // Reutilizamos el denim pero con el bajo casi igual al muslo (= pierna recta).
+  // `bajo` es la mitad del contorno del bajo: 0.9 × el muslo, entre dos.
+  const bajoRecto = ((m.muslo ?? m.cadera * 0.56) * 0.45);
   const doc = draftPantalonDenim({ ...m, bajo: bajoRecto });
   doc.name = "Pantalón vestir · desde medidas";
   for (const p of doc.pieces) p.fabric = "gabardina 240 gsm";
