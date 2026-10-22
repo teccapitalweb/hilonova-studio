@@ -82,7 +82,11 @@ export function mirrorPiece(piece: Piece): Piece {
 
 /** Rota la pieza `deg` grados (sentido horario en pantalla) alrededor de su centro. */
 export function rotatePiece(piece: Piece, deg: number): Piece {
-  const c = pieceCenter(piece);
+  return rotatePieceAbout(piece, pieceCenter(piece), deg);
+}
+
+/** Rota la pieza `deg` grados alrededor de un punto cualquiera (para rotar varias piezas juntas). */
+export function rotatePieceAbout(piece: Piece, c: Vec2, deg: number): Piece {
   const a = (deg * Math.PI) / 180;
   const cos = Math.cos(a);
   const sin = Math.sin(a);
@@ -99,6 +103,17 @@ export function rotatePiece(piece: Piece, deg: number): Piece {
     return out;
   });
   return { ...piece, nodes, grainAngle: (((piece.grainAngle + deg) % 360) + 360) % 360 };
+}
+
+/** Centro del rectángulo envolvente de varias piezas. */
+export function piecesCenter(pieces: readonly Piece[]): Vec2 {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const p of pieces) {
+    const b = bounds(p);
+    minX = Math.min(minX, b.minX); minY = Math.min(minY, b.minY);
+    maxX = Math.max(maxX, b.maxX); maxY = Math.max(maxY, b.maxY);
+  }
+  return { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
 }
 
 // ─── nodos: insertar, quitar, suavizar ───────────────────────────────────────

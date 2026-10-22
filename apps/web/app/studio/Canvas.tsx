@@ -21,8 +21,9 @@ import {
   pointInPiece,
   smoothNodesFromPoints,
   emptyPiece,
+  bounds,
 } from "@hilonova/geometry";
-import { useEditor, SIZE_COLORS, type Tool } from "./store";
+import { useEditor, SIZE_COLORS, selectionOf, type Tool } from "./store";
 import { buildNest } from "./nest";
 
 /** Umbral de pixeles para considerar que el click cayó sobre un nodo. */
@@ -40,7 +41,7 @@ type Drag =
   | { kind: "node"; startPx: Vec2; moved: boolean }
   | { kind: "handle"; which: "in" | "out"; startPx: Vec2; moved: boolean }
   | { kind: "piece"; startPx: Vec2; last: Vec2; moved: boolean }
-  | { kind: "rect" | "circle" | "measure"; startPx: Vec2; origin: Vec2 };
+  | { kind: "rect" | "circle" | "measure" | "marquee"; startPx: Vec2; origin: Vec2 };
 
 export default function Canvas() {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -49,8 +50,8 @@ export default function Canvas() {
   const draw = useEditor((s) => s);
   const {
     zoom, pan, gridStep, snapGrid, showSeam, showNest, activeSizes, measurements, tool,
-    selectedPieceId, selectedNodeId, blockKind, draft, cursor,
-    setCursor, setPan, setZoom, selectNode, selectPiece, clearSelection, toggleNotch,
+    selectedPieceId, selectedNodeId, blockKind, draft, cursor, multi,
+    setCursor, setPan, setZoom, selectNode, selectPiece, clearSelection, toggleNotch, toggleSelectPiece,
   } = draw;
   const doc = useEditor((s) => s.history.present);
 
@@ -125,10 +126,11 @@ export default function Canvas() {
     }
 
     // piezas
+    const selected = new Set(selectionOf({ selectedPieceId, multi }));
     for (const piece of doc.pieces) {
       const pts = samplePath(piece, 20);
       if (pts.length < 2) continue;
-      const isSelPiece = selectedPieceId === piece.id;
+      const isSelPiece = selected.has(piece.id);
 
       // margen de costura (línea punteada por fuera del contorno)
       if (showSeam && piece.closed && piece.seamAllowance > 0) {
@@ -282,6 +284,14 @@ export default function Canvas() {
           `${Math.abs(draft.a.x - draft.b.x).toFixed(1)} × ${Math.abs(draft.a.y - draft.b.y).toFixed(1)} cm`,
           Math.max(a.x, b.x) + 8, Math.max(a.y, b.y) + 14,
         );
+      } else if (draft.kind === "marquee") {
+        const a = toPx(draft.a), b = toPx(draft.b);
+        ctx.fillStyle = "rgba(125,227,255,.08)";
+        ctx.strokeStyle = "#7DE3FF";
+        ctx.setLineDash([4, 3]);
+        ctx.fillRect(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+        ctx.strokeRect(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+        ctx.setLineDash([]);
       } else if (draft.kind === "circle") {
         const c = toPx(draft.c);
         ctx.setLineDash([6, 4]);
@@ -303,7 +313,7 @@ export default function Canvas() {
       }
       ctx.restore();
     }
-  }, [doc, zoom, pan, gridStep, selectedPieceId, selectedNodeId, showSeam, showNest, activeSizes, measurements, blockKind, draft, cursor]);
+  }, [doc, zoom, pan, gridStep, selectedPieceId, selectedNodeId, showSeam, showNest, activeSizes, measurements, blockKind, draft, cursor, multi]);
 
   // ─── resize observer (redraw al cambiar tamaño) ──────────────────────────
   useEffect(() => {
@@ -447,18 +457,27 @@ export default function Canvas() {
     if (tool === "notch") return;
 
     // 3) interior de una pieza (la de arriba primero) o línea abierta cercana
+    const additive = e.ctrlKey || e.metaKey;
     for (let i = doc.pieces.length - 1; i >= 0; i--) {
       const piece = doc.pieces[i]!;
       const inside = piece.closed
         ? pointInPiece(piece, world)
         : (nearestSegment(piece, world)?.distance ?? Infinity) * zoom < EDGE_PX;
       if (inside) {
-        selectPiece(piece.id);
+        if (additive) { toggleSelectPiece(piece.id); return; }
+        // si la pieza ya forma parte de la selección, se mueve todo el grupo
+        if (!selectionOf(st).includes(piece.id)) selectPiece(piece.id);
         dragState.current = { kind: "piece", startPx: pxStart, last: world, moved: false };
         return;
       }
     }
 
+    // Ctrl + arrastre en el vacío: rectángulo de selección
+    if (additive) {
+      st.setDraft({ kind: "marquee", a: world, b: world });
+      dragState.current = { kind: "marquee", startPx: pxStart, origin: world };
+      return;
+    }
     clearSelection();
     dragState.current = { kind: "pan", startPx: pxStart, panStart: { ...pan } };
   }
@@ -495,6 +514,8 @@ export default function Canvas() {
       st.setDraft({ kind: "circle", c: d.origin, r: dist(d.origin, snapPoint(world)) });
     } else if (d.kind === "measure") {
       st.setDraft({ kind: "measure", a: d.origin, b: snapPoint(world) });
+    } else if (d.kind === "marquee") {
+      st.setDraft({ kind: "marquee", a: d.origin, b: world });
     }
   }
 
@@ -506,6 +527,20 @@ export default function Canvas() {
     const st = useEditor.getState();
     if (d.kind === "rect" && st.draft?.kind === "rect") st.commitRect(st.draft.a, st.draft.b);
     if (d.kind === "circle" && st.draft?.kind === "circle") st.commitCircle(st.draft.c, st.draft.r);
+    if (d.kind === "marquee" && st.draft?.kind === "marquee") {
+      const { a, b } = st.draft;
+      const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x);
+      const y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y);
+      // se selecciona toda pieza cuyo recuadro toque el rectángulo
+      const ids = st.history.present.pieces
+        .filter((p) => {
+          const bb = bounds(p);
+          return bb.minX <= x1 && bb.maxX >= x0 && bb.minY <= y1 && bb.maxY >= y0;
+        })
+        .map((p) => p.id);
+      st.setDraft(null);
+      if (Math.hypot(x1 - x0, y1 - y0) > 0.5) st.selectPieces(ids);
+    }
     // "measure" deja la medición visible hasta el siguiente clic o cambio de herramienta
   }
 
@@ -534,6 +569,9 @@ export default function Canvas() {
       if (mod && k === "z") { e.preventDefault(); if (e.shiftKey) st.redo(); else st.undo(); return; }
       if (mod && k === "y") { e.preventDefault(); st.redo(); return; }
       if (mod && k === "d") { e.preventDefault(); st.duplicateSelected(); return; }
+      if (mod && k === "c") { e.preventDefault(); st.copySelected(); return; }
+      if (mod && k === "v") { e.preventDefault(); st.pasteClipboard(); return; }
+      if (mod && k === "a") { e.preventDefault(); st.selectAllPieces(); return; }
       if (mod) return;
 
       if (e.key === "Escape") {

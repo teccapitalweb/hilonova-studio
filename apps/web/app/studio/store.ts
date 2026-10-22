@@ -27,6 +27,8 @@ import {
   translatePiece,
   mirrorPiece,
   rotatePiece,
+  rotatePieceAbout,
+  piecesCenter,
   insertNodeOnSegment,
   removeNode,
   setNodeSmooth,
@@ -82,7 +84,8 @@ export type Draft =
   | { kind: "path"; smooth: boolean; points: Vec2[] }
   | { kind: "rect"; a: Vec2; b: Vec2 }
   | { kind: "circle"; c: Vec2; r: number }
-  | { kind: "measure"; a: Vec2; b: Vec2 };
+  | { kind: "measure"; a: Vec2; b: Vec2 }
+  | { kind: "marquee"; a: Vec2; b: Vec2 };
 export type View =
   | "proyectos" | "editor" | "graduacion" | "trazo" | "produccion"
   | "materiales" | "libreria" | "reportes" | "config";
@@ -97,6 +100,11 @@ export interface SavedRef {
 interface EditorState {
   history: History;
   selectedPieceId: string | null;
+  /** piezas seleccionadas además de la principal (selección múltiple) */
+  multi: string[];
+  /** portapapeles de piezas (copiar y pegar) */
+  clipboard: Piece[];
+  pasteCount: number;
   selectedNodeId: string | null;
   tool: Tool;
   /** zoom en pixeles por cm (1 = 1cm renderiza como 1px) */
@@ -150,6 +158,12 @@ interface EditorState {
   setView(v: View): void;
   setFabricWidth(cm: number): void;
   selectPiece(id: string | null): void;
+  /** Ctrl+clic: agrega o quita una pieza de la selección */
+  toggleSelectPiece(id: string): void;
+  selectPieces(ids: string[]): void;
+  selectAllPieces(): void;
+  copySelected(): void;
+  pasteClipboard(): void;
   selectNode(pieceId: string, nodeId: string): void;
   clearSelection(): void;
   /** punto de retorno para deshacer antes de un arrastre (una sola entrada) */
@@ -211,6 +225,11 @@ interface EditorState {
   markSaved(id: string): void;
 }
 
+/** Ids de las piezas seleccionadas (la principal primero, sin repetidos). */
+export function selectionOf(s: { selectedPieceId: string | null; multi: string[] }): string[] {
+  return [...new Set([...(s.selectedPieceId ? [s.selectedPieceId] : []), ...s.multi])];
+}
+
 /** Estado del documento que cambia entre variantes. */
 export function snapshotOf(doc: PatternDoc) {
   return {
@@ -226,6 +245,9 @@ export function snapshotOf(doc: PatternDoc) {
 export const useEditor = create<EditorState>((set, get) => ({
   history: initHistory(demoJeanDoc()),
   selectedPieceId: null,
+  multi: [],
+  clipboard: [],
+  pasteCount: 0,
   selectedNodeId: null,
   tool: "select",
   zoom: 4,                       // 1 cm = 4 px por default (editor "ampliado")
@@ -268,12 +290,49 @@ export const useEditor = create<EditorState>((set, get) => ({
   })),
 
   selectPiece: (id) =>
-    set({ selectedPieceId: id, selectedNodeId: null }),
+    set({ selectedPieceId: id, multi: [], selectedNodeId: null }),
 
   selectNode: (pieceId, nodeId) =>
-    set({ selectedPieceId: pieceId, selectedNodeId: nodeId }),
+    set({ selectedPieceId: pieceId, multi: [], selectedNodeId: nodeId }),
 
-  clearSelection: () => set({ selectedPieceId: null, selectedNodeId: null }),
+  clearSelection: () => set({ selectedPieceId: null, multi: [], selectedNodeId: null }),
+
+  toggleSelectPiece: (id) => {
+    const cur = selectionOf(get());
+    const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
+    set({ selectedPieceId: next[0] ?? null, multi: next.slice(1), selectedNodeId: null });
+  },
+
+  selectPieces: (ids) =>
+    set({ selectedPieceId: ids[0] ?? null, multi: ids.slice(1), selectedNodeId: null }),
+
+  selectAllPieces: () => {
+    const ids = get().history.present.pieces.map((p) => p.id);
+    set({ selectedPieceId: ids[0] ?? null, multi: ids.slice(1), selectedNodeId: null });
+  },
+
+  copySelected: () => {
+    const ids = selectionOf(get());
+    const pieces = get().history.present.pieces.filter((p) => ids.includes(p.id));
+    if (pieces.length) set({ clipboard: pieces, pasteCount: 0 });
+  },
+
+  pasteClipboard: () => {
+    const { clipboard, history, saved, pasteCount } = get();
+    if (!clipboard.length) return;
+    const step = 6 * (pasteCount + 1);
+    const copies = clipboard.map((p) => translatePiece(clonePiece(p), step, step));
+    let doc = history.present;
+    for (const c of copies) doc = addPiece(doc, c);
+    set({
+      history: hCommit(history, doc),
+      selectedPieceId: copies[0]!.id,
+      multi: copies.slice(1).map((c) => c.id),
+      selectedNodeId: null,
+      pasteCount: pasteCount + 1,
+      saved: { ...saved, dirty: true },
+    });
+  },
 
   beginDrag: () => {
     const { history, saved } = get();
@@ -288,11 +347,16 @@ export const useEditor = create<EditorState>((set, get) => ({
   },
 
   moveSelectedPieceBy: (dx, dy) => {
-    const { selectedPieceId, history } = get();
-    const piece = history.present.pieces.find((p) => p.id === selectedPieceId);
-    if (!piece) return;
-    const moved = translatePiece(piece, dx, dy);
-    set({ history: hReplace(history, setPieceNodes(history.present, piece.id, moved.nodes)) });
+    const ids = selectionOf(get());
+    const { history } = get();
+    if (!ids.length) return;
+    let doc = history.present;
+    for (const id of ids) {
+      const piece = doc.pieces.find((p) => p.id === id);
+      if (!piece) continue;
+      doc = setPieceNodes(doc, id, translatePiece(piece, dx, dy).nodes);
+    }
+    set({ history: hReplace(history, doc) });
   },
 
   moveSelectedHandle: (which, to) => {
@@ -324,6 +388,7 @@ export const useEditor = create<EditorState>((set, get) => ({
     set({
       history: hCommit(history, addPiece(history.present, piece)),
       selectedPieceId: piece.id,
+      multi: [],
       selectedNodeId: null,
       draft: null,
       saved: { ...saved, dirty: true },
@@ -337,6 +402,7 @@ export const useEditor = create<EditorState>((set, get) => ({
     set({
       history: hCommit(history, addPiece(history.present, piece)),
       selectedPieceId: piece.id,
+      multi: [],
       selectedNodeId: null,
       draft: null,
       saved: { ...saved, dirty: true },
@@ -350,6 +416,7 @@ export const useEditor = create<EditorState>((set, get) => ({
     set({
       history: hCommit(history, addPiece(history.present, piece)),
       selectedPieceId: piece.id,
+      multi: [],
       selectedNodeId: null,
       draft: null,
       saved: { ...saved, dirty: true },
@@ -370,50 +437,65 @@ export const useEditor = create<EditorState>((set, get) => ({
       });
       return;
     }
+    let doc = history.present;
+    for (const id of selectionOf(get())) doc = removePiece(doc, id);
     set({
-      history: hCommit(history, removePiece(history.present, piece.id)),
+      history: hCommit(history, doc),
       selectedPieceId: null,
+      multi: [],
       saved: { ...saved, dirty: true },
     });
   },
 
   duplicateSelected: () => {
-    const { selectedPieceId, history, saved } = get();
-    const piece = history.present.pieces.find((p) => p.id === selectedPieceId);
-    if (!piece) return;
-    const b = bounds(piece);
-    const copy = translatePiece(clonePiece(piece, `${piece.name} copia`), b.maxX - b.minX + 6, 0);
+    const { history, saved } = get();
+    const ids = selectionOf(get());
+    const pieces = history.present.pieces.filter((p) => ids.includes(p.id));
+    if (!pieces.length) return;
+    const c = piecesCenter(pieces);
+    let maxX = -Infinity, minX = Infinity;
+    for (const p of pieces) {
+      const b = bounds(p);
+      maxX = Math.max(maxX, b.maxX); minX = Math.min(minX, b.minX);
+    }
+    const dx = maxX - minX + 6;
+    void c;
+    const copies = pieces.map((p) => translatePiece(clonePiece(p, `${p.name} copia`), dx, 0));
+    let doc = history.present;
+    for (const cp of copies) doc = addPiece(doc, cp);
     set({
-      history: hCommit(history, addPiece(history.present, copy)),
-      selectedPieceId: copy.id,
+      history: hCommit(history, doc),
+      selectedPieceId: copies[0]!.id,
+      multi: copies.slice(1).map((x) => x.id),
       selectedNodeId: null,
       saved: { ...saved, dirty: true },
     });
   },
 
   mirrorSelected: () => {
-    const { selectedPieceId, history, saved } = get();
-    const piece = history.present.pieces.find((p) => p.id === selectedPieceId);
-    if (!piece) return;
-    const mirrored = mirrorPiece(piece);
-    const doc = patchPiece(
-      setPieceNodes(history.present, piece.id, mirrored.nodes),
-      piece.id,
-      { grainAngle: mirrored.grainAngle },
-    );
+    const { history, saved } = get();
+    let doc = history.present;
+    for (const id of selectionOf(get())) {
+      const piece = doc.pieces.find((p) => p.id === id);
+      if (!piece) continue;
+      const m = mirrorPiece(piece);
+      doc = patchPiece(setPieceNodes(doc, id, m.nodes), id, { grainAngle: m.grainAngle });
+    }
     set({ history: hCommit(history, doc), selectedNodeId: null, saved: { ...saved, dirty: true } });
   },
 
   rotateSelected: (deg) => {
-    const { selectedPieceId, history, saved } = get();
-    const piece = history.present.pieces.find((p) => p.id === selectedPieceId);
-    if (!piece) return;
-    const rotated = rotatePiece(piece, deg);
-    const doc = patchPiece(
-      setPieceNodes(history.present, piece.id, rotated.nodes),
-      piece.id,
-      { grainAngle: rotated.grainAngle },
-    );
+    const { history, saved } = get();
+    const ids = selectionOf(get());
+    const pieces = history.present.pieces.filter((p) => ids.includes(p.id));
+    if (!pieces.length) return;
+    // varias piezas giran juntas alrededor del centro del grupo; una sola, alrededor de su centro
+    const center = piecesCenter(pieces);
+    let doc = history.present;
+    for (const p of pieces) {
+      const r = rotatePieceAbout(p, center, deg);
+      doc = patchPiece(setPieceNodes(doc, p.id, r.nodes), p.id, { grainAngle: r.grainAngle });
+    }
     set({ history: hCommit(history, doc), saved: { ...saved, dirty: true } });
   },
 
@@ -425,6 +507,7 @@ export const useEditor = create<EditorState>((set, get) => ({
     set({
       history: hCommit(history, setPieceNodes(history.present, piece.id, res.piece.nodes)),
       selectedPieceId: piece.id,
+      multi: [],
       selectedNodeId: res.nodeId,
       saved: { ...saved, dirty: true },
     });
@@ -477,6 +560,7 @@ export const useEditor = create<EditorState>((set, get) => ({
     set({
       history: hCommit(history, addPiece(history.present, placed)),
       selectedPieceId: placed.id,
+      multi: [],
       selectedNodeId: null,
       saved: { ...saved, dirty: true },
     });
@@ -516,6 +600,7 @@ export const useEditor = create<EditorState>((set, get) => ({
       blockKind: (target.snapshot.blockKind as BlockKind | undefined) ?? get().blockKind,
       activeSizes: [...target.snapshot.sizes],
       selectedPieceId: null,
+      multi: [],
       selectedNodeId: null,
       saved: { ...saved, dirty: true },
     });
@@ -610,6 +695,7 @@ export const useEditor = create<EditorState>((set, get) => ({
       measurements: { ...m },
       history: hCommit(history, named),
       selectedPieceId: null,
+      multi: [],
       selectedNodeId: null,
       saved: { ...saved, dirty: true },
     });
@@ -654,6 +740,7 @@ export const useEditor = create<EditorState>((set, get) => ({
     set({
       history: initHistory(demoJeanDoc()),
       selectedPieceId: null,
+      multi: [],
       selectedNodeId: null,
       saved: { id: null, dirty: false, lastSaved: null },
     }),
@@ -662,6 +749,7 @@ export const useEditor = create<EditorState>((set, get) => ({
     set({
       history: initHistory(doc),
       selectedPieceId: null,
+      multi: [],
       selectedNodeId: null,
       blockKind: (doc.blockKind as BlockKind | undefined) ?? "pantalon-denim",
       activeSizes: [...doc.sizes],

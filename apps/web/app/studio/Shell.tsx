@@ -10,7 +10,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Canvas from "./Canvas";
 import Trazo from "./Trazo";
 import ExportModal from "./ExportModal";
-import { useEditor, SIZE_COLORS, type Tool, type View } from "./store";
+import { useEditor, SIZE_COLORS, selectionOf, type Tool, type View } from "./store";
 import { bounds, samplePath, type Piece } from "@hilonova/geometry";
 import {
   findBlock,
@@ -525,8 +525,11 @@ function RailBtn({
 
 function PiecesPanel() {
   const doc = useEditor((s) => s.history.present);
-  const selected = useEditor((s) => s.selectedPieceId);
+  const primary = useEditor((s) => s.selectedPieceId);
+  const multiSel = useEditor((s) => s.multi);
+  const selectedIds = selectionOf({ selectedPieceId: primary, multi: multiSel });
   const selectPiece = useEditor((s) => s.selectPiece);
+  const toggleSelectPiece = useEditor((s) => s.toggleSelectPiece);
   const insertLibraryPiece = useEditor((s) => s.insertLibraryPiece);
   const [libOpen, setLibOpen] = useState(false);
   return (
@@ -572,8 +575,8 @@ function PiecesPanel() {
         return (
           <button
             key={p.id}
-            className={`st-piece${selected === p.id ? " sel" : ""}`}
-            onClick={() => selectPiece(p.id)}
+            className={`st-piece${selectedIds.includes(p.id) ? " sel" : ""}`}
+            onClick={(e) => (e.ctrlKey || e.metaKey ? toggleSelectPiece(p.id) : selectPiece(p.id))}
           >
             <PieceThumb piece={p} />
             <div className="st-piece-info">
@@ -606,6 +609,21 @@ function PieceThumb({ piece }: { piece: Piece }) {
 }
 
 // ─── Panel de propiedades ────────────────────────────────────────────────────
+
+/** Rotar a cualquier ángulo: se escribe el ángulo y se elige el sentido. */
+function RotateRow({ rotate }: { rotate: (deg: number) => void }) {
+  const [angle, setAngle] = useState(15);
+  return (
+    <div className="st-field" style={{ marginTop: 10 }}>
+      <span>Rotar</span>
+      <span className="st-input-wrap" style={{ gap: 6 }}>
+        <button className="st-act" style={{ marginTop: 0 }} onClick={() => rotate(-angle)} title="Girar a la izquierda">⟲</button>
+        <NumInput value={angle} step={5} min={0.1} max={360} unit="°" width={56} onCommit={setAngle} />
+        <button className="st-act" style={{ marginTop: 0 }} onClick={() => rotate(angle)} title="Girar a la derecha">⟳</button>
+      </span>
+    </div>
+  );
+}
 
 function SavePieceButton({ piece }: { piece: Piece }) {
   const [saved, setSaved] = useState(false);
@@ -642,6 +660,11 @@ function PropsPanel() {
   const setNodePos = useEditor((s) => s.setSelectedNodePos);
   const setSmooth = useEditor((s) => s.setSelectedNodeSmooth);
   const toggleNotch = useEditor((s) => s.toggleNotch);
+  const multi = useEditor((s) => s.multi);
+  const copy = useEditor((s) => s.copySelected);
+  const paste = useEditor((s) => s.pasteClipboard);
+  const clipCount = useEditor((s) => s.clipboard.length);
+  const count = (pieceId ? 1 : 0) + multi.length;
   const piece = pieceId ? doc.pieces.find((p) => p.id === pieceId) : null;
   const node = piece && nodeId ? piece.nodes.find((n) => n.id === nodeId) : null;
   const isCurve = !!(node && (node.handleIn || node.handleOut));
@@ -658,11 +681,34 @@ function PropsPanel() {
           <span className="st-dim">
             Dibujar: L línea · C curva · R rectángulo · O círculo · A agregar nodo · M medir
             <br />
-            Shift o Alt + arrastre → pan · Rueda → zoom · Supr → borrar · Ctrl+D → duplicar
+            Shift o Alt + arrastre → pan · Rueda → zoom · Supr → borrar
+            <br />
+            Ctrl+clic → varias piezas · Ctrl+arrastre → recuadro · Ctrl+A → todas
+            <br />
+            Ctrl+C / Ctrl+V → copiar y pegar · Ctrl+D → duplicar
           </span>
+          {clipCount > 0 && (
+            <div className="st-actions"><button className="st-act" onClick={paste}>Pegar ({clipCount})</button></div>
+          )}
         </div>
       )}
-      {piece && (
+      {piece && count > 1 && (
+        <div className="st-group">
+          <div className="st-label">{count} piezas seleccionadas</div>
+          <p className="st-hint" style={{ marginTop: 0 }}>
+            Arrastra una de ellas para mover todas. Rotar gira el grupo alrededor de su centro.
+          </p>
+          <RotateRow rotate={rotate} />
+          <div className="st-actions">
+            <button className="st-act" onClick={duplicate} title="Duplicar (Ctrl+D)">Duplicar</button>
+            <button className="st-act" onClick={mirror} title="Espejar cada pieza">Espejar</button>
+            <button className="st-act" onClick={copy} title="Copiar (Ctrl+C)">Copiar</button>
+            {clipCount > 0 && <button className="st-act" onClick={paste} title="Pegar (Ctrl+V)">Pegar</button>}
+            <button className="st-act danger" onClick={del} title="Eliminar (Supr)">Eliminar</button>
+          </div>
+        </div>
+      )}
+      {piece && count <= 1 && (
         <div className="st-group">
           <div className="st-label">Pieza</div>
           <EditField name="Nombre">
@@ -690,8 +736,11 @@ function PropsPanel() {
             <button className="st-act" onClick={() => rotate(-90)} title="Rotar 90° a la izquierda">⟲ 90°</button>
             <button className="st-act" onClick={() => rotate(90)} title="Rotar 90° a la derecha">⟳ 90°</button>
             <SavePieceButton piece={piece} />
+            <button className="st-act" onClick={copy} title="Copiar (Ctrl+C)">Copiar</button>
+            {clipCount > 0 && <button className="st-act" onClick={paste} title="Pegar (Ctrl+V)">Pegar</button>}
             <button className="st-act danger" onClick={() => { useEditor.getState().selectPiece(piece.id); del(); }} title="Eliminar pieza (Supr)">Eliminar</button>
           </div>
+          <RotateRow rotate={rotate} />
         </div>
       )}
       {piece && node && (
@@ -792,7 +841,7 @@ function Legend({ color, label }: { color: string; label: string }) {
 // ─── Status bar ──────────────────────────────────────────────────────────────
 
 const TOOL_HINT: Record<Tool, string> = {
-  select: "Clic: seleccionar · arrastra: mover nodo, handle o pieza",
+  select: "Clic: seleccionar · Ctrl+clic: varias · Ctrl+arrastre: recuadro · arrastra: mover nodo, handle o pieza",
   pan: "Arrastra para mover la vista",
   notch: "Clic en un nodo para poner o quitar piquete",
   line: "Clic: agregar punto · clic en el primero o Enter: cerrar · doble clic: línea abierta · Esc: cancelar",
