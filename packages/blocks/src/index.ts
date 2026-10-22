@@ -601,6 +601,427 @@ export function draftBlusaClasica(m: BodyMeasurements): PatternDoc {
   return doc;
 }
 
+// ─── ayudas compartidas por las prendas nuevas ──────────────────────────────
+
+const SML_SIZES = ["S", "M", "L", "XL"];
+
+/** Pone la gama S-M-L-XL con base M (prendas de tronco, vestidos, jogger…). */
+function withSml(doc: PatternDoc): PatternDoc {
+  doc.sizes = [...SML_SIZES];
+  doc.baseSize = "M";
+  return doc;
+}
+
+interface Torso {
+  busto: number;
+  q: number;
+  qF: number;
+  qB: number;
+  hombro: number;
+  sisa: number;
+  largoT: number;
+  largoManga: number;
+  cuello: number;
+}
+
+/** Medidas de tronco con holgura `ease` sobre el contorno de busto. */
+function torsoOf(m: BodyMeasurements, ease: number): Torso {
+  const busto = m.busto ?? 92;
+  const q = (busto + ease) / 4;
+  return {
+    busto,
+    q,
+    qF: q - 0.5,
+    qB: q + 0.5,
+    hombro: m.hombro ?? 42,
+    sisa: m.sisa ?? 23,
+    largoT: m.largoTorso ?? 42,
+    largoManga: m.largoManga ?? 60,
+    cuello: m.cuello ?? 38,
+  };
+}
+
+/** Hombro y sisa: de la punta de hombro al fondo de la sisa. `inset` mete la curva hacia el cuerpo. */
+function armholeNodes(sx: number, drop: number, qx: number, sisa: number, inset: number): Node[] {
+  return [
+    node({ x: sx, y: drop }, { handleOut: { x: -0.8, y: 3.5 } }),
+    node(
+      { x: sx - inset, y: drop + (sisa - drop) * 0.55 },
+      { handleIn: { x: 0, y: -3 }, handleOut: { x: 0, y: 3 } },
+    ),
+    node({ x: qx, y: sisa }, { notch: true, handleIn: { x: -2.5, y: -1.5 } }),
+  ];
+}
+
+/** Manga de una pieza (cabeza + caída), con el centro de la cabeza en x=0. */
+function sleeveNodes(bicep: number, capH: number, len: number, wrist: number): Node[] {
+  return [
+    node({ x: 0, y: 0 }, { notch: true, handleIn: { x: -bicep * 0.28, y: 0 }, handleOut: { x: bicep * 0.28, y: 0 } }),
+    node({ x: bicep / 2, y: capH }, { notch: true, handleIn: { x: -bicep * 0.05, y: -capH * 0.55 } }),
+    node({ x: wrist / 2, y: len }),
+    node({ x: -wrist / 2, y: len }),
+    node({ x: -bicep / 2, y: capH }, { notch: true, handleOut: { x: bicep * 0.05, y: -capH * 0.55 } }),
+  ];
+}
+
+/** Hoja de cuello camisero completa (simétrica). */
+function collarNodes(lc: number, h: number): Node[] {
+  return fullFromHalf([
+    node({ x: 0, y: 0 }, { notch: true, handleOut: { x: lc * 0.5, y: 0.2 } }),
+    node({ x: lc, y: 1 }, { handleIn: { x: -lc * 0.35, y: 0 } }),
+    node({ x: lc + 0.5, y: h }, { handleOut: { x: -lc * 0.3, y: 0.9 } }),
+    node({ x: 0, y: h - 1.5 }, { notch: true, handleIn: { x: lc * 0.3, y: 0.2 } }),
+  ]);
+}
+
+/** Pieza con nombre, cantidad, tela y nodos listos. */
+function mk(name: string, qty: number, fabric: string, nodes: Node[], closed = true): Piece {
+  const p = emptyPiece(name, qty);
+  p.fabric = fabric;
+  p.nodes = nodes;
+  p.closed = closed;
+  return p;
+}
+
+/** Reparte las piezas sobre la mesa: una fila por grupo, sin empalmes. */
+function layoutRows(rows: Piece[][], gap = 8): Piece[] {
+  const out: Piece[] = [];
+  let y = 0;
+  for (const row of rows) {
+    let x = 0;
+    let rowH = 0;
+    for (const p of row) {
+      const xs = p.nodes.map((n) => n.at.x);
+      const ys = p.nodes.map((n) => n.at.y);
+      const minX = Math.min(...xs), maxX = Math.max(...xs);
+      const minY = Math.min(...ys), maxY = Math.max(...ys);
+      p.nodes = shiftNodes(p.nodes, x - minX, y - minY);
+      x += maxX - minX + gap;
+      rowH = Math.max(rowH, maxY - minY);
+      out.push(p);
+    }
+    y += rowH + gap;
+  }
+  return out;
+}
+
+// ─── chamarra de mezclilla (trucker) ────────────────────────────────────────
+
+/** Chamarra de mezclilla con faja, bolsillos de pecho con solapa, cuello y puños. 9 piezas. */
+export function draftChamarraMezclilla(m: BodyMeasurements): PatternDoc {
+  const doc = withSml(emptyDoc("Chamarra de mezclilla · desde medidas"));
+  const F = "mezclilla 12 oz";
+  const t = torsoOf(m, 14);
+  const sx = t.hombro / 2 + 0.5;
+  const nF = t.cuello / 6 + 1;
+  const dF = nF + 2.5;
+  const nB = nF + 0.3;
+  const dB = 2.5;
+  const ext = 2.5;                       // extensión de abotonadura
+  const under = t.sisa + 1.5;            // fondo de sisa (chamarra: más holgado)
+  const hemY = t.largoT + 8;             // el cuerpo termina donde empieza la faja
+
+  const front = mk("Delantero", 2, F, [
+    node({ x: -ext, y: dF }),
+    node({ x: 0, y: dF }, { notch: true, handleOut: { x: nF * 0.55, y: 0 } }),
+    node({ x: nF, y: 0 }, { notch: true, handleIn: { x: 0, y: dF * 0.55 } }),
+    ...armholeNodes(sx, 4.5, t.qF, under, 1),
+    node({ x: t.qF, y: hemY }),
+    node({ x: -ext, y: hemY }),
+  ]);
+  const back = mk("Espalda", 1, F, fullFromHalf([
+    node({ x: 0, y: dB }, { notch: true, handleOut: { x: nB * 0.55, y: 0 } }),
+    node({ x: nB, y: 0 }, { notch: true, handleIn: { x: 0, y: dB * 0.55 } }),
+    ...armholeNodes(sx, 4.2, t.qB, under, 0.8),
+    node({ x: t.qB, y: hemY }),
+    node({ x: 0, y: hemY }, { notch: true }),
+  ]));
+
+  const bicep = t.busto * 0.3 + 8;
+  const wrist = 24;
+  const sleeve = mk("Manga", 2, F, sleeveNodes(bicep, under * 0.55, t.largoManga - 7, wrist));
+  const collar = mk("Cuello", 2, F, collarNodes(t.cuello / 2 + 1, 7.5));
+  const cuff = rectPiece("Puño", { x: 0, y: 0 }, { x: wrist, y: 7 });
+  cuff.quantity = 2; cuff.fabric = F;
+  const fajaF = rectPiece("Faja delantera", { x: 0, y: 0 }, { x: t.qF + ext, y: 6 });
+  fajaF.quantity = 2; fajaF.fabric = F;
+  const fajaB = rectPiece("Faja espalda", { x: 0, y: 0 }, { x: t.qB * 2, y: 6 });
+  fajaB.quantity = 1; fajaB.fabric = F;
+  const pocket = pieceFromPoints(
+    "Bolsillo de pecho",
+    [{ x: 0, y: 0 }, { x: 12, y: 0 }, { x: 12, y: 11 }, { x: 6, y: 14 }, { x: 0, y: 11 }],
+    { closed: true, smooth: false, quantity: 2 },
+  );
+  pocket.fabric = F;
+  const flap = pieceFromPoints(
+    "Solapa",
+    [{ x: 0, y: 0 }, { x: 12, y: 0 }, { x: 12, y: 4 }, { x: 6, y: 6 }, { x: 0, y: 4 }],
+    { closed: true, smooth: false, quantity: 2 },
+  );
+  flap.fabric = F;
+
+  doc.pieces = layoutRows([[front, back, sleeve], [collar, cuff, fajaF, fajaB], [pocket, flap]]);
+  return doc;
+}
+
+// ─── pantalones cortos, bermuda y jogger ────────────────────────────────────
+
+interface TrouserOpts {
+  name: string;
+  fabric: string;
+  hipEase: number;
+  thighEase: number;
+  extras?: (c: { qW: number; hemTotal: number; cintura: number }) => Piece[];
+}
+
+/**
+ * Delantero y espalda de un pantalón recto o ahusado, de cualquier largo.
+ * `muslo` es el contorno del muslo y `bajo` la mitad del contorno del bajo.
+ * La anchura de cada pieza sale de repartir el contorno entre delantero (47 %)
+ * y espalda (53 %). Sin pinzas: la curva de cadera absorbe la diferencia con la cintura.
+ */
+function draftTrouser(m: BodyMeasurements, o: TrouserOpts): PatternDoc {
+  const doc = emptyDoc(o.name);
+  const tiro = m.tiro ?? 25;
+  const largo = m.largo ?? 60;
+  const qW = (m.cintura + 1) / 4;
+  const qH = (m.cadera + o.hipEase) / 4;
+  const thighTotal = (m.muslo ?? 58) + o.thighEase;
+  const hemTotal = (m.bajo ?? 28) * 2;
+  const yHip = tiro * 0.75;
+  const yFork = tiro * 0.55;
+
+  const frontCrotchX = qH - thighTotal * 0.47;
+  const frontHemOut = qH + 0.5;
+  const frontHemIn = frontHemOut - hemTotal * 0.47;
+  const front = mk("Delantero", 2, o.fabric, [
+    node({ x: 0, y: 0 }),
+    node({ x: qW, y: 0 }, { handleOut: { x: 0.5, y: yHip * 0.4 } }),
+    node({ x: qH, y: yHip }, { notch: true, handleIn: { x: -1, y: -yHip * 0.4 } }),
+    node({ x: frontHemOut, y: largo }),
+    node({ x: frontHemIn, y: largo }),
+    node({ x: frontCrotchX, y: tiro }, { notch: true, handleOut: { x: -frontCrotchX * 0.6, y: 0 } }),
+    node({ x: 0, y: yFork }, { handleIn: { x: 0, y: (tiro - yFork) * 0.5 } }),
+  ]);
+
+  const qHb = qH + 0.5;
+  const backCrotchX = qHb - thighTotal * 0.53;
+  const backHemOut = qHb + 0.5;
+  const backHemIn = backHemOut - hemTotal * 0.53;
+  const back = mk("Espalda", 2, o.fabric, [
+    node({ x: -3, y: -2.5 }),
+    node({ x: qW + 1.5 - 3, y: -0.5 }, { handleOut: { x: 0.5, y: yHip * 0.4 } }),
+    node({ x: qHb, y: yHip }, { notch: true, handleIn: { x: -1, y: -yHip * 0.4 } }),
+    node({ x: backHemOut, y: largo }),
+    node({ x: backHemIn, y: largo }),
+    node({ x: backCrotchX, y: tiro }, { notch: true, handleOut: { x: (-1.5 - backCrotchX) * 0.6, y: 0 } }),
+    node({ x: -1.5, y: yFork }, { handleIn: { x: 0, y: (tiro - yFork) * 0.5 } }),
+  ]);
+
+  const extras = o.extras ? o.extras({ qW, hemTotal, cintura: m.cintura }) : [];
+  doc.pieces = layoutRows([[front, back], extras]);
+  return doc;
+}
+
+/** Short de mezclilla: pierna recta, largo corto. */
+export function draftShort(m: BodyMeasurements): PatternDoc {
+  return draftTrouser(m, {
+    name: "Short · desde medidas",
+    fabric: "mezclilla 10 oz",
+    hipEase: 4,
+    thighEase: 4,
+    extras: ({ cintura }) => [
+      withQty(rectPiece("Pretina", { x: 0, y: 0 }, { x: cintura + 4, y: 8 }), 1, "mezclilla 10 oz"),
+      withQty(
+        pieceFromPoints(
+          "Bolsillo trasero",
+          [{ x: 0, y: 0 }, { x: 14, y: 0 }, { x: 14, y: 12 }, { x: 7, y: 16 }, { x: 0, y: 12 }],
+          { closed: true, smooth: false },
+        ),
+        2,
+        "mezclilla 10 oz",
+      ),
+    ],
+  });
+}
+
+/** Bermuda: pierna recta a la rodilla, en gabardina. */
+export function draftBermuda(m: BodyMeasurements): PatternDoc {
+  return draftTrouser(m, {
+    name: "Bermuda · desde medidas",
+    fabric: "gabardina 240 gsm",
+    hipEase: 5,
+    thighEase: 5,
+    extras: ({ cintura }) => [
+      withQty(rectPiece("Pretina", { x: 0, y: 0 }, { x: cintura + 4, y: 8 }), 1, "gabardina 240 gsm"),
+      withQty(rectPiece("Bolsillo", { x: 0, y: 0 }, { x: 16, y: 18 }), 4, "forro de bolsillo"),
+    ],
+  });
+}
+
+/** Pants jogger: pierna ahusada con puño de tobillo y pretina de elástico. */
+export function draftPantsJogger(m: BodyMeasurements): PatternDoc {
+  const doc = draftTrouser(m, {
+    name: "Pants jogger · desde medidas",
+    fabric: "french terry 280 gsm",
+    hipEase: 8,
+    thighEase: 8,
+    extras: ({ cintura, hemTotal }) => [
+      withQty(rectPiece("Pretina elástica", { x: 0, y: 0 }, { x: cintura + 2, y: 8 }), 1, "french terry 280 gsm"),
+      withQty(rectPiece("Puño de tobillo", { x: 0, y: 0 }, { x: hemTotal * 0.8, y: 9 }), 2, "rib 1x1"),
+    ],
+  });
+  return withSml(doc);
+}
+
+// ─── falda en A ──────────────────────────────────────────────────────────────
+
+/** Falda en A con delantero al doblez, espalda con cierre en el centro y pretina. */
+export function draftFaldaA(m: BodyMeasurements): PatternDoc {
+  const doc = withSml(emptyDoc("Falda en A · desde medidas"));
+  const F = "gabardina stretch";
+  const largoF = m.largoFalda ?? 55;
+  const qW = (m.cintura + 2) / 4;
+  const qH = (m.cadera + 4) / 4;
+  const hipY = 18;
+  const qHem = qH + largoF * 0.12;       // vuelo de la A
+
+  const front = mk("Delantero", 1, F, fullFromHalf([
+    node({ x: 0, y: 0 }, { notch: true }),
+    node({ x: qW, y: 0 }),
+    node({ x: qH, y: hipY }, { notch: true, handleIn: { x: -0.5, y: -hipY * 0.35 } }),
+    node({ x: qHem, y: largoF }),
+    node({ x: 0, y: largoF + 0.8 }, { notch: true }),
+  ]));
+  const back = mk("Espalda", 2, F, [
+    node({ x: 0, y: 0 }, { notch: true }),
+    node({ x: qW + 0.5, y: 0 }),
+    node({ x: qH + 0.5, y: hipY }, { notch: true, handleIn: { x: -0.5, y: -hipY * 0.35 } }),
+    node({ x: qHem + 0.5, y: largoF }),
+    node({ x: 0, y: largoF }),
+  ]);
+  const waistband = rectPiece("Pretina", { x: 0, y: 0 }, { x: m.cintura + 4, y: 6 });
+  waistband.quantity = 1; waistband.fabric = F;
+
+  doc.pieces = layoutRows([[front, back], [waistband]]);
+  return doc;
+}
+
+// ─── vestido básico ──────────────────────────────────────────────────────────
+
+/** Vestido básico sin mangas, entallado y con vuelo, con vistas de escote. 4 piezas. */
+export function draftVestidoBasico(m: BodyMeasurements): PatternDoc {
+  const doc = withSml(emptyDoc("Vestido básico · desde medidas"));
+  const F = "crepé";
+  const t = torsoOf(m, 8);
+  const sx = t.hombro / 2 - 2;
+  const nF = t.cuello / 6 + 1.2;
+  const dF = nF + 3.5;
+  const nB = nF;
+  const dB = 2.5;
+  const waistY = t.largoT;
+  const hipY = waistY + 20;
+  const hemY = waistY + (m.largoFalda ?? 60);
+  const qWF = (m.cintura + 4) / 4 - 0.5;
+  const qHF = (m.cadera + 6) / 4 - 0.5;
+  const qHemF = qHF + 5;
+
+  const front = mk("Delantero", 1, F, fullFromHalf([
+    node({ x: 0, y: dF }, { notch: true, handleOut: { x: nF * 0.55, y: 0 } }),
+    node({ x: nF, y: 0 }, { notch: true, handleIn: { x: 0, y: dF * 0.55 } }),
+    ...armholeNodes(sx, 3.5, t.qF, t.sisa, 2.2),
+    node({ x: qWF, y: waistY }, { notch: true }),
+    node({ x: qHF, y: hipY }),
+    node({ x: qHemF, y: hemY }),
+    node({ x: 0, y: hemY + 0.8 }, { notch: true }),
+  ]));
+  const back = mk("Espalda", 2, F, [
+    node({ x: 0, y: dB }, { notch: true, handleOut: { x: nB * 0.55, y: 0 } }),
+    node({ x: nB, y: 0 }, { notch: true, handleIn: { x: 0, y: dB * 0.55 } }),
+    ...armholeNodes(sx, 3.2, t.qB, t.sisa, 2),
+    node({ x: qWF + 1, y: waistY }, { notch: true }),
+    node({ x: qHF + 1, y: hipY }),
+    node({ x: qHemF + 1, y: hemY }),
+    node({ x: 0, y: hemY }, { notch: true }),
+  ]);
+
+  const facingF = mk("Vista de escote delantera", 1, "entretela termoadherible", fullFromHalf([
+    node({ x: 0, y: dF }, { handleOut: { x: nF * 0.55, y: 0 } }),
+    node({ x: nF, y: 0 }, { handleIn: { x: 0, y: dF * 0.55 } }),
+    node({ x: nF + 3.6, y: 0.9 }),
+    node({ x: nF + 2.2, y: 5.2 }, { handleOut: { x: -nF * 0.2, y: (dF - 0.6) * 0.5 } }),
+    node({ x: 0, y: dF + 4.6 }, { handleIn: { x: nF * 0.55, y: 0 } }),
+  ]));
+  const facingB = mk("Vista de escote espalda", 2, "entretela termoadherible", [
+    node({ x: 0, y: dB }, { handleOut: { x: nB * 0.55, y: 0 } }),
+    node({ x: nB, y: 0 }, { handleIn: { x: 0, y: dB * 0.55 } }),
+    node({ x: nB + 3.6, y: 0.9 }),
+    node({ x: nB + 2.2, y: 5 }),
+    node({ x: 0, y: dB + 4.6 }),
+  ]);
+
+  doc.pieces = layoutRows([[front, back], [facingF, facingB]]);
+  return doc;
+}
+
+// ─── sudadera con capucha ────────────────────────────────────────────────────
+
+/** Sudadera de hombro caído con capucha, bolsillo canguro, puños y pretina de rib. 7 piezas. */
+export function draftSudadera(m: BodyMeasurements): PatternDoc {
+  const doc = withSml(emptyDoc("Sudadera con capucha · desde medidas"));
+  const F = "french terry 280 gsm";
+  const RIB = "rib 1x1";
+  const t = torsoOf(m, 18);
+  const sx = t.hombro / 2 + 3;           // hombro caído
+  const nF = t.cuello / 6 + 1.5;
+  const dF = nF + 3;
+  const dB = 2;
+  const under = t.sisa + 4;
+  const hemY = t.largoT + 16;
+
+  const front = mk("Delantero", 1, F, fullFromHalf([
+    node({ x: 0, y: dF }, { notch: true, handleOut: { x: nF * 0.55, y: 0 } }),
+    node({ x: nF, y: 0 }, { notch: true, handleIn: { x: 0, y: dF * 0.55 } }),
+    ...armholeNodes(sx, 3, t.qF, under, 1.5),
+    node({ x: t.qF, y: hemY }),
+    node({ x: 0, y: hemY }, { notch: true }),
+  ]));
+  const back = mk("Espalda", 1, F, fullFromHalf([
+    node({ x: 0, y: dB }, { notch: true, handleOut: { x: nF * 0.55, y: 0 } }),
+    node({ x: nF, y: 0 }, { notch: true, handleIn: { x: 0, y: dB * 0.55 } }),
+    ...armholeNodes(sx, 2.8, t.qB, under, 1.3),
+    node({ x: t.qB, y: hemY }),
+    node({ x: 0, y: hemY }, { notch: true }),
+  ]));
+
+  const wrist = 20;
+  const sleeve = mk("Manga", 2, F, sleeveNodes(t.busto * 0.3 + 12, under * 0.38, t.largoManga - 8, wrist));
+
+  const s = t.cuello / 38;               // la capucha crece con el cuello
+  const hood = pieceFromPoints(
+    "Capucha",
+    [
+      { x: 0, y: 36 * s }, { x: 0, y: 12 * s }, { x: 6 * s, y: 2 * s }, { x: 20 * s, y: 0 },
+      { x: 32 * s, y: 8 * s }, { x: 36 * s, y: 24 * s }, { x: 34 * s, y: 36 * s }, { x: 18 * s, y: 38 * s },
+    ],
+    { closed: true, smooth: true, quantity: 2 },
+  );
+  hood.fabric = F;
+  const cuff = rectPiece("Puño de rib", { x: 0, y: 0 }, { x: wrist * 0.8, y: 8 });
+  cuff.quantity = 2; cuff.fabric = RIB;
+  const band = rectPiece("Pretina de rib", { x: 0, y: 0 }, { x: (t.qF + t.qB) * 2 * 0.85, y: 9 });
+  band.quantity = 1; band.fabric = RIB;
+  const pouch = pieceFromPoints(
+    "Bolsillo canguro",
+    [{ x: 4, y: 0 }, { x: 34, y: 0 }, { x: 38, y: 24 }, { x: 0, y: 24 }],
+    { closed: true, smooth: false },
+  );
+  pouch.fabric = F;
+
+  doc.pieces = layoutRows([[front, back, sleeve], [hood, cuff, band, pouch]]);
+  return doc;
+}
+
 // ─── catálogo de bloques (fuente de verdad para la UI) ──────────────────────
 
 export type BlockKind =
@@ -608,7 +1029,14 @@ export type BlockKind =
   | "pantalon-vestir"
   | "playera-basica"
   | "falda-recta"
-  | "blusa-clasica";
+  | "blusa-clasica"
+  | "chamarra-mezclilla"
+  | "short"
+  | "bermuda"
+  | "vestido-basico"
+  | "sudadera-capucha"
+  | "falda-a"
+  | "pants-jogger";
 
 export interface BlockMeta {
   kind: BlockKind;
@@ -618,6 +1046,8 @@ export interface BlockMeta {
   pieces: number;           // nº de piezas que genera
   fields: Array<keyof BodyMeasurements>; // qué medidas pide
   iconPath: string;         // SVG path (viewBox 0 0 24 24) para la galería
+  /** medidas de arranque propias de la prenda (p. ej. el largo de un short) */
+  defaults?: Partial<BodyMeasurements>;
 }
 
 export const BLOCK_CATALOG: readonly BlockMeta[] = [
@@ -666,7 +1096,83 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
     fields: ["busto", "cintura", "cadera", "hombro", "sisa", "largoTorso", "largoManga", "cuello"],
     iconPath: "M4 6l5-3 3 3 3-3 5 3-2 5-2-1v10H8V10l-2 1z",
   },
+  {
+    kind: "chamarra-mezclilla",
+    name: "Chamarra de mezclilla",
+    tag: "chamarra · mezclilla",
+    blurb: "Trucker con faja, bolsillos de pecho con solapa, cuello y puños. 9 piezas.",
+    pieces: 9,
+    fields: ["busto", "cintura", "hombro", "sisa", "largoTorso", "largoManga", "cuello"],
+    iconPath: "M3 7l5-3 4 2 4-2 5 3-1 5-2-1v9H6v-9l-2 1z",
+    defaults: { largoTorso: 44, largoManga: 62 },
+  },
+  {
+    kind: "short",
+    name: "Short",
+    tag: "short · mezclilla",
+    blurb: "Pierna recta y corta, con pretina y bolsillos traseros.",
+    pieces: 4,
+    fields: ["cintura", "cadera", "tiro", "largo", "muslo", "bajo"],
+    iconPath: "M7 3h10l1 8-1 9h-4l-1-8-1 8H7l-1-9z",
+    defaults: { largo: 45, muslo: 58, bajo: 31 },
+  },
+  {
+    kind: "bermuda",
+    name: "Bermuda",
+    tag: "bermuda · gabardina",
+    blurb: "Pierna recta a la rodilla, con pretina y bolsillos.",
+    pieces: 4,
+    fields: ["cintura", "cadera", "tiro", "largo", "muslo", "bajo"],
+    iconPath: "M7 3h10l1 10-1 8h-4l-1-9-1 9H7l-1-8z",
+    defaults: { largo: 58, muslo: 58, bajo: 29 },
+  },
+  {
+    kind: "vestido-basico",
+    name: "Vestido básico",
+    tag: "vestido · crepé",
+    blurb: "Sin mangas, entallado y con vuelo, con vistas de escote. 4 piezas.",
+    pieces: 4,
+    fields: ["busto", "cintura", "cadera", "hombro", "sisa", "largoTorso", "cuello", "largoFalda"],
+    iconPath: "M8 3h8l1 6-3 3 4 9H6l4-9-3-3z",
+    defaults: { largoFalda: 60 },
+  },
+  {
+    kind: "sudadera-capucha",
+    name: "Sudadera con capucha",
+    tag: "sudadera · french terry",
+    blurb: "Hombro caído, capucha, bolsillo canguro y rib en puños y pretina. 7 piezas.",
+    pieces: 7,
+    fields: ["busto", "cintura", "hombro", "sisa", "largoTorso", "largoManga", "cuello"],
+    iconPath: "M8 3l4 2 4-2 4 4-2 4-2-1v10H8V10l-2 1-2-4z",
+    defaults: { largoTorso: 44, largoManga: 62 },
+  },
+  {
+    kind: "falda-a",
+    name: "Falda en A",
+    tag: "falda · gabardina",
+    blurb: "Con vuelo, delantero al doblez, cierre atrás y pretina.",
+    pieces: 3,
+    fields: ["cintura", "cadera", "largoFalda"],
+    iconPath: "M8 3h8l1 4 3 14H4L7 7z",
+    defaults: { largoFalda: 55 },
+  },
+  {
+    kind: "pants-jogger",
+    name: "Pants jogger",
+    tag: "pants · french terry",
+    blurb: "Pierna ahusada con puño de tobillo y pretina elástica.",
+    pieces: 4,
+    fields: ["cintura", "cadera", "tiro", "largo", "muslo", "bajo"],
+    iconPath: "M8 3h8l1 7-1 10-3 1-1-8-1 8-3-1-1-10z",
+    defaults: { largo: 100, muslo: 62, bajo: 17 },
+  },
 ] as const;
+
+/** Medidas de arranque de una prenda: las de fábrica con las propias del bloque encima. */
+export function defaultMeasurementsFor(kind: BlockKind): BodyMeasurements {
+  const meta = BLOCK_CATALOG.find((b) => b.kind === kind);
+  return { ...DEFAULT_MEASUREMENTS, ...(meta?.defaults ?? {}) };
+}
 
 /** Punto de entrada por tipo de prenda.
  *  Marca el `blockKind` en el documento para que el editor sepa qué
@@ -679,6 +1185,13 @@ function draftBlockRaw(kind: BlockKind, m: BodyMeasurements): PatternDoc {
     case "playera-basica":  doc = draftPlayeraBasica(m); break;
     case "falda-recta":     doc = draftFaldaRecta(m); break;
     case "blusa-clasica":   doc = draftBlusaClasica(m); break;
+    case "chamarra-mezclilla": doc = draftChamarraMezclilla(m); break;
+    case "short":           doc = draftShort(m); break;
+    case "bermuda":         doc = draftBermuda(m); break;
+    case "vestido-basico":  doc = draftVestidoBasico(m); break;
+    case "sudadera-capucha": doc = draftSudadera(m); break;
+    case "falda-a":         doc = draftFaldaA(m); break;
+    case "pants-jogger":    doc = draftPantsJogger(m); break;
   }
   doc.blockKind = kind;
   return doc;
@@ -776,6 +1289,19 @@ export const GRADE_RULES: Record<BlockKind, Deltas> = {
     busto: 4, cintura: 4, cadera: 4, hombro: 1, sisa: 0.8, largoTorso: 1,
     largoManga: 1, cuello: 1,
   },
+  "chamarra-mezclilla": {
+    busto: 4, cintura: 4, hombro: 1, sisa: 0.8, largoTorso: 1, largoManga: 1, cuello: 1,
+  },
+  short: { cintura: 4, cadera: 4, tiro: 0.5, largo: 0.5, muslo: 2, bajo: 1 },
+  bermuda: { cintura: 4, cadera: 4, tiro: 0.5, largo: 0.8, muslo: 2, bajo: 1 },
+  "vestido-basico": {
+    busto: 4, cintura: 4, cadera: 4, hombro: 1, sisa: 0.8, largoTorso: 1, cuello: 1, largoFalda: 1,
+  },
+  "sudadera-capucha": {
+    busto: 4, cintura: 4, hombro: 1, sisa: 0.8, largoTorso: 1, largoManga: 1, cuello: 1,
+  },
+  "falda-a": { cintura: 4, cadera: 4, largoFalda: 0.5 },
+  "pants-jogger": { cintura: 4, cadera: 4, tiro: 0.5, largo: 1, muslo: 2, bajo: 0.5 },
 };
 
 /** Reglas efectivas (cm por talla) de un bloque: las de fábrica con las editadas encima. */
@@ -891,6 +1417,26 @@ export const PIECE_LIBRARY: readonly LibraryEntry[] = [
   fromBlock("blusa-clasica", "Pie de cuello", "Pie de cuello", "Cuellos", "Blusa clásica"),
   fromBlock("blusa-clasica", "Puño", "Puño de camisa", "Puños y vistas", "Blusa clásica"),
   fromBlock("blusa-clasica", "Vista", "Vista delantera", "Puños y vistas", "Blusa clásica"),
+  fromBlock("chamarra-mezclilla", "Bolsillo de pecho", "Bolsillo de pecho", "Bolsillos", "Chamarra de mezclilla"),
+  fromBlock("chamarra-mezclilla", "Solapa", "Solapa de bolsillo", "Bolsillos", "Chamarra de mezclilla"),
+  fromBlock("sudadera-capucha", "Bolsillo canguro", "Bolsillo canguro", "Bolsillos", "Sudadera con capucha"),
+  fromBlock("chamarra-mezclilla", "Cuello", "Cuello de chamarra", "Cuellos", "Chamarra de mezclilla"),
+  fromBlock("sudadera-capucha", "Capucha", "Capucha", "Cuellos", "Sudadera con capucha"),
+  fromBlock("sudadera-capucha", "Delantero", "Delantero de sudadera", "Delanteros", "Sudadera con capucha"),
+  fromBlock("vestido-basico", "Delantero", "Delantero de vestido", "Delanteros", "Vestido básico"),
+  fromBlock("chamarra-mezclilla", "Delantero", "Delantero de chamarra", "Delanteros", "Chamarra de mezclilla"),
+  fromBlock("short", "Delantero", "Delantero de short", "Delanteros", "Short"),
+  fromBlock("vestido-basico", "Espalda", "Espalda de vestido", "Espaldas", "Vestido básico"),
+  fromBlock("sudadera-capucha", "Espalda", "Espalda de sudadera", "Espaldas", "Sudadera con capucha"),
+  fromBlock("chamarra-mezclilla", "Espalda", "Espalda de chamarra", "Espaldas", "Chamarra de mezclilla"),
+  fromBlock("short", "Espalda", "Espalda de short", "Espaldas", "Short"),
+  fromBlock("chamarra-mezclilla", "Manga", "Manga de chamarra", "Mangas", "Chamarra de mezclilla"),
+  fromBlock("sudadera-capucha", "Manga", "Manga de sudadera", "Mangas", "Sudadera con capucha"),
+  fromBlock("chamarra-mezclilla", "Puño", "Puño de chamarra", "Puños y vistas", "Chamarra de mezclilla"),
+  fromBlock("sudadera-capucha", "Puño de rib", "Puño de rib", "Puños y vistas", "Sudadera con capucha"),
+  fromBlock("vestido-basico", "Vista de escote delantera", "Vista de escote", "Puños y vistas", "Vestido básico"),
+  fromBlock("pants-jogger", "Puño de tobillo", "Puño de tobillo", "Complementos", "Pants jogger"),
+  fromBlock("pants-jogger", "Pretina elástica", "Pretina elástica", "Complementos", "Pants jogger"),
   {
     id: "generico:bolsillo-parche",
     name: "Bolsillo parche",
@@ -944,4 +1490,4 @@ export const LIBRARY_CATEGORIES: readonly LibraryCategory[] = [
   "Complementos",
 ];
 
-export const VERSION = "0.5.0";
+export const VERSION = "0.6.0";
