@@ -55,6 +55,14 @@ export function clonePiece(piece: Piece, name = piece.name): Piece {
 
 const hasLen = (v: Vec2 | undefined): v is Vec2 => !!v && Math.hypot(v.x, v.y) > EPS;
 
+/** Regla de graduación de un nodo nuevo entre `a` y `b` (interpolada); undefined si ninguno tiene. */
+function lerpGrade(a: Node, b: Node, t: number): { dx: number; dy: number } | undefined {
+  if (!a.grade && !b.grade) return undefined;
+  const ga = a.grade ?? { dx: 0, dy: 0 };
+  const gb = b.grade ?? { dx: 0, dy: 0 };
+  return { dx: ga.dx + (gb.dx - ga.dx) * t, dy: ga.dy + (gb.dy - ga.dy) * t };
+}
+
 // ─── transformaciones de pieza ───────────────────────────────────────────────
 
 export function pieceCenter(piece: Piece): Vec2 {
@@ -156,7 +164,8 @@ export function insertNodeOnSegment(
   const b = piece.nodes[(segIndex + 1) % n]!;
   // segmento recto: el nodo nuevo es un vértice simple, sin handles
   if (!hasLen(a.handleOut) && !hasLen(b.handleIn)) {
-    const straight = makeNode(lerp(a.at, b.at, t));
+    const sg = lerpGrade(a, b, t);
+    const straight = makeNode(lerp(a.at, b.at, t), sg ? { grade: sg } : undefined);
     const nodes = [...piece.nodes];
     nodes.splice(segIndex + 1, 0, straight);
     return { piece: { ...piece, nodes }, nodeId: straight.id };
@@ -170,6 +179,8 @@ export function insertNodeOnSegment(
   const s = lerp(r0, r1, t);
 
   const extra: Partial<Omit<Node, "id" | "at">> = {};
+  const g = lerpGrade(a, b, t);
+  if (g) extra.grade = g;
   const inH = sub(r0, s);
   const outH = sub(r1, s);
   if (hasLen(inH)) extra.handleIn = inH;
@@ -386,4 +397,61 @@ export function removeLabel(piece: Piece, labelId: string): Piece {
 export function labelBox(label: PieceLabel, at: Vec2) {
   const w = Math.max(label.size, label.text.length * label.size * 0.55);
   return { minX: at.x, maxX: at.x + w, minY: at.y - label.size, maxY: at.y + label.size * 0.25 };
+}
+
+// ─── pinzas ──────────────────────────────────────────────────────────────────
+
+/** Largo aproximado de un segmento del contorno. */
+function segmentLength(piece: Piece, segIndex: number): number {
+  const n = piece.nodes.length;
+  const a = piece.nodes[segIndex]!;
+  const b = piece.nodes[(segIndex + 1) % n]!;
+  const c = segmentBezier(a.at, b.at, a.handleOut, b.handleIn);
+  let len = 0;
+  let prev = c.p0;
+  for (let i = 1; i <= 24; i++) {
+    const q = evalBezier(c, i / 24);
+    len += dist(prev, q);
+    prev = q;
+  }
+  return len;
+}
+
+/** Dirección unitaria del contorno en el punto t de un segmento. */
+export function segmentTangent(piece: Piece, segIndex: number, t: number): Vec2 {
+  const n = piece.nodes.length;
+  const a = piece.nodes[segIndex]!;
+  const b = piece.nodes[(segIndex + 1) % n]!;
+  const c = segmentBezier(a.at, b.at, a.handleOut, b.handleIn);
+  const t0 = Math.max(0, t - 0.01);
+  const t1 = Math.min(1, t + 0.01);
+  return normalize(sub(evalBezier(c, t1), evalBezier(c, t0)));
+}
+
+/**
+ * Abre una pinza en el contorno: en el punto `t` del segmento `segIndex` se corta
+ * una "V" de `width` cm de boca cuyo vértice (la punta) está en `apex`. Devuelve la
+ * pieza nueva, o null si la boca no cabe en ese segmento.
+ */
+export function addDart(piece: Piece, segIndex: number, t: number, width: number, apex: Vec2): Piece | null {
+  if (!piece.closed || width <= 0) return null;
+  const len = segmentLength(piece, segIndex);
+  if (len <= 0) return null;
+  const half = width / 2 / len;
+  const tA = t - half;
+  const tB = t + half;
+  if (tA < 0.01 || tB > 0.99) return null;
+
+  // primero el punto más lejano (B), luego A sobre el tramo que queda antes de B
+  const withB = insertNodeOnSegment(piece, segIndex, tB).piece;
+  const withA = insertNodeOnSegment(withB, segIndex, tA / tB).piece;
+  const nodes = [...withA.nodes];
+  const A = nodes[segIndex + 1]!;
+  const B = nodes[segIndex + 2]!;
+  const ga = A.grade ?? { dx: 0, dy: 0 };
+  const gb = B.grade ?? { dx: 0, dy: 0 };
+  const hasGrade = !!(A.grade || B.grade);
+  const tip = makeNode(apex, hasGrade ? { grade: { dx: (ga.dx + gb.dx) / 2, dy: (ga.dy + gb.dy) / 2 } } : undefined);
+  nodes.splice(segIndex + 2, 0, tip);
+  return { ...piece, nodes };
 }

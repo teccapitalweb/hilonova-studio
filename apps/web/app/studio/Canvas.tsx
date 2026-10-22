@@ -18,6 +18,7 @@ import {
   add,
   dist,
   nearestSegment,
+  segmentTangent,
   pointInPiece,
   smoothNodesFromPoints,
   emptyPiece,
@@ -35,7 +36,7 @@ const EDGE_PX = 10;
 
 const TOOL_KEYS: Record<string, Tool> = {
   v: "select", h: "pan", n: "notch", l: "line", c: "curve",
-  r: "rect", o: "circle", a: "addnode", m: "measure", t: "text",
+  r: "rect", o: "circle", a: "addnode", m: "measure", t: "text", p: "dart",
 };
 
 type Drag =
@@ -53,7 +54,7 @@ export default function Canvas() {
   const draw = useEditor((s) => s);
   const {
     zoom, pan, gridStep, snapGrid, showSeam, showNest, activeSizes, measurements, tool,
-    selectedPieceId, selectedNodeId, blockKind, draft, cursor, multi, selectedLabel,
+    selectedPieceId, selectedNodeId, blockKind, draft, cursor, multi, selectedLabel, dartWidth,
     setCursor, setPan, setZoom, selectNode, selectPiece, clearSelection, toggleNotch, toggleSelectPiece,
   } = draw;
   const doc = useEditor((s) => s.history.present);
@@ -309,6 +310,22 @@ export default function Canvas() {
           `${Math.abs(draft.a.x - draft.b.x).toFixed(1)} × ${Math.abs(draft.a.y - draft.b.y).toFixed(1)} cm`,
           Math.max(a.x, b.x) + 8, Math.max(a.y, b.y) + 14,
         );
+      } else if (draft.kind === "dart") {
+        const base = toPx(draft.base);
+        const hw = dartWidth / 2;
+        const l1 = toPx({ x: draft.base.x - draft.dir.x * hw, y: draft.base.y - draft.dir.y * hw });
+        const l2 = toPx({ x: draft.base.x + draft.dir.x * hw, y: draft.base.y + draft.dir.y * hw });
+        ctx.beginPath(); ctx.arc(base.x, base.y, 4, 0, Math.PI * 2); ctx.fill();
+        if (cursor) {
+          const tip = toPx(cursor);
+          ctx.setLineDash([5, 3]);
+          ctx.beginPath();
+          ctx.moveTo(l1.x, l1.y); ctx.lineTo(tip.x, tip.y); ctx.lineTo(l2.x, l2.y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.font = "11px ui-monospace, monospace";
+          ctx.fillText(`pinza ${dartWidth} cm`, tip.x + 8, tip.y - 6);
+        }
       } else if (draft.kind === "marquee") {
         const a = toPx(draft.a), b = toPx(draft.b);
         ctx.fillStyle = "rgba(125,227,255,.08)";
@@ -338,7 +355,7 @@ export default function Canvas() {
       }
       ctx.restore();
     }
-  }, [doc, zoom, pan, gridStep, selectedPieceId, selectedNodeId, showSeam, showNest, activeSizes, measurements, blockKind, draft, cursor, multi, selectedLabel]);
+  }, [doc, zoom, pan, gridStep, selectedPieceId, selectedNodeId, showSeam, showNest, activeSizes, measurements, blockKind, draft, cursor, multi, selectedLabel, dartWidth]);
 
   // ─── resize observer (redraw al cambiar tamaño) ──────────────────────────
   useEffect(() => {
@@ -427,6 +444,46 @@ export default function Canvas() {
       const p = snapPoint(world);
       st.setDraft({ kind: "measure", a: p, b: p });
       dragState.current = { kind: "measure", startPx: pxStart, origin: p };
+      return;
+    }
+    if (tool === "dart") {
+      const d = st.draft;
+      if (d?.kind !== "dart") {
+        // 1.er clic: dónde va la boca de la pinza, sobre el contorno
+        let best: { pieceId: string; seg: number; t: number; d: number; pt: Vec2 } | null = null;
+        for (const piece of doc.pieces) {
+          if (!piece.closed) continue;
+          const hit = nearestSegment(piece, world);
+          if (hit && (!best || hit.distance < best.d)) best = { pieceId: piece.id, seg: hit.segIndex, t: hit.t, d: hit.distance, pt: hit.point };
+        }
+        if (best && best.d * zoom < EDGE_PX * 1.5) {
+          const piece = doc.pieces.find((p) => p.id === best!.pieceId)!;
+          st.setNotice(null);
+          st.setDraft({
+            kind: "dart",
+            pieceId: best.pieceId,
+            segIndex: best.seg,
+            t: best.t,
+            base: best.pt,
+            dir: segmentTangent(piece, best.seg, best.t),
+          });
+        } else {
+          st.setNotice("Haz clic sobre el contorno de una pieza, donde irá la boca de la pinza.");
+        }
+        return;
+      }
+      // 2.º clic: la punta de la pinza, dentro de la pieza
+      const piece = doc.pieces.find((p) => p.id === d.pieceId);
+      if (!piece) { st.setDraft(null); return; }
+      const apex = snapPoint(world);
+      if (!pointInPiece(piece, apex)) {
+        st.setNotice("La punta de la pinza debe quedar dentro de la pieza.");
+        return;
+      }
+      if (!st.addDartAt(d.pieceId, d.segIndex, d.t, apex)) {
+        st.setDraft(null);
+        st.setNotice("La pinza es más ancha que ese tramo del contorno: reduce el ancho o elige un tramo más largo.");
+      }
       return;
     }
     if (tool === "text") {

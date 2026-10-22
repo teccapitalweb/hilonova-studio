@@ -29,6 +29,7 @@ import {
   rotatePiece,
   rotatePieceAbout,
   piecesCenter,
+  addDart,
   addLabelToPiece,
   updateLabel,
   moveLabel,
@@ -82,7 +83,7 @@ export const SIZE_COLORS: Record<string, string> = {
 
 export type Tool =
   | "select" | "pan" | "notch"
-  | "line" | "curve" | "rect" | "circle" | "addnode" | "measure" | "text";
+  | "line" | "curve" | "rect" | "circle" | "addnode" | "measure" | "text" | "dart";
 
 /** Trazo en construcción (todavía no es parte del documento). */
 export type Draft =
@@ -90,7 +91,8 @@ export type Draft =
   | { kind: "rect"; a: Vec2; b: Vec2 }
   | { kind: "circle"; c: Vec2; r: number }
   | { kind: "measure"; a: Vec2; b: Vec2 }
-  | { kind: "marquee"; a: Vec2; b: Vec2 };
+  | { kind: "marquee"; a: Vec2; b: Vec2 }
+  | { kind: "dart"; pieceId: string; segIndex: number; t: number; base: Vec2; dir: Vec2 };
 export type View =
   | "proyectos" | "editor" | "graduacion" | "trazo" | "produccion"
   | "materiales" | "libreria" | "reportes" | "config";
@@ -107,6 +109,14 @@ interface EditorState {
   selectedPieceId: string | null;
   /** piezas seleccionadas además de la principal (selección múltiple) */
   multi: string[];
+  /** ancho de la boca de la pinza, cm */
+  dartWidth: number;
+  setDartWidth(w: number): void;
+  /** aviso breve para la barra de estado (p. ej. por qué no se pudo hacer algo) */
+  notice: string | null;
+  setNotice(msg: string | null): void;
+  /** abre una pinza en el contorno; devuelve false si no cabe */
+  addDartAt(pieceId: string, segIndex: number, t: number, apex: Vec2): boolean;
   /** texto seleccionado (pertenece a una pieza) */
   selectedLabel: { pieceId: string; labelId: string } | null;
   /** portapapeles de piezas (copiar y pegar) */
@@ -273,6 +283,28 @@ export const useEditor = create<EditorState>((set, get) => ({
   selectedPieceId: null,
   multi: [],
   selectedLabel: null,
+  dartWidth: 2.5,
+  setDartWidth: (w) => set({ dartWidth: Math.max(0.5, Math.min(12, w)) }),
+  notice: null,
+  setNotice: (msg) => set({ notice: msg }),
+  addDartAt: (pieceId, segIndex, t, apex) => {
+    const { history, saved, dartWidth } = get();
+    const piece = history.present.pieces.find((p) => p.id === pieceId);
+    if (!piece) return false;
+    const next = addDart(piece, segIndex, t, dartWidth, apex);
+    if (!next) return false;
+    set({
+      history: hCommit(history, setPieceNodes(history.present, pieceId, next.nodes)),
+      selectedPieceId: pieceId,
+      multi: [],
+      selectedNodeId: null,
+      selectedLabel: null,
+      draft: null,
+      notice: null,
+      saved: { ...saved, dirty: true },
+    });
+    return true;
+  },
   clipboard: [],
   pasteCount: 0,
   selectedNodeId: null,
@@ -300,7 +332,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   canUndo: () => hCanUndo(get().history),
   canRedo: () => hCanRedo(get().history),
 
-  setTool: (tool) => set({ tool, draft: null }),
+  setTool: (tool) => set({ tool, draft: null, notice: null }),
   setZoom: (zoom) => set({ zoom: Math.max(0.5, Math.min(60, zoom)) }),
   setPan: (pan) => set({ pan }),
   setCursor: (cursor) => set({ cursor }),

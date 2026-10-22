@@ -316,6 +316,9 @@ function ToolRail() {
           <path d="M12 3v6M9 6h6" {...st} />
         </svg>
       </RailBtn>
+      <RailBtn active={tool === "dart"} onClick={() => setTool("dart")} title="Pinza: clic en el contorno (boca) y luego dentro de la pieza (punta) (P)">
+        <svg {...ic}><path d="M4 6h5l3 12 3-12h5" {...st} /></svg>
+      </RailBtn>
       <RailBtn active={tool === "notch"} onClick={() => setTool("notch")} title="Piquete: clic en un nodo (N)">
         <svg {...ic}><path d="M12 4v16M9 8l3-4 3 4" {...st} /></svg>
       </RailBtn>
@@ -668,6 +671,9 @@ function PropsPanel() {
   const paste = useEditor((s) => s.pasteClipboard);
   const clipCount = useEditor((s) => s.clipboard.length);
   const count = (pieceId ? 1 : 0) + multi.length;
+  const tool = useEditor((s) => s.tool);
+  const dartWidth = useEditor((s) => s.dartWidth);
+  const setDartWidth = useEditor((s) => s.setDartWidth);
   const selLabel = useEditor((s) => s.selectedLabel);
   const patchLabel = useEditor((s) => s.patchSelectedLabel);
   const delLabel = useEditor((s) => s.deleteSelectedLabel);
@@ -683,6 +689,18 @@ function PropsPanel() {
       <div className="st-side-h">
         <span>Propiedades</span>
       </div>
+      {tool === "dart" && (
+        <div className="st-group">
+          <div className="st-label">Pinza</div>
+          <EditField name="Ancho de la boca">
+            <NumInput value={dartWidth} step={0.5} min={0.5} max={12} unit="cm" onCommit={setDartWidth} />
+          </EditField>
+          <p className="st-hint">
+            1.º clic en el contorno donde va la boca; 2.º clic dentro de la pieza para la punta.
+            Si la pieza queda con la pinza abierta, así sale en el DXF y en el PDF.
+          </p>
+        </div>
+      )}
       {label && (
         <div className="st-group">
           <div className="st-label">Texto</div>
@@ -875,10 +893,12 @@ const TOOL_HINT: Record<Tool, string> = {
   addnode: "Clic sobre un contorno para agregar un nodo",
   measure: "Arrastra para medir una distancia",
   text: "Clic sobre una pieza para agregar un texto (nota, medida, instrucción)",
+  dart: "Pinza: 1.º clic en el contorno (la boca) · 2.º clic dentro de la pieza (la punta) · el ancho se cambia a la derecha",
 };
 
 function StatusBar() {
   const tool = useEditor((s) => s.tool);
+  const notice = useEditor((s) => s.notice);
   const cursor = useEditor((s) => s.cursor);
   const zoom = useEditor((s) => s.zoom);
   const snap = useEditor((s) => s.snapGrid);
@@ -896,7 +916,7 @@ function StatusBar() {
       <span className="st-sep" />
       <span className={snap ? "ok" : "mut"}>snap {snap ? "on" : "off"}</span>
       <span className="st-sep" />
-      <span className="mut">{TOOL_HINT[tool]}</span>
+      {notice ? <span style={{ color: "#ffb08a" }}>{notice}</span> : <span className="mut">{TOOL_HINT[tool]}</span>}
       <span className="st-sep" />
       <span className="ok">● motor v0.5 activo</span>
     </footer>
