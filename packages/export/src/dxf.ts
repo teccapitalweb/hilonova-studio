@@ -9,7 +9,7 @@
 // moderno respeta el header "$INSUNITS" para interpretar correctamente.
 
 import type { PatternDoc, Piece, Vec2 } from "@hilonova/geometry";
-import { samplePath, offsetPolyline } from "@hilonova/geometry";
+import { samplePath, offsetPolyline, gradeDoc, compareSizes } from "@hilonova/geometry";
 
 const UNIT_CODE: Record<string, number> = { cm: 5, mm: 4, in: 1 };
 
@@ -84,7 +84,7 @@ function text(at: Vec2, value: string, height: number, layer: string): string {
   );
 }
 
-function pieceEntities(piece: Piece, offset: Vec2): string {
+function pieceEntities(piece: Piece, offset: Vec2, label = ""): string {
   const pts = samplePath(piece, 24).map((p) => ({ x: p.x + offset.x, y: p.y + offset.y }));
   if (pts.length < 2) return "";
   let out = "";
@@ -98,14 +98,20 @@ function pieceEntities(piece: Piece, offset: Vec2): string {
     out += polyline(seam, "15_SeamAllowance", true);
   }
 
-  // 5 - Grainline (vertical centrada en el bounding box)
+  // 5 - Grainline (centrada en el bounding box, con el ángulo de la pieza; 0° = vertical)
   const minX = Math.min(...pts.map((p) => p.x));
   const maxX = Math.max(...pts.map((p) => p.x));
   const minY = Math.min(...pts.map((p) => p.y));
   const maxY = Math.max(...pts.map((p) => p.y));
   const cx = (minX + maxX) / 2;
   const h = maxY - minY;
-  out += line({ x: cx, y: minY + h * 0.1 }, { x: cx, y: maxY - h * 0.1 }, "5_Grainline");
+  if (piece.closed) {
+    const cy = (minY + maxY) / 2;
+    const a = (piece.grainAngle * Math.PI) / 180;
+    const ux = Math.sin(a) * h * 0.4;
+    const uy = -Math.cos(a) * h * 0.4;
+    out += line({ x: cx - ux, y: cy - uy }, { x: cx + ux, y: cy + uy }, "5_Grainline");
+  }
 
   // 4 - Notches (línea perpendicular corta hacia fuera, aproximada)
   for (const n of piece.nodes) {
@@ -118,7 +124,7 @@ function pieceEntities(piece: Piece, offset: Vec2): string {
   // 8 - Text (nombre y cantidad arriba del centro)
   out += text(
     { x: cx - h * 0.08, y: minY - 1.5 },
-    `${piece.name.toUpperCase()} ×${piece.quantity}`,
+    `${piece.name.toUpperCase()} ×${piece.quantity}${label}`,
     Math.max(1.2, h * 0.025),
     "8_Text",
   );
@@ -146,5 +152,38 @@ export function exportDxfAama(doc: PatternDoc, opts: DxfOptions = {}): string {
   }
   entities += pair(0, "ENDSEC");
 
+  return header(doc.unit) + tables() + entities + pair(0, "EOF");
+}
+
+/**
+ * DXF con todas las tallas del documento (graduado): cada talla va en su propia
+ * franja horizontal, de la menor a la mayor, con el nombre de la talla en el
+ * rótulo de cada pieza. Usa las reglas de graduación de los nodos.
+ */
+export function exportDxfGraded(doc: PatternDoc, opts: DxfOptions = {}): string {
+  const gap = opts.gap ?? 5;
+  const sizes = [...doc.sizes].sort(compareSizes);
+  let entities = pair(0, "SECTION") + pair(2, "ENTITIES");
+
+  let cursorY = 0;
+  for (const size of sizes) {
+    const graded = gradeDoc(doc, size);
+    let cursorX = 0;
+    let maxH = 0;
+    for (const piece of graded.pieces) {
+      const pts = samplePath(piece, 12);
+      if (pts.length < 2) continue;
+      const minX = Math.min(...pts.map((p) => p.x));
+      const minY = Math.min(...pts.map((p) => p.y));
+      const w = Math.max(...pts.map((p) => p.x)) - minX;
+      const h = Math.max(...pts.map((p) => p.y)) - minY;
+      // cada pieza se normaliza a su esquina para que las tallas no se encimen
+      entities += pieceEntities(piece, { x: cursorX - minX, y: cursorY - minY }, ` · talla ${size}`);
+      cursorX += w + gap;
+      maxH = Math.max(maxH, h);
+    }
+    cursorY += maxH + gap * 3;
+  }
+  entities += pair(0, "ENDSEC");
   return header(doc.unit) + tables() + entities + pair(0, "EOF");
 }
