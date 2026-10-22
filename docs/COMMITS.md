@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 49
+> Rama: `dev/mvp-9-nov` · Commits: 51
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,36 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## docs: paquete de prueba de los DXF en Gerber
+
+- Commit: `a62df70`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: carpeta docs/prueba-gerber con 12 archivos DXF (6 prendas: falda recta, falda en A,
+blusa clásica, camisa de hombre, pantalón de vestir y playera básica, cada una en talla base
+y graduada) y PRUEBA.md con los pasos, las medidas esperadas por pieza, la tabla de
+resultados y los puntos donde ya se sabe que puede fallar (unidades, graduado, formato AAMA).
+Por qué: los DXF solo se han validado con pruebas propias; falta abrirlos en Gerber.
+Verificación: archivos generados con el exportador de la app; las medidas de la tabla salen
+del mismo patrón. La prueba en Gerber la hace quien tenga el programa.
+Archivos: docs/prueba-gerber/*
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `f93672d`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md con la eliminación de la vista 3D.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## revert: quitar la vista 3D
 
