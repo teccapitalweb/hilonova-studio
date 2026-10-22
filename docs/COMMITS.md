@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 19
+> Rama: `dev/mvp-9-nov` · Commits: 22
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,67 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## feat(studio): menú lateral, Proyectos, Materiales, Librería, Reportes, Configuración y Producción
+
+- Commit: `0feb0e3`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: el studio gana el menú lateral del concepto (Proyectos, Patronaje 2D,
+Graduación, Trazo, Producción, Materiales, Librería, Reportes, Configuración) y
+las pestañas Diseño/Graduación/Trazo/Producción. Proyectos: abrir, duplicar,
+eliminar, nuevo en blanco o desde prenda. Materiales: telas, forros, entretelas
+y avíos con ancho y precio; el Trazo los puede elegir. Librería: piezas de
+fábrica con vista previa y "mis piezas" (guardar desde el editor). Reportes:
+consumo y costo de tela por talla, listado de piezas, CSV e impresión.
+Configuración: rejilla, snap, margen de costura, ancho de tela, y respaldo
+completo/restauración e importación/exportación de proyectos en .hilonova.json.
+Producción: ficha técnica y variantes de modelo (guardar como variante nueva,
+usar, guardar cambios, duplicar, eliminar, consumo comparado). Las medidas del
+proyecto se restauran al abrirlo. Se corrigieron dos acciones del store
+(toggleNotch y applyMeasurements) y applyMeasurements conserva variantes.
+Por qué: el producto pide el menú lateral completo, variantes de modelo y que el
+trabajo no se pierda (sin cuentas en la nube, el respaldo en archivo es clave).
+Verificación: tsc y build de producción OK. En el navegador se recorrieron las
+cinco pantallas; con una blusa se guardó "Modelo base" (7 piezas) y "Sin vista"
+(6 piezas) y al cambiar de variante el editor volvió a 7 piezas.
+Limitaciones: no hay vista 3D; datos solo en este navegador; sin Stripe.
+Archivos: apps/web/app/studio/{Shell,store,Proyectos,Materiales,Libreria,
+Reportes,Config,Produccion,thumbs,Trazo,nesting}.ts(x), studio.css,
+apps/web/app/lib/{collection,materials,pieces,prefs,library}.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## feat(engine): el proyecto guarda sus medidas y variantes de modelo
+
+- Commit: `6946dd8`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: PatternDoc suma measurements (medidas con las que se dibujó), variants y
+activeVariant (variantes de modelo con una foto de piezas, tallas, reglas y
+medidas). draftBlock guarda las medidas en el documento.
+Por qué: al reabrir un proyecto las medidas volvían a las de fábrica, y la
+tabla de tallaje, la ficha y el tech pack salían con datos equivocados; además
+el producto pide variantes de modelo.
+Verificación: tsc sin errores en todos los paquetes.
+Archivos: packages/geometry/src/doc.ts, packages/blocks/src/index.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `5a218af`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md con los commits de trazo y DXF graduado.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## feat(export): DXF graduado con todas las tallas y hilo con ángulo
 
