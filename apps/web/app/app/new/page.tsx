@@ -12,7 +12,7 @@ import { useSession } from "../../lib/auth";
 import { saveItem } from "../../lib/library";
 import {
   BLOCK_CATALOG,
-  DEFAULT_MEASUREMENTS,
+  defaultMeasurementsFor,
   draftBlock,
   type BlockKind,
 } from "@hilonova/blocks";
@@ -36,7 +36,7 @@ export default function NewPatternPage() {
     setBusy(kind);
     // generamos con un pequeño delay para dejar que la UI muestre el loading
     setTimeout(() => {
-      const doc = draftBlock(kind, DEFAULT_MEASUREMENTS);
+      const doc = draftBlock(kind, defaultMeasurementsFor(kind));
       const id = saveItem(doc, name);
       router.push(`/studio?id=${id}`);
     }, 180);
@@ -64,7 +64,7 @@ export default function NewPatternPage() {
           </Link>
           <h1>Elige un bloque para empezar.</h1>
           <p>
-            Cada bloque parte de medidas estándar talla 32. Puedes editar
+            Cada bloque parte de las medidas estándar de su talla base. Puedes editar
             cada medida después y el patrón se redibuja al instante.
           </p>
         </section>

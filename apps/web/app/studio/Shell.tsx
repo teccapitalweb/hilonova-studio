@@ -376,7 +376,7 @@ const FIELD_META: Record<keyof BodyMeasurements, { label: string; min: number; m
   largoTorso:  { label: "Largo torso",  min: 32, max: 58, step: 0.5 },
   largoManga:  { label: "Largo manga",  min: 20, max: 85, step: 0.5 },
   tiro:        { label: "Tiro",         min: 18, max: 35, step: 0.5 },
-  largo:       { label: "Largo total",  min: 70, max: 120, step: 0.5 },
+  largo:       { label: "Largo total",  min: 30, max: 120, step: 0.5 },
   muslo:       { label: "Muslo",        min: 42, max: 80, step: 0.5 },
   bajo:        { label: "Abertura bajo", min: 12, max: 32, step: 0.5 },
   largoFalda:  { label: "Largo falda",  min: 35, max: 110, step: 0.5 },
