@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 29
+> Rama: `dev/mvp-9-nov` · Commits: 31
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,45 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## fix(engine): margen de costura siempre hacia afuera y DXF compatible con R12
+
+- Commit: `872e0d1`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: offsetPolyline detecta el sentido del contorno con el área con signo, así
+que un margen positivo siempre queda por fuera de la pieza (antes dependía de
+cómo se dibujó: en muchas piezas quedaba hacia adentro). El DXF escribe las
+polilíneas como POLYLINE + VERTEX + SEQEND (R12), que coincide con la cabecera
+AC1009 y lo leen todos los CAD, en vez de LWPOLYLINE (R14). Los rótulos del DXF
+se pasan a ASCII (sin acentos ni símbolos: "Puño" → "PUNO", "×" → "x").
+Por qué: al revisar el DXF descargado se vio que la línea del margen de costura
+caía dentro del contorno, lo que también achicaba las piezas que usa el trazo
+para calcular consumo; y la cabecera declaraba R12 pero el archivo usaba una
+entidad de R14.
+Verificación: tsc OK y build OK. Se generó de nuevo el DXF graduado de la falda en
+A y se validó con un lector propio: 24 polilíneas cerradas, 3288 vértices,
+sin observaciones, 0 caracteres no ASCII, las 12 piezas con margen por fuera
+(p. ej. 2905 cm² de contorno → 3123 cm² con costura). No se probó en Gerber ni
+Lectra reales. Los consumos del trazo cambian (ahora se acomodan las piezas con
+su margen real).
+Archivos: packages/geometry/src/offset.ts, packages/export/src/dxf.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `48e2f59`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md con las cinco prendas nuevas.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## feat(blocks): camisa de hombre, camisa manga corta, polo, chaleco y pantalón cargo
 
