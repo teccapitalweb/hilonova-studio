@@ -22,6 +22,7 @@ export function MeasurementSilhouette({ kind, activeField }: Props) {
     case "pantalon-vestir":
       return <SilPantalon active={activeField} slim={kind === "pantalon-denim"} body={body} />;
     case "playera-basica":
+    case "blusa-clasica":
       return <SilPlayera active={activeField} body={body} />;
     case "falda-recta":
       return <SilFalda active={activeField} body={body} />;

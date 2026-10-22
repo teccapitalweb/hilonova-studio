@@ -7,9 +7,40 @@ import {
   emptyDoc,
   emptyPiece,
   node,
+  type Node,
   type PatternDoc,
   type Piece,
 } from "@hilonova/geometry";
+
+// ─── tallas ──────────────────────────────────────────────────────────────────
+
+/** Escala alfabética de tallas (un paso de graduación por talla). */
+export const ALPHA_SIZES: readonly string[] = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL"];
+
+const alphaIndex = (size: string): number => ALPHA_SIZES.indexOf(size.toUpperCase());
+
+/**
+ * Pasos de graduación entre una talla y la base.
+ * - Tallas alfabéticas (S, M, L, XL): 1 paso por talla.
+ * - Tallas numéricas (28, 30, 32…): 1 paso cada 2 números.
+ */
+export function sizeSteps(size: string, baseSize: string): number {
+  const a = alphaIndex(size);
+  const b = alphaIndex(baseSize);
+  if (a >= 0 && b >= 0) return a - b;
+  return (parseInt(size, 10) - parseInt(baseSize, 10)) / 2;
+}
+
+/** Orden de tallas para listas y UI (S < M < L < XL; 28 < 30 < 32). */
+export function compareSizes(a: string, b: string): number {
+  const ia = alphaIndex(a);
+  const ib = alphaIndex(b);
+  if (ia >= 0 && ib >= 0) return ia - ib;
+  const na = parseInt(a, 10);
+  const nb = parseInt(b, 10);
+  if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
+  return a.localeCompare(b);
+}
 
 // ─── medidas de cuerpo ───────────────────────────────────────────────────────
 
@@ -203,7 +234,7 @@ export function measurementsForSize(
   base: BodyMeasurements,
   baseSize: string,
 ): BodyMeasurements {
-  const steps = (parseInt(size, 10) - parseInt(baseSize, 10)) / 2;
+  const steps = sizeSteps(size, baseSize);
   return {
     ...base,
     cintura: base.cintura + steps * DELTA_PER_STEP.cintura,
@@ -404,13 +435,201 @@ export function draftPantalonVestir(m: BodyMeasurements): PatternDoc {
   return doc;
 }
 
+// ─── bloque de blusa clásica (camisera, manga larga con puño) ───────────────
+
+/** Arma una pieza simétrica completa a partir de su mitad derecha.
+ *  `half` va del centro-arriba (x=0) al centro-abajo (x=0); el primer y el
+ *  último nodo deben estar sobre x=0. */
+function fullFromHalf(half: Node[]): Node[] {
+  const head = half.map((n, i) =>
+    i === 0 && n.handleOut
+      ? { ...n, handleIn: { x: -n.handleOut.x, y: n.handleOut.y } }
+      : n,
+  );
+  const mirrored = half
+    .slice(1, -1)
+    .map((n) => {
+      const extra: Partial<Omit<Node, "id" | "at">> = {};
+      if (n.notch) extra.notch = true;
+      if (n.handleOut) extra.handleIn = { x: -n.handleOut.x, y: n.handleOut.y };
+      if (n.handleIn) extra.handleOut = { x: -n.handleIn.x, y: n.handleIn.y };
+      return node({ x: -n.at.x, y: n.at.y }, extra);
+    })
+    .reverse();
+  return [...head, ...mirrored];
+}
+
+const shiftNodes = (nodes: Node[], dx: number, dy: number): Node[] =>
+  nodes.map((n) => ({ ...n, at: { x: n.at.x + dx, y: n.at.y + dy } }));
+
+const nodesWidth = (nodes: Node[]): { min: number; max: number } => {
+  const xs = nodes.map((n) => n.at.x);
+  return { min: Math.min(...xs), max: Math.max(...xs) };
+};
+
+/**
+ * Blusa clásica de manga larga con puño y cuello camisero. 7 piezas:
+ * delantero (×2, con extensión de abotonadura), espalda (×1, completa),
+ * manga (×2), cuello (×2), pie de cuello (×2), puño (×2) y vista (×2).
+ *
+ * Usa busto, cintura, cadera, hombro, cuello, sisa, largoTorso y largoManga.
+ * Talla base M; gama S · M · L · XL. Es un bloque base de partida: la
+ * holgura y las curvas se calibran con el patronista.
+ */
+export function draftBlusaClasica(m: BodyMeasurements): PatternDoc {
+  const doc = emptyDoc("Blusa clásica · desde medidas");
+  doc.baseSize = "M";
+  doc.sizes = ["S", "M", "L", "XL"];
+
+  const busto = m.busto ?? 92;
+  const hombro = m.hombro ?? 42;
+  const sisa = m.sisa ?? 23;
+  const largoT = m.largoTorso ?? 42;
+  const largoManga = m.largoManga ?? 60;
+  const cuello = m.cuello ?? 38;
+
+  // holguras (cm) sobre contorno completo, para tejido plano
+  const q = (busto + 8) / 4;
+  const qF = q - 0.5;                    // el delantero toma un poco menos que la espalda
+  const qB = q + 0.5;
+  const qWF = (m.cintura + 8) / 4 - 0.5;
+  const qWB = (m.cintura + 8) / 4 + 0.5;
+  const qHF = (m.cadera + 8) / 4 - 0.5;
+  const qHB = (m.cadera + 8) / 4 + 0.5;
+  const sx = hombro / 2;                 // punta de hombro
+  const hemY = largoT + 18;              // largo total desde el hombro-cuello
+
+  const nF = cuello / 6 + 0.5;           // ancho de escote
+  const dF = nF + 1.7;                   // profundidad escote delantero
+  const nB = nF + 0.3;
+  const dB = 2;
+  const dropF = 4.5;                     // caída de hombro
+  const dropB = 4.2;
+  const ext = 2;                         // extensión de abotonadura
+
+  const FABRIC = "popelina 120 hilos";
+
+  // ── delantero (mitad derecha + extensión) ─────────────────────────────────
+  const front = emptyPiece("Delantero", 2);
+  front.fabric = FABRIC;
+  front.nodes = [
+    node({ x: -ext, y: dF }),
+    node({ x: 0, y: dF }, { notch: true, handleOut: { x: nF * 0.55, y: 0 } }),
+    node({ x: nF, y: 0 }, { notch: true, handleIn: { x: 0, y: dF * 0.55 } }),
+    node({ x: sx, y: dropF }, { handleOut: { x: -0.8, y: 3.5 } }),
+    node(
+      { x: sx - 1, y: dropF + (sisa - dropF) * 0.55 },
+      { handleIn: { x: 0, y: -3 }, handleOut: { x: 0, y: 3 } },
+    ),
+    node({ x: qF, y: sisa }, { notch: true, handleIn: { x: -2.5, y: -1.5 } }),
+    node({ x: qWF, y: largoT }),
+    node({ x: qHF, y: hemY }),
+    node({ x: -ext, y: hemY }),
+  ];
+
+  // ── espalda (completa, simétrica) ─────────────────────────────────────────
+  const back = emptyPiece("Espalda", 1);
+  back.fabric = FABRIC;
+  back.nodes = fullFromHalf([
+    node({ x: 0, y: dB }, { notch: true, handleOut: { x: nB * 0.55, y: 0 } }),
+    node({ x: nB, y: 0 }, { notch: true, handleIn: { x: 0, y: dB * 0.55 } }),
+    node({ x: sx, y: dropB }, { handleOut: { x: -0.8, y: 3.5 } }),
+    node(
+      { x: sx - 0.8, y: dropB + (sisa - dropB) * 0.55 },
+      { handleIn: { x: 0, y: -3 }, handleOut: { x: 0, y: 3 } },
+    ),
+    node({ x: qB, y: sisa }, { notch: true, handleIn: { x: -2.5, y: -1.5 } }),
+    node({ x: qWB, y: largoT }),
+    node({ x: qHB, y: hemY }),
+    node({ x: 0, y: hemY }, { notch: true }),
+  ]);
+
+  // ── manga larga ───────────────────────────────────────────────────────────
+  const bicep = busto * 0.29 + 6;        // ancho de manga a la sisa
+  const capH = sisa * 0.6;               // altura de cabeza de manga
+  const cuffL = 23;                      // largo del puño
+  const cuffH = 6;                       // alto del puño
+  const sleeveLen = largoManga - cuffH;
+  const wrist = cuffL + 1;               // abertura de manga (con fruncido leve)
+  const sleeve = emptyPiece("Manga", 2);
+  sleeve.fabric = FABRIC;
+  sleeve.nodes = [
+    node({ x: 0, y: 0 }, { notch: true, handleIn: { x: -bicep * 0.28, y: 0 }, handleOut: { x: bicep * 0.28, y: 0 } }),
+    node({ x: bicep / 2, y: capH }, { notch: true, handleIn: { x: -bicep * 0.05, y: -capH * 0.55 } }),
+    node({ x: wrist / 2, y: sleeveLen }),
+    node({ x: -wrist / 2, y: sleeveLen }),
+    node({ x: -bicep / 2, y: capH }, { notch: true, handleOut: { x: bicep * 0.05, y: -capH * 0.55 } }),
+  ];
+
+  // ── cuello camisero (hoja) y pie de cuello ────────────────────────────────
+  const lc = cuello / 2 + 0.5;
+  const collar = emptyPiece("Cuello", 2);
+  collar.fabric = FABRIC;
+  collar.nodes = fullFromHalf([
+    node({ x: 0, y: 0 }, { notch: true, handleOut: { x: lc * 0.5, y: 0.2 } }),
+    node({ x: lc, y: 1 }, { handleIn: { x: -lc * 0.35, y: 0 } }),
+    node({ x: lc + 0.5, y: 7 }, { handleOut: { x: -lc * 0.3, y: 0.9 } }),
+    node({ x: 0, y: 5.5 }, { notch: true, handleIn: { x: lc * 0.3, y: 0.2 } }),
+  ]);
+
+  const stand = emptyPiece("Pie de cuello", 2);
+  stand.fabric = FABRIC;
+  stand.nodes = fullFromHalf([
+    node({ x: 0, y: 0 }, { notch: true, handleOut: { x: lc * 0.5, y: 0.2 } }),
+    node({ x: lc + 1.5, y: -0.3 }),
+    node({ x: lc + 1.5, y: 3.2 }),
+    node({ x: 0, y: 3.5 }, { notch: true, handleIn: { x: lc * 0.5, y: 0.1 } }),
+  ]);
+
+  // ── puño y vista ──────────────────────────────────────────────────────────
+  const cuff = emptyPiece("Puño", 2);
+  cuff.fabric = FABRIC;
+  cuff.nodes = [
+    node({ x: 0, y: 0 }, { notch: true }),
+    node({ x: cuffL, y: 0 }),
+    node({ x: cuffL, y: cuffH }),
+    node({ x: 0, y: cuffH }),
+  ];
+
+  const facing = emptyPiece("Vista", 2);
+  facing.fabric = FABRIC;
+  facing.nodes = [
+    node({ x: -ext, y: dF }),
+    node({ x: 3.2, y: dF - 2.6 }),
+    node({ x: 3.2, y: hemY }),
+    node({ x: -ext, y: hemY }),
+  ];
+
+  // ── distribución sobre la mesa (sin empalmes) ─────────────────────────────
+  const gap = 8;
+  let cursor = 0;
+  const place = (p: Piece, y: number): void => {
+    const { min, max } = nodesWidth(p.nodes);
+    p.nodes = shiftNodes(p.nodes, cursor - min, y);
+    cursor += max - min + gap;
+  };
+  place(front, 0);
+  place(back, 0);
+  place(sleeve, 0);
+  cursor = 0;
+  const row2 = hemY + gap;
+  place(collar, row2);
+  place(stand, row2);
+  place(cuff, row2);
+  place(facing, row2);
+
+  doc.pieces = [front, back, sleeve, collar, stand, cuff, facing];
+  return doc;
+}
+
 // ─── catálogo de bloques (fuente de verdad para la UI) ──────────────────────
 
 export type BlockKind =
   | "pantalon-denim"
   | "pantalon-vestir"
   | "playera-basica"
-  | "falda-recta";
+  | "falda-recta"
+  | "blusa-clasica";
 
 export interface BlockMeta {
   kind: BlockKind;
@@ -459,6 +678,15 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
     fields: ["cintura", "cadera", "largoFalda"],
     iconPath: "M7 3h10l1 5-1 13H7L6 8z",
   },
+  {
+    kind: "blusa-clasica",
+    name: "Blusa clásica",
+    tag: "blusa · popelina",
+    blurb: "Camisera de manga larga con puño y cuello. 7 piezas, tallas S a XL.",
+    pieces: 7,
+    fields: ["busto", "cintura", "cadera", "hombro", "sisa", "largoTorso", "largoManga", "cuello"],
+    iconPath: "M4 6l5-3 3 3 3-3 5 3-2 5-2-1v10H8V10l-2 1z",
+  },
 ] as const;
 
 /** Punto de entrada por tipo de prenda.
@@ -471,6 +699,7 @@ export function draftBlock(kind: BlockKind, m: BodyMeasurements): PatternDoc {
     case "pantalon-vestir": doc = draftPantalonVestir(m); break;
     case "playera-basica":  doc = draftPlayeraBasica(m); break;
     case "falda-recta":     doc = draftFaldaRecta(m); break;
+    case "blusa-clasica":   doc = draftBlusaClasica(m); break;
   }
   doc.blockKind = kind;
   return doc;
@@ -496,6 +725,10 @@ const GRADE_RULES: Record<BlockKind, Deltas> = {
   "falda-recta": {
     cintura: 4, cadera: 4, largoFalda: 0.5,
   },
+  "blusa-clasica": {
+    busto: 4, cintura: 4, cadera: 4, hombro: 1, sisa: 0.8, largoTorso: 1,
+    largoManga: 1, cuello: 1,
+  },
 };
 
 /** Devuelve las medidas para una talla aplicando las reglas del bloque. */
@@ -505,7 +738,7 @@ export function measurementsForBlockSize(
   base: BodyMeasurements,
   baseSize: string,
 ): BodyMeasurements {
-  const steps = (parseInt(size, 10) - parseInt(baseSize, 10)) / 2;
+  const steps = sizeSteps(size, baseSize);
   const rules = GRADE_RULES[kind];
   const out: BodyMeasurements = { ...base };
   for (const [key, delta] of Object.entries(rules) as [keyof BodyMeasurements, number][]) {
@@ -533,4 +766,4 @@ export function graduateBlock(
 export const findBlock = (kind: BlockKind): BlockMeta =>
   BLOCK_CATALOG.find((b) => b.kind === kind) ?? BLOCK_CATALOG[0]!;
 
-export const VERSION = "0.3.0";
+export const VERSION = "0.4.0";

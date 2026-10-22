@@ -110,7 +110,7 @@ export default function NewPatternPage() {
 
         <aside className="new-foot">
           <p>
-            ¿No ves lo que buscas? Más bloques (chamarra, blusa, vestido, pants)
+            ¿No ves lo que buscas? Más bloques (chamarra, vestido, pants)
             se añadirán en próximas versiones.
           </p>
         </aside>

@@ -21,6 +21,7 @@ import {
 import {
   demoJeanDoc,
   draftBlock,
+  compareSizes,
   graduatePantalon,
   DEFAULT_MEASUREMENTS,
   type BlockKind,
@@ -38,6 +39,13 @@ export const SIZE_COLORS: Record<string, string> = {
   "40": "#48C7E0",
   "42": "#E07C7C",
   "44": "#8A91FF",
+  // tallas alfabéticas (blusa y demás prendas S–XL)
+  XS: "#C77DFF",
+  S: "#E04FA8",
+  M: "#F0662C",
+  L: "#3FD0C9",
+  XL: "#8A6BFF",
+  XXL: "#9BD17E",
 };
 
 export type Tool = "select" | "pan" | "notch";
@@ -154,7 +162,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   toggleSize: (size) => set((s) => ({
     activeSizes: s.activeSizes.includes(size)
       ? s.activeSizes.filter((x) => x !== size)
-      : [...s.activeSizes, size].sort((a, b) => parseInt(a) - parseInt(b)),
+      : [...s.activeSizes, size].sort(compareSizes),
   })),
 
   selectPiece: (id) =>
@@ -221,6 +229,7 @@ export const useEditor = create<EditorState>((set, get) => ({
       selectedPieceId: null,
       selectedNodeId: null,
       blockKind: (doc.blockKind as BlockKind | undefined) ?? "pantalon-denim",
+      activeSizes: [...doc.sizes],
       saved: { id: savedId ?? null, dirty: false, lastSaved: new Date().toISOString() },
     }),
 
