@@ -158,3 +158,60 @@ describe("biblioteca de piezas", () => {
     expect(a.nodes[0]!.id).not.toBe(b.nodes[0]!.id);
   });
 });
+
+// ─── pinzas puestas en los patrones base ─────────────────────────────────────
+
+describe("pinzas en los patrones base", () => {
+  /** Puntas de pinza: nodos cuyo ángulo con sus vecinos es muy agudo, y la boca (distancia entre vecinos). */
+  function darts(p: { nodes: Array<{ at: { x: number; y: number } }> }) {
+    const out: Array<{ mouth: number; depth: number }> = [];
+    const n = p.nodes.length;
+    for (let i = 0; i < n; i++) {
+      const a = p.nodes[(i - 1 + n) % n]!.at, b = p.nodes[i]!.at, c = p.nodes[(i + 1) % n]!.at;
+      const v1 = { x: a.x - b.x, y: a.y - b.y }, v2 = { x: c.x - b.x, y: c.y - b.y };
+      const l1 = Math.hypot(v1.x, v1.y), l2 = Math.hypot(v2.x, v2.y);
+      if (l1 < 3 || l2 < 3) continue;
+      const cos = (v1.x * v2.x + v1.y * v2.y) / (l1 * l2);
+      if (Math.acos(Math.max(-1, Math.min(1, cos))) < (40 * Math.PI) / 180) {
+        out.push({ mouth: Math.hypot(a.x - c.x, a.y - c.y), depth: Math.min(l1, l2) });
+      }
+    }
+    return out;
+  }
+
+  // [prenda, pieza, pinzas esperadas como mínimo]
+  const cases: Array<[BlockKind, string, number]> = [
+    ["falda-recta", "Delantero falda", 1],
+    ["falda-recta", "Espalda falda", 1],
+    ["falda-a", "Delantero", 2],
+    ["falda-a", "Espalda", 1],
+    ["vestido-basico", "Delantero", 2],
+    ["blusa-clasica", "Delantero", 1],
+    ["bermuda", "Espalda", 1],
+    ["pantalon-cargo", "Espalda", 1],
+  ];
+
+  it.each(cases)("%s · %s trae al menos %i pinza(s) en todas las tallas", (kind, name, min) => {
+    const base = docOf(kind);
+    for (const size of base.sizes) {
+      const piece = gradeDoc(base, size).pieces.find((p) => p.name === name)!;
+      const ds = darts(piece);
+      expect(ds.length, `${kind} ${size}`).toBeGreaterThanOrEqual(min);
+      for (const d of ds) {
+        expect(d.mouth, `${kind} ${size}: boca de la pinza`).toBeGreaterThan(0.8);
+        expect(d.mouth).toBeLessThan(7);
+        expect(d.depth).toBeGreaterThan(4);
+      }
+    }
+  });
+
+  it("las prendas sin pinza no las traen (p. ej. la playera)", () => {
+    expect(darts(docOf("playera-basica").pieces.find((p) => p.name === "Delantero playera")!)).toHaveLength(0);
+  });
+
+  it("más busto, pinza de busto más ancha", () => {
+    const m = defaultMeasurementsFor("blusa-clasica");
+    const mouth = (busto: number) => darts(draftBlock("blusa-clasica", { ...m, busto }).pieces.find((p) => p.name === "Delantero")!)[0]!.mouth;
+    expect(mouth(104)).toBeGreaterThan(mouth(84));
+  });
+});

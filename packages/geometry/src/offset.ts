@@ -65,8 +65,9 @@ export function offsetPolyline(
     const bis = normalize(add(n1, n2));
     // escala por 1/cos(α/2) para que el punto quede sobre la línea paralela
     // (α es el ángulo entre tangentes). Usamos dot entre t2 y bis para
-    // obtener sin(α/2); evitamos divisiones degeneradas con un piso.
-    const cosHalf = Math.max(0.2, Math.abs(dot2(bis, n1)));
+    // obtener sin(α/2). El piso de 0.5 limita la esquina a 2 × el margen: en puntas
+    // muy agudas (el vértice de una pinza) el margen se recorta en vez de dispararse.
+    const cosHalf = Math.max(0.5, Math.abs(dot2(bis, n1)));
     const scale = distance / cosHalf;
     out[i] = add(p, mul(bis, scale));
   }

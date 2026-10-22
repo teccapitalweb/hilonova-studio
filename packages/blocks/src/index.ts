@@ -4,8 +4,10 @@
 // industrial. No más polígonos fijos: cambias una medida, cambia el patrón.
 
 import {
+  addDart,
   clonePiece,
   contourRun,
+  nearestSegment,
   sizeSteps,
   emptyDoc,
   emptyPiece,
@@ -15,6 +17,7 @@ import {
   type Node,
   type PatternDoc,
   type Piece,
+  type Vec2,
 } from "@hilonova/geometry";
 
 // ─── tallas ──────────────────────────────────────────────────────────────────
@@ -399,6 +402,13 @@ export function draftFaldaRecta(m: BodyMeasurements): PatternDoc {
   front.nodes[2] = { ...front.nodes[2]!, notch: true };
   back.nodes[2] = { ...back.nodes[2]!, notch: true };
 
+  // pinzas de cintura: 1 en el delantero y 1 en la espalda por mitad; absorben la diferencia con la cadera
+  const dartDiff = qCadera - qCintura;
+  const wF = clamp(dartDiff * 0.4, 1.2, 3);
+  const wB = clamp(dartDiff * 0.55, 1.5, 3.5);
+  front.nodes = dartAt(front, { x: qCintura * 0.5, y: 0 }, wF, { x: qCintura * 0.5, y: 9 }).nodes;
+  back.nodes = dartAt(back, { x: bOff + qCintura * 0.5, y: 0 }, wB, { x: bOff + qCintura * 0.5, y: 12 }).nodes;
+
   doc.pieces = [front, back];
   return doc;
 }
@@ -506,6 +516,17 @@ export function draftBlusaClasica(m: BodyMeasurements): PatternDoc {
     node({ x: qHF, y: hemY }),
     node({ x: -ext, y: hemY }),
   ];
+
+  // pinza de busto en el costado (la mitad izquierda sale igual porque el delantero va ×2)
+  {
+    const sDart = clamp(8 / Math.max(1, largoT - sisa), 0.15, 0.6);
+    front.nodes = dartAt(
+      front,
+      { x: qF + (qWF - qF) * sDart, y: sisa + (largoT - sisa) * sDart },
+      bustDartWidth(busto),
+      { x: qF * 0.45, y: sisa + 5 },
+    ).nodes;
+  }
 
   // ── espalda (completa, simétrica) ─────────────────────────────────────────
   const back = emptyPiece("Espalda", 1);
@@ -662,6 +683,21 @@ function sleeveNodes(bicep: number, capH: number, len: number, wrist: number): N
   ];
 }
 
+/**
+ * Abre una pinza en el contorno de `piece` cerca de `near` (la boca) con la punta en `apex`.
+ * Si la boca no cabe en ese tramo, devuelve la pieza sin cambios.
+ */
+function dartAt(piece: Piece, near: Vec2, width: number, apex: Vec2): Piece {
+  const hit = nearestSegment(piece, near);
+  if (!hit) return piece;
+  return addDart(piece, hit.segIndex, hit.t, width, apex) ?? piece;
+}
+
+const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
+
+/** Ancho de la pinza de busto según el contorno de busto (más busto, más pinza). */
+const bustDartWidth = (busto: number): number => clamp(2 + (busto - 88) * 0.15, 1.5, 6);
+
 /** Largo (cm) del contorno que recorren estos nodos, de uno a otro. */
 function pathLen(nodes: Node[]): number {
   if (nodes.length < 2) return 0;
@@ -805,6 +841,8 @@ interface TrouserOpts {
   hipEase: number;
   thighEase: number;
   extras?: (c: { qW: number; hemTotal: number; cintura: number }) => Piece[];
+  /** pinza de cintura en la espalda */
+  backDart?: boolean;
 }
 
 /**
@@ -851,6 +889,13 @@ function draftTrouser(m: BodyMeasurements, o: TrouserOpts): PatternDoc {
     node({ x: -1.5, y: yFork }, { handleIn: { x: 0, y: (tiro - yFork) * 0.5 } }),
   ]);
 
+  if (o.backDart) {
+    // el borde de cintura de la espalda va de (-3, -2.5) a (qW - 1.5, -0.5): la pinza cae al 45 % del borde
+    const bx = -3 + (qW - 1.5 + 3) * 0.45;
+    const by = -2.5 + 2 * 0.45;
+    back.nodes = dartAt(back, { x: bx, y: by }, clamp((qH - qW) * 0.5, 1.5, 3.5), { x: bx, y: by + 12 }).nodes;
+  }
+
   const extras = o.extras ? o.extras({ qW, hemTotal, cintura: m.cintura }) : [];
   doc.pieces = layoutRows([[front, back], extras]);
   return doc;
@@ -885,6 +930,7 @@ export function draftBermuda(m: BodyMeasurements): PatternDoc {
     fabric: "gabardina 240 gsm",
     hipEase: 5,
     thighEase: 5,
+    backDart: true,
     extras: ({ cintura }) => [
       withQty(rectPiece("Pretina", { x: 0, y: 0 }, { x: cintura + 4, y: 8 }), 1, "gabardina 240 gsm"),
       withQty(rectPiece("Bolsillo", { x: 0, y: 0 }, { x: 16, y: 18 }), 4, "forro de bolsillo"),
@@ -936,6 +982,15 @@ export function draftFaldaA(m: BodyMeasurements): PatternDoc {
   const waistband = rectPiece("Pretina", { x: 0, y: 0 }, { x: m.cintura + 4, y: 6 });
   waistband.quantity = 1; waistband.fabric = F;
 
+  // pinzas de cintura: 2 en el delantero (una por lado del doblez) y 1 por mitad en la espalda
+  const dartDiff = qH - qW;
+  const wF = clamp(dartDiff * 0.4, 1.2, 3);
+  const wB = clamp(dartDiff * 0.55, 1.5, 3.5);
+  for (const sign of [1, -1]) {
+    front.nodes = dartAt(front, { x: sign * qW * 0.5, y: 0 }, wF, { x: sign * qW * 0.5, y: 9 }).nodes;
+  }
+  back.nodes = dartAt(back, { x: (qW + 0.5) * 0.5, y: 0 }, wB, { x: (qW + 0.5) * 0.5, y: 12 }).nodes;
+
   doc.pieces = layoutRows([[front, back], [waistband]]);
   return doc;
 }
@@ -977,6 +1032,20 @@ export function draftVestidoBasico(m: BodyMeasurements): PatternDoc {
     node({ x: qHemF + 1, y: hemY }),
     node({ x: 0, y: hemY }, { notch: true }),
   ]);
+
+  // pinza de busto en el costado, a cada lado del delantero
+  const bustW = bustDartWidth(t.busto);
+  const sDart = clamp(8 / Math.max(1, waistY - t.sisa), 0.15, 0.6);
+  const sideX = t.qF + (qWF - t.qF) * sDart;
+  const sideY = t.sisa + (waistY - t.sisa) * sDart;
+  for (const sign of [1, -1]) {
+    front.nodes = dartAt(
+      front,
+      { x: sign * sideX, y: sideY },
+      bustW,
+      { x: sign * t.qF * 0.45, y: t.sisa + 5 },
+    ).nodes;
+  }
 
   const facingF = mk("Vista de escote delantera", 1, "entretela termoadherible", fullFromHalf([
     node({ x: 0, y: dF }, { handleOut: { x: nF * 0.55, y: 0 } }),
@@ -1260,6 +1329,7 @@ export function draftPantalonCargo(m: BodyMeasurements): PatternDoc {
     fabric: F,
     hipEase: 6,
     thighEase: 6,
+    backDart: true,
     extras: ({ cintura }) => [
       withQty(rectPiece("Pretina", { x: 0, y: 0 }, { x: cintura + 4, y: 8 }), 1, F),
       withQty(rectPiece("Bolsillo cargo", { x: 0, y: 0 }, { x: 20, y: 22 }), 2, F),
@@ -1351,7 +1421,7 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
     kind: "falda-recta",
     name: "Falda recta",
     tag: "falda · gabardina",
-    blurb: "Falda tubo con pinzas, de cintura a rodilla o midi.",
+    blurb: "Falda tubo con pinzas de cintura, de cintura a rodilla o midi.",
     pieces: 2,
     fields: ["cintura", "cadera", "largoFalda"],
     iconPath: "M7 3h10l1 5-1 13H7L6 8z",
@@ -1360,7 +1430,7 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
     kind: "blusa-clasica",
     name: "Blusa clásica",
     tag: "blusa · popelina",
-    blurb: "Camisera de manga larga con puño y cuello. 7 piezas, tallas S a XL.",
+    blurb: "Camisera de manga larga con pinza de busto, puño y cuello. 7 piezas, tallas S a XL.",
     pieces: 7,
     fields: ["busto", "cintura", "cadera", "hombro", "sisa", "largoTorso", "largoManga", "cuello"],
     iconPath: "M4 6l5-3 3 3 3-3 5 3-2 5-2-1v10H8V10l-2 1z",
@@ -1389,7 +1459,7 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
     kind: "bermuda",
     name: "Bermuda",
     tag: "bermuda · gabardina",
-    blurb: "Pierna recta a la rodilla, con pretina y bolsillos.",
+    blurb: "Pierna recta a la rodilla, con pinza trasera, pretina y bolsillos.",
     pieces: 4,
     fields: ["cintura", "cadera", "tiro", "largo", "muslo", "bajo"],
     iconPath: "M7 3h10l1 10-1 8h-4l-1-9-1 9H7l-1-8z",
@@ -1399,7 +1469,7 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
     kind: "vestido-basico",
     name: "Vestido básico",
     tag: "vestido · crepé",
-    blurb: "Sin mangas, entallado y con vuelo, con vistas de escote. 4 piezas.",
+    blurb: "Sin mangas, entallado, con pinza de busto y vistas de escote. 4 piezas.",
     pieces: 4,
     fields: ["busto", "cintura", "cadera", "hombro", "sisa", "largoTorso", "cuello", "largoFalda"],
     iconPath: "M8 3h8l1 6-3 3 4 9H6l4-9-3-3z",
@@ -1419,7 +1489,7 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
     kind: "falda-a",
     name: "Falda en A",
     tag: "falda · gabardina",
-    blurb: "Con vuelo, delantero al doblez, cierre atrás y pretina.",
+    blurb: "Con vuelo y pinzas de cintura, delantero al doblez, cierre atrás y pretina.",
     pieces: 3,
     fields: ["cintura", "cadera", "largoFalda"],
     iconPath: "M8 3h8l1 4 3 14H4L7 7z",
@@ -1479,7 +1549,7 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
     kind: "pantalon-cargo",
     name: "Pantalón cargo",
     tag: "pantalón · twill",
-    blurb: "Pierna recta con bolsillos de fuelle y solapa, pretina y trabillas. 7 piezas.",
+    blurb: "Pierna recta con pinza trasera, bolsillos de fuelle y solapa, pretina y trabillas. 7 piezas.",
     pieces: 7,
     fields: ["cintura", "cadera", "tiro", "largo", "muslo", "bajo"],
     iconPath: "M8 3h8l1 8-1 10h-3l-1-8-1 8H8L7 11z M9 12h2v3H9z",
