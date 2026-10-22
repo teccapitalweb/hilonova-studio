@@ -704,25 +704,79 @@ img { max-width: 100%; display: block; }
   }
 }
 
-/* ===================== RESPONSIVE ===================== */
+/* ===================== RESPONSIVE =====================
+   Mobile-first polish:
+   - 1024px: ocultamos links y login del nav antes de que el pill se desborde.
+   - 940px: hero/value/sc-feats/footer pasan a 1 columna; pcards a 2.
+   - 720px: todo a 1 columna; cards y tipografía más densas; testimonial apilado.
+   - 420px: ajustes finales para pantallas estrechas (iPhone SE y similares).
+*/
+@media (max-width: 1024px) {
+  /* El pill se llenaba al borde entre tablet (~768) y 1024 porque cabían
+     links + "Iniciar sesión" + botón pero sin margen. Los ocultamos antes. */
+  .nav-links { display: none; }
+  .nav-login { display: none; }
+}
 @media (max-width: 940px) {
   .hero-grid { grid-template-columns: 1fr; gap: 34px; }
-  .hero-prod { max-width: 420px; }
+  .hero-prod { max-width: 420px; margin-inline: auto; }
   .value { grid-template-columns: 1fr; }
   .pcards { grid-template-columns: 1fr 1fr; }
   .sc-feats { grid-template-columns: 1fr 1fr; }
+  /* El sc-body (showcase) tiene columnas fijas 56px/1fr/220px que no caben:
+     ocultamos el panel lateral y reducimos el riel para que la vista sirva como preview. */
+  .sc-body { grid-template-columns: 56px 1fr; min-height: 340px; }
+  .sc-panel { display: none; }
   .foot-grid { grid-template-columns: 1fr 1fr; }
   .foot-brand { grid-column: 1 / -1; }
+  /* El testimonial tenía foto + texto en 2 columnas con foto grande: lo pasamos a bloque. */
+  .quote { grid-template-columns: 1fr; gap: 20px; text-align: left; }
+  .quote .ph { width: clamp(96px, 22vw, 140px); }
 }
 @media (max-width: 720px) {
-  .nav-links { display: none; }
-  .nav-login { display: none; }
+  /* Deja aire sobre la strip para que el nav sticky no la pise. */
+  .strip { padding-top: 24px; }
+  /* Hero más denso en móvil. */
+  .hero { padding-top: 8px; }
+  .hero-card { padding: 28px 22px; border-radius: 24px; }
+  .hero h1 { font-size: clamp(36px, 9.5vw, 48px); }
+  .hero .sub { font-size: 15.5px; margin-top: 18px; }
+  .hero-cta { gap: 10px; margin-top: 24px; }
+  .hero-cta .btn { padding: 13px 20px; font-size: 14.5px; }
+  .hero-stats { gap: 8px; margin-top: 26px; }
+  .stat-pill { padding: 7px 12px; }
+  .stat-pill b { font-size: 15px; }
+  .stat-pill span { font-size: 12px; }
+  /* Secciones y títulos reducidos. */
+  .sec { padding: 48px 0; }
+  .sec h2 { font-size: clamp(26px, 7.5vw, 34px); }
+  /* 1 columna para todo. */
+  .pcards { grid-template-columns: 1fr; }
+  .pcard { aspect-ratio: 5 / 4; }  /* Mucho menos alto que 3/3.4 por default. */
+  .sc-feats { grid-template-columns: 1fr; gap: 14px; }
   .ctx-grid { grid-template-columns: 1fr; }
   .steps { grid-template-columns: 1fr; }
   .pricing { grid-template-columns: 1fr; max-width: 420px; margin-inline: auto; }
-  .pcards { grid-template-columns: 1fr; }
-  .sc-body { grid-template-columns: 48px 1fr; }
-  .sc-panel { display: none; }
-  .sc-feats { grid-template-columns: 1fr; }
-  .quote { grid-template-columns: 1fr; text-align: center; justify-items: center; }
+  .plan.pop { transform: none; }  /* Evita que el "más usado" sobresalga. */
+  /* Cards y plans más compactos. */
+  .vcard { padding: 22px; }
+  .stepc { padding: 22px; }
+  .plan { padding: 24px 22px; }
+  /* CTA band y footer. */
+  .cta-band h2 { font-size: clamp(26px, 7.5vw, 36px); }
+  .cta-band p { font-size: 15.5px; }
+  .foot-grid { grid-template-columns: 1fr; gap: 24px; }
+  .foot-brand { grid-column: auto; }
+  /* Botones del nav un poco más compactos. */
+  .nav .btn { padding: 10px 16px; font-size: 14px; }
+  .brand { font-size: 17px; }
+  .brand .mk { width: 32px; height: 32px; }
+}
+@media (max-width: 420px) {
+  /* iPhone SE y similares: aire mínimo entre nav y strip, títulos un pelín menos. */
+  .nav-in { padding: 7px 7px 7px 16px; }
+  .hero-card { padding: 24px 18px; }
+  .hero h1 { letter-spacing: -0.03em; }
+  :root { --gut: 14px; }
+  .sec { padding: 40px 0; }
 }
