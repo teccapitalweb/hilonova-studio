@@ -12,13 +12,16 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "format": "prettier --write \"**/*.{ts,tsx,css,md,json}\""
+    "format": "prettier --write \"**/*.{ts,tsx,css,md,json}\"",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@cwasm/webp": "^0.1.5",
     "jimp": "1.6.0",
     "prettier": "3.4.2",
     "turbo": "2.3.3",
-    "typescript": "5.7.3"
+    "typescript": "5.7.3",
+    "vitest": "^2.1.9"
   }
 }
