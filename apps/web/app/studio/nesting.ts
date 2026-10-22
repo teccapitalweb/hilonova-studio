@@ -35,7 +35,9 @@ const GAP = 1; // separación entre piezas en cm (margen de corte)
  * Acomoda las piezas (×quantity cada una) en una banda de tela de
  * `fabricWidth` cm. Devuelve posiciones + métricas de consumo.
  */
-export function nestPieces(pieces: readonly Piece[], fabricWidth: number): NestingResult {
+export function nestPieces(allPieces: readonly Piece[], fabricWidth: number): NestingResult {
+  // las líneas internas (abiertas) no se cortan: no entran al trazo
+  const pieces = allPieces.filter((p) => p.closed);
   const placed: PlacedPiece[] = [];
   // ordenar las copias por altura descendente ayuda a empacar mejor
   const items: Array<{ piece: Piece; copy: number; w: number; h: number }> = [];

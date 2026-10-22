@@ -16,7 +16,27 @@ import {
   redo as hRedo,
   canUndo as hCanUndo,
   canRedo as hCanRedo,
+  checkpoint as hCheckpoint,
+  replacePresent as hReplace,
   moveNode as docMoveNode,
+  addPiece,
+  removePiece,
+  patchPiece,
+  setPieceNodes,
+  clonePiece,
+  translatePiece,
+  mirrorPiece,
+  rotatePiece,
+  insertNodeOnSegment,
+  removeNode,
+  setNodeSmooth,
+  moveHandle,
+  pieceFromPoints,
+  rectPiece,
+  ellipsePiece,
+  bounds,
+  type Piece,
+  type PiecePatch,
 } from "@hilonova/geometry";
 import {
   demoJeanDoc,
@@ -24,6 +44,7 @@ import {
   compareSizes,
   graduatePantalon,
   DEFAULT_MEASUREMENTS,
+  type LibraryEntry,
   type BlockKind,
   type BodyMeasurements,
 } from "@hilonova/blocks";
@@ -48,7 +69,16 @@ export const SIZE_COLORS: Record<string, string> = {
   XXL: "#9BD17E",
 };
 
-export type Tool = "select" | "pan" | "notch";
+export type Tool =
+  | "select" | "pan" | "notch"
+  | "line" | "curve" | "rect" | "circle" | "addnode" | "measure";
+
+/** Trazo en construcción (todavía no es parte del documento). */
+export type Draft =
+  | { kind: "path"; smooth: boolean; points: Vec2[] }
+  | { kind: "rect"; a: Vec2; b: Vec2 }
+  | { kind: "circle"; c: Vec2; r: number }
+  | { kind: "measure"; a: Vec2; b: Vec2 };
 export type View = "editor" | "trazo" | "ficha";
 
 /** Id del patrón vigente en la biblioteca (si fue abierto o guardado). */
@@ -88,6 +118,11 @@ interface EditorState {
   blockKind: BlockKind;
   /** vinculación con la biblioteca del usuario */
   saved: SavedRef;
+  /** trazo en construcción con las herramientas de dibujo */
+  draft: Draft | null;
+  /** tamaño del lienzo en px (lo informa el Canvas) para centrar piezas nuevas */
+  viewSize: { w: number; h: number };
+  setViewSize(w: number, h: number): void;
 
   // selectores derivados
   doc(): PatternDoc;
@@ -108,7 +143,30 @@ interface EditorState {
   selectPiece(id: string | null): void;
   selectNode(pieceId: string, nodeId: string): void;
   clearSelection(): void;
+  /** punto de retorno para deshacer antes de un arrastre (una sola entrada) */
+  beginDrag(): void;
+  /** arrastre en vivo del nodo seleccionado (requiere beginDrag antes) */
   moveSelectedNode(to: Vec2): void;
+  /** arrastre en vivo de la pieza seleccionada, en cm */
+  moveSelectedPieceBy(dx: number, dy: number): void;
+  /** arrastre en vivo de un handle Bézier del nodo seleccionado */
+  moveSelectedHandle(which: "in" | "out", to: Vec2): void;
+  setDraft(d: Draft | null): void;
+  addDraftPoint(p: Vec2): void;
+  /** convierte el trazo en curso en pieza (cerrada) o línea interna (abierta) */
+  finishPath(close: boolean): void;
+  commitRect(a: Vec2, b: Vec2): void;
+  commitCircle(c: Vec2, r: number): void;
+  deleteSelection(): void;
+  duplicateSelected(): void;
+  mirrorSelected(): void;
+  rotateSelected(deg: number): void;
+  addNodeAt(pieceId: string, segIndex: number, t: number): void;
+  setSelectedNodeSmooth(smooth: boolean): void;
+  setSelectedNodePos(x: number, y: number): void;
+  patchSelectedPiece(patch: PiecePatch): void;
+  /** inserta una pieza de la biblioteca a la derecha del patrón actual */
+  insertLibraryPiece(entry: LibraryEntry): void;
   /** marca o desmarca un piquete en el nodo dado */
   toggleNotch(pieceId: string, nodeId: string): void;
   /** regenera el documento desde unas medidas nuevas (empuja al historial) */
@@ -144,12 +202,15 @@ export const useEditor = create<EditorState>((set, get) => ({
   measurements: { ...DEFAULT_MEASUREMENTS },
   blockKind: "pantalon-denim",
   saved: { id: null, dirty: false, lastSaved: null },
+  draft: null,
+  viewSize: { w: 800, h: 500 },
+  setViewSize: (w, h) => set({ viewSize: { w, h } }),
 
   doc: () => get().history.present,
   canUndo: () => hCanUndo(get().history),
   canRedo: () => hCanRedo(get().history),
 
-  setTool: (tool) => set({ tool }),
+  setTool: (tool) => set({ tool, draft: null }),
   setZoom: (zoom) => set({ zoom: Math.max(0.5, Math.min(60, zoom)) }),
   setPan: (pan) => set({ pan }),
   setCursor: (cursor) => set({ cursor }),
@@ -173,11 +234,209 @@ export const useEditor = create<EditorState>((set, get) => ({
 
   clearSelection: () => set({ selectedPieceId: null, selectedNodeId: null }),
 
+  beginDrag: () => {
+    const { history, saved } = get();
+    set({ history: hCheckpoint(history), saved: { ...saved, dirty: true } });
+  },
+
   moveSelectedNode: (to) => {
-    const { selectedPieceId, selectedNodeId, history, saved } = get();
+    const { selectedPieceId, selectedNodeId, history } = get();
     if (!selectedPieceId || !selectedNodeId) return;
     const next = docMoveNode(history.present, selectedPieceId, selectedNodeId, to);
-    set({ history: hCommit(history, next), saved: { ...saved, dirty: true } });
+    set({ history: hReplace(history, next) });
+  },
+
+  moveSelectedPieceBy: (dx, dy) => {
+    const { selectedPieceId, history } = get();
+    const piece = history.present.pieces.find((p) => p.id === selectedPieceId);
+    if (!piece) return;
+    const moved = translatePiece(piece, dx, dy);
+    set({ history: hReplace(history, setPieceNodes(history.present, piece.id, moved.nodes)) });
+  },
+
+  moveSelectedHandle: (which, to) => {
+    const { selectedPieceId, selectedNodeId, history } = get();
+    const piece = history.present.pieces.find((p) => p.id === selectedPieceId);
+    if (!piece || !selectedNodeId) return;
+    const next = moveHandle(piece, selectedNodeId, which, to);
+    set({ history: hReplace(history, setPieceNodes(history.present, piece.id, next.nodes)) });
+  },
+
+  setDraft: (draft) => set({ draft }),
+
+  addDraftPoint: (p) =>
+    set((s) =>
+      s.draft?.kind === "path" ? { draft: { ...s.draft, points: [...s.draft.points, p] } } : s,
+    ),
+
+  finishPath: (close) => {
+    const { draft, history, saved } = get();
+    if (draft?.kind !== "path") return;
+    const minPts = close ? 3 : 2;
+    if (draft.points.length < minPts) { set({ draft: null }); return; }
+    const n = history.present.pieces.length + 1;
+    const piece = pieceFromPoints(
+      close ? `Pieza ${n}` : `Línea interna ${n}`,
+      draft.points,
+      { closed: close, smooth: draft.smooth },
+    );
+    set({
+      history: hCommit(history, addPiece(history.present, piece)),
+      selectedPieceId: piece.id,
+      selectedNodeId: null,
+      draft: null,
+      saved: { ...saved, dirty: true },
+    });
+  },
+
+  commitRect: (a, b) => {
+    const { history, saved } = get();
+    if (Math.abs(a.x - b.x) < 0.3 || Math.abs(a.y - b.y) < 0.3) { set({ draft: null }); return; }
+    const piece = rectPiece(`Pieza ${history.present.pieces.length + 1}`, a, b);
+    set({
+      history: hCommit(history, addPiece(history.present, piece)),
+      selectedPieceId: piece.id,
+      selectedNodeId: null,
+      draft: null,
+      saved: { ...saved, dirty: true },
+    });
+  },
+
+  commitCircle: (c, r) => {
+    const { history, saved } = get();
+    if (r < 0.3) { set({ draft: null }); return; }
+    const piece = ellipsePiece(`Pieza ${history.present.pieces.length + 1}`, c, r, r);
+    set({
+      history: hCommit(history, addPiece(history.present, piece)),
+      selectedPieceId: piece.id,
+      selectedNodeId: null,
+      draft: null,
+      saved: { ...saved, dirty: true },
+    });
+  },
+
+  deleteSelection: () => {
+    const { selectedPieceId, selectedNodeId, history, saved } = get();
+    const piece = history.present.pieces.find((p) => p.id === selectedPieceId);
+    if (!piece) return;
+    if (selectedNodeId) {
+      const next = removeNode(piece, selectedNodeId);
+      if (next === piece) return; // ya está en el mínimo de nodos
+      set({
+        history: hCommit(history, setPieceNodes(history.present, piece.id, next.nodes)),
+        selectedNodeId: null,
+        saved: { ...saved, dirty: true },
+      });
+      return;
+    }
+    set({
+      history: hCommit(history, removePiece(history.present, piece.id)),
+      selectedPieceId: null,
+      saved: { ...saved, dirty: true },
+    });
+  },
+
+  duplicateSelected: () => {
+    const { selectedPieceId, history, saved } = get();
+    const piece = history.present.pieces.find((p) => p.id === selectedPieceId);
+    if (!piece) return;
+    const b = bounds(piece);
+    const copy = translatePiece(clonePiece(piece, `${piece.name} copia`), b.maxX - b.minX + 6, 0);
+    set({
+      history: hCommit(history, addPiece(history.present, copy)),
+      selectedPieceId: copy.id,
+      selectedNodeId: null,
+      saved: { ...saved, dirty: true },
+    });
+  },
+
+  mirrorSelected: () => {
+    const { selectedPieceId, history, saved } = get();
+    const piece = history.present.pieces.find((p) => p.id === selectedPieceId);
+    if (!piece) return;
+    const mirrored = mirrorPiece(piece);
+    const doc = patchPiece(
+      setPieceNodes(history.present, piece.id, mirrored.nodes),
+      piece.id,
+      { grainAngle: mirrored.grainAngle },
+    );
+    set({ history: hCommit(history, doc), selectedNodeId: null, saved: { ...saved, dirty: true } });
+  },
+
+  rotateSelected: (deg) => {
+    const { selectedPieceId, history, saved } = get();
+    const piece = history.present.pieces.find((p) => p.id === selectedPieceId);
+    if (!piece) return;
+    const rotated = rotatePiece(piece, deg);
+    const doc = patchPiece(
+      setPieceNodes(history.present, piece.id, rotated.nodes),
+      piece.id,
+      { grainAngle: rotated.grainAngle },
+    );
+    set({ history: hCommit(history, doc), saved: { ...saved, dirty: true } });
+  },
+
+  addNodeAt: (pieceId, segIndex, t) => {
+    const { history, saved } = get();
+    const piece = history.present.pieces.find((p) => p.id === pieceId);
+    if (!piece) return;
+    const res = insertNodeOnSegment(piece, segIndex, t);
+    set({
+      history: hCommit(history, setPieceNodes(history.present, piece.id, res.piece.nodes)),
+      selectedPieceId: piece.id,
+      selectedNodeId: res.nodeId,
+      saved: { ...saved, dirty: true },
+    });
+  },
+
+  setSelectedNodeSmooth: (smooth) => {
+    const { selectedPieceId, selectedNodeId, history, saved } = get();
+    const piece = history.present.pieces.find((p) => p.id === selectedPieceId);
+    if (!piece || !selectedNodeId) return;
+    const next = setNodeSmooth(piece, selectedNodeId, smooth);
+    set({
+      history: hCommit(history, setPieceNodes(history.present, piece.id, next.nodes)),
+      saved: { ...saved, dirty: true },
+    });
+  },
+
+  setSelectedNodePos: (x, y) => {
+    const { selectedPieceId, selectedNodeId, history, saved } = get();
+    if (!selectedPieceId || !selectedNodeId) return;
+    set({
+      history: hCommit(history, docMoveNode(history.present, selectedPieceId, selectedNodeId, { x, y })),
+      saved: { ...saved, dirty: true },
+    });
+  },
+
+  patchSelectedPiece: (patch) => {
+    const { selectedPieceId, history, saved } = get();
+    if (!selectedPieceId) return;
+    set({
+      history: hCommit(history, patchPiece(history.present, selectedPieceId, patch)),
+      saved: { ...saved, dirty: true },
+    });
+  },
+
+  insertLibraryPiece: (entry) => {
+    const { history, saved, measurements, pan, zoom, viewSize } = get();
+    const doc = history.present;
+    const piece: Piece = entry.make(measurements);
+    const pb = bounds(piece);
+    // centrada en lo que se ve del lienzo, para que aparezca a la vista
+    const cx = (viewSize.w / 2 - pan.x) / zoom;
+    const cy = (viewSize.h / 2 - pan.y) / zoom;
+    const placed = translatePiece(
+      piece,
+      cx - (pb.minX + pb.maxX) / 2,
+      cy - (pb.minY + pb.maxY) / 2,
+    );
+    set({
+      history: hCommit(history, addPiece(doc, placed)),
+      selectedPieceId: placed.id,
+      selectedNodeId: null,
+      saved: { ...saved, dirty: true },
+    });
   },
 
   toggleNotch: (pieceId, nodeId) => {
@@ -230,6 +489,7 @@ export const useEditor = create<EditorState>((set, get) => ({
       selectedNodeId: null,
       blockKind: (doc.blockKind as BlockKind | undefined) ?? "pantalon-denim",
       activeSizes: [...doc.sizes],
+      draft: null,
       saved: { id: savedId ?? null, dirty: false, lastSaved: new Date().toISOString() },
     }),
 

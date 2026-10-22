@@ -10,9 +10,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Canvas from "./Canvas";
 import Trazo from "./Trazo";
 import ExportModal from "./ExportModal";
-import { useEditor, SIZE_COLORS } from "./store";
+import { useEditor, SIZE_COLORS, type Tool } from "./store";
 import { bounds, samplePath, type Piece } from "@hilonova/geometry";
-import { findBlock, type BodyMeasurements, type BlockKind } from "@hilonova/blocks";
+import {
+  findBlock,
+  PIECE_LIBRARY,
+  LIBRARY_CATEGORIES,
+  type BodyMeasurements,
+  type BlockKind,
+} from "@hilonova/blocks";
 import { loadDoc as libLoad, saveItem, renameItem } from "../lib/library";
 import { MeasurementSilhouette } from "./MeasurementSilhouette";
 import TechPack from "./TechPack";
@@ -199,47 +205,56 @@ function ToolRail() {
   const setTool = useEditor((s) => s.setTool);
   const snap = useEditor((s) => s.snapGrid);
   const toggleSnap = useEditor((s) => s.toggleSnap);
+  const ic = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none" } as const;
+  const st = { stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" } as const;
   return (
     <aside className="st-rail">
-      <RailBtn active={tool === "select"} onClick={() => setTool("select")} title="Seleccionar">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <path d="M5 3l15 7-6 2-2 6-7-15Z" fill="currentColor" />
-        </svg>
+      <RailBtn active={tool === "select"} onClick={() => setTool("select")} title="Seleccionar y mover (V)">
+        <svg {...ic}><path d="M5 3l15 7-6 2-2 6-7-15Z" fill="currentColor" /></svg>
       </RailBtn>
-      <RailBtn active={tool === "pan"} onClick={() => setTool("pan")} title="Pan (shift+drag)">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <path d="M9 11V5a1.5 1.5 0 0 1 3 0v6M12 8a1.5 1.5 0 1 1 3 0v4M15 10a1.5 1.5 0 1 1 3 0v5a5 5 0 0 1-5 5h-2a4 4 0 0 1-3.3-1.8L5 14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+      <RailBtn active={tool === "pan"} onClick={() => setTool("pan")} title="Mano / pan (H · Shift+arrastre)">
+        <svg {...ic}><path d="M9 11V5a1.5 1.5 0 0 1 3 0v6M12 8a1.5 1.5 0 1 1 3 0v4M15 10a1.5 1.5 0 1 1 3 0v5a5 5 0 0 1-5 5h-2a4 4 0 0 1-3.3-1.8L5 14" {...st} /></svg>
       </RailBtn>
       <div className="st-rail-sep" />
-      <RailBtn active={tool === "notch"} onClick={() => setTool("notch")} title="Piquete (click en nodo)">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <path d="M12 4v16M9 8l3-4 3 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <RailBtn active={tool === "line"} onClick={() => setTool("line")} title="Polilínea: clic por punto, clic en el primero o Enter para cerrar, doble clic para dejar abierta (L)">
+        <svg {...ic}>
+          <path d="M5 19 12 6l7 13" {...st} />
+          <circle cx="5" cy="19" r="1.8" fill="currentColor" />
+          <circle cx="12" cy="6" r="1.8" fill="currentColor" />
+          <circle cx="19" cy="19" r="1.8" fill="currentColor" />
         </svg>
       </RailBtn>
-      <RailBtn disabled title="Punto (Fase 2.5)">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="3.5" fill="currentColor" />
-          <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.6" />
+      <RailBtn active={tool === "curve"} onClick={() => setTool("curve")} title="Curva suave por puntos: igual que la polilínea, con curvas (C)">
+        <svg {...ic}>
+          <path d="M4 18C6 6 12 6 12 12s6 6 8-6" {...st} />
+          <circle cx="4" cy="18" r="1.8" fill="currentColor" />
+          <circle cx="20" cy="6" r="1.8" fill="currentColor" />
         </svg>
       </RailBtn>
-      <RailBtn disabled title="Línea (Fase 2.5)">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <path d="M5 19 19 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          <circle cx="5" cy="19" r="2" fill="currentColor" />
-          <circle cx="19" cy="5" r="2" fill="currentColor" />
+      <RailBtn active={tool === "rect"} onClick={() => setTool("rect")} title="Rectángulo: arrastra (R)">
+        <svg {...ic}><rect x="4" y="6" width="16" height="12" rx="1" {...st} /></svg>
+      </RailBtn>
+      <RailBtn active={tool === "circle"} onClick={() => setTool("circle")} title="Círculo: arrastra desde el centro (O)">
+        <svg {...ic}><circle cx="12" cy="12" r="7.5" {...st} /></svg>
+      </RailBtn>
+      <RailBtn active={tool === "addnode"} onClick={() => setTool("addnode")} title="Agregar nodo en un contorno: clic sobre la línea (A)">
+        <svg {...ic}>
+          <path d="M4 17c4-9 12-9 16 0" {...st} />
+          <path d="M12 3v6M9 6h6" {...st} />
         </svg>
       </RailBtn>
-      <RailBtn disabled title="Curva Bézier (Fase 2.5)">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <path d="M4 19C4 10 20 14 20 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          <circle cx="4" cy="19" r="2" fill="currentColor" />
-          <circle cx="20" cy="5" r="2" fill="currentColor" />
+      <RailBtn active={tool === "notch"} onClick={() => setTool("notch")} title="Piquete: clic en un nodo (N)">
+        <svg {...ic}><path d="M12 4v16M9 8l3-4 3 4" {...st} /></svg>
+      </RailBtn>
+      <RailBtn active={tool === "measure"} onClick={() => setTool("measure")} title="Medir distancia: arrastra (M)">
+        <svg {...ic}>
+          <path d="M3 15 15 3l6 6L9 21Z" {...st} />
+          <path d="M7 11l2 2M10 8l2 2M13 5l2 2" {...st} />
         </svg>
       </RailBtn>
       <div className="st-rail-sep" />
       <RailBtn active={snap} onClick={toggleSnap} title="Snap a rejilla">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <svg {...ic}>
           <rect x="4" y="4" width="16" height="16" rx="1" stroke="currentColor" strokeWidth="1.5" />
           <path d="M4 10h16M4 15h16M10 4v16M15 4v16" stroke="currentColor" strokeWidth="1" opacity=".6" />
         </svg>
@@ -438,12 +453,44 @@ function PiecesPanel() {
   const doc = useEditor((s) => s.history.present);
   const selected = useEditor((s) => s.selectedPieceId);
   const selectPiece = useEditor((s) => s.selectPiece);
+  const insertLibraryPiece = useEditor((s) => s.insertLibraryPiece);
+  const [libOpen, setLibOpen] = useState(false);
   return (
     <aside className="st-side">
       <div className="st-side-h">
         <span>Piezas</span>
-        <span className="st-chip">{doc.pieces.length}</span>
+        <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <span className="st-chip">{doc.pieces.length}</span>
+          <button
+            className="st-mini"
+            onClick={() => setLibOpen((o) => !o)}
+            aria-pressed={libOpen}
+            title="Biblioteca de piezas: insertar delantero, espalda, manga, cuello, puño, bolsillos…"
+          >
+            {libOpen ? "Cerrar" : "+ Biblioteca"}
+          </button>
+        </span>
       </div>
+      {libOpen && (
+        <div className="st-lib">
+          {LIBRARY_CATEGORIES.map((cat) => (
+            <div key={cat} className="st-lib-cat">
+              <div className="st-lib-h">{cat}</div>
+              {PIECE_LIBRARY.filter((e) => e.category === cat).map((e) => (
+                <button
+                  key={e.id}
+                  className="st-lib-item"
+                  onClick={() => insertLibraryPiece(e)}
+                  title={`Insertar “${e.name}” (${e.source})`}
+                >
+                  <span>{e.name}</span>
+                  <small>{e.source}</small>
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
       {doc.pieces.map((p) => {
         const b = bounds(p);
         const w = b.maxX - b.minX;
@@ -458,7 +505,7 @@ function PiecesPanel() {
             <div className="st-piece-info">
               <div className="st-piece-name">{p.name}</div>
               <div className="st-piece-meta">
-                {w.toFixed(0)} × {h.toFixed(0)} cm · ×{p.quantity}
+                {w.toFixed(0)} × {h.toFixed(0)} cm · ×{p.quantity}{p.closed ? "" : " · línea"}
               </div>
             </div>
           </button>
@@ -486,12 +533,82 @@ function PieceThumb({ piece }: { piece: Piece }) {
 
 // ─── Panel de propiedades ────────────────────────────────────────────────────
 
+/** Campo numérico que confirma al salir o con Enter (evita una entrada de deshacer por tecla). */
+function NumInput({
+  value, onCommit, step = 0.1, min, max, unit,
+}: {
+  value: number;
+  onCommit: (v: number) => void;
+  step?: number;
+  min?: number;
+  max?: number;
+  unit?: string;
+}) {
+  const shown = Number.isFinite(value) ? String(Math.round(value * 100) / 100) : "";
+  const [text, setText] = useState(shown);
+  useEffect(() => setText(shown), [shown]);
+  function commit() {
+    let v = parseFloat(text.replace(",", "."));
+    if (!Number.isFinite(v)) { setText(shown); return; }
+    if (min !== undefined) v = Math.max(min, v);
+    if (max !== undefined) v = Math.min(max, v);
+    if (v !== value) onCommit(v);
+    else setText(shown);
+  }
+  return (
+    <span className="st-input-wrap">
+      <input
+        className="st-input mono"
+        type="number"
+        step={step}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+      />
+      {unit && <em>{unit}</em>}
+    </span>
+  );
+}
+
+function TextInput({ value, onCommit }: { value: string; onCommit: (v: string) => void }) {
+  const [text, setText] = useState(value);
+  useEffect(() => setText(value), [value]);
+  return (
+    <input
+      className="st-input st-input-text"
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={() => { if (text !== value) onCommit(text); }}
+      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+    />
+  );
+}
+
+function EditField({ name, children }: { name: string; children: React.ReactNode }) {
+  return (
+    <div className="st-field">
+      <span>{name}</span>
+      {children}
+    </div>
+  );
+}
+
 function PropsPanel() {
   const doc = useEditor((s) => s.history.present);
   const pieceId = useEditor((s) => s.selectedPieceId);
   const nodeId = useEditor((s) => s.selectedNodeId);
+  const patch = useEditor((s) => s.patchSelectedPiece);
+  const duplicate = useEditor((s) => s.duplicateSelected);
+  const mirror = useEditor((s) => s.mirrorSelected);
+  const rotate = useEditor((s) => s.rotateSelected);
+  const del = useEditor((s) => s.deleteSelection);
+  const setNodePos = useEditor((s) => s.setSelectedNodePos);
+  const setSmooth = useEditor((s) => s.setSelectedNodeSmooth);
+  const toggleNotch = useEditor((s) => s.toggleNotch);
   const piece = pieceId ? doc.pieces.find((p) => p.id === pieceId) : null;
   const node = piece && nodeId ? piece.nodes.find((n) => n.id === nodeId) : null;
+  const isCurve = !!(node && (node.handleIn || node.handleOut));
 
   return (
     <aside className="st-props">
@@ -500,28 +617,67 @@ function PropsPanel() {
       </div>
       {!piece && (
         <div className="st-empty">
-          Haz click en un nodo del lienzo para editar.
+          Selecciona una pieza o un nodo en el lienzo para editarlo.
           <br />
-          <span className="st-dim">Shift o Alt + arrastre → pan · Rueda → zoom</span>
+          <span className="st-dim">
+            Dibujar: L línea · C curva · R rectángulo · O círculo · A agregar nodo · M medir
+            <br />
+            Shift o Alt + arrastre → pan · Rueda → zoom · Supr → borrar · Ctrl+D → duplicar
+          </span>
         </div>
       )}
       {piece && (
         <div className="st-group">
           <div className="st-label">Pieza</div>
-          <Field name="Nombre" value={piece.name} />
-          <Field name="Cantidad" value={`×${piece.quantity}`} />
-          <Field name="Tela" value={piece.fabric ?? "—"} />
-          <Field name="Margen costura" value={`${piece.seamAllowance} cm`} />
-          <Field name="Hilo de tela" value={`${piece.grainAngle}°`} />
+          <EditField name="Nombre">
+            <TextInput value={piece.name} onCommit={(v) => patch({ name: v || piece.name })} />
+          </EditField>
+          <EditField name="Cantidad">
+            <NumInput value={piece.quantity} step={1} min={1} max={99} onCommit={(v) => patch({ quantity: Math.round(v) })} />
+          </EditField>
+          <EditField name="Tela">
+            <TextInput value={piece.fabric ?? ""} onCommit={(v) => patch({ fabric: v })} />
+          </EditField>
+          {piece.closed && (
+            <EditField name="Margen costura">
+              <NumInput value={piece.seamAllowance} step={0.1} min={0} max={5} unit="cm" onCommit={(v) => patch({ seamAllowance: v })} />
+            </EditField>
+          )}
+          {piece.closed && (
+            <EditField name="Hilo de tela">
+              <NumInput value={piece.grainAngle} step={5} min={0} max={359} unit="°" onCommit={(v) => patch({ grainAngle: v })} />
+            </EditField>
+          )}
+          <div className="st-actions">
+            <button className="st-act" onClick={duplicate} title="Duplicar (Ctrl+D)">Duplicar</button>
+            <button className="st-act" onClick={mirror} title="Espejar horizontalmente">Espejar</button>
+            <button className="st-act" onClick={() => rotate(-90)} title="Rotar 90° a la izquierda">⟲ 90°</button>
+            <button className="st-act" onClick={() => rotate(90)} title="Rotar 90° a la derecha">⟳ 90°</button>
+            <button className="st-act danger" onClick={() => { useEditor.getState().selectPiece(piece.id); del(); }} title="Eliminar pieza (Supr)">Eliminar</button>
+          </div>
         </div>
       )}
-      {node && (
+      {piece && node && (
         <div className="st-group">
           <div className="st-label">Nodo seleccionado</div>
-          <Field name="X" value={`${node.at.x.toFixed(2)} cm`} />
-          <Field name="Y" value={`${node.at.y.toFixed(2)} cm`} />
-          <Field name="Tipo" value={node.handleIn || node.handleOut ? "curva" : "vértice"} />
-          {node.notch && <Field name="Piquete" value="sí" />}
+          <EditField name="X">
+            <NumInput value={node.at.x} step={0.1} unit="cm" onCommit={(v) => setNodePos(v, node.at.y)} />
+          </EditField>
+          <EditField name="Y">
+            <NumInput value={node.at.y} step={0.1} unit="cm" onCommit={(v) => setNodePos(node.at.x, v)} />
+          </EditField>
+          <EditField name="Tipo">
+            <span className="st-seg">
+              <button className={!isCurve ? "on" : ""} onClick={() => setSmooth(false)}>Vértice</button>
+              <button className={isCurve ? "on" : ""} onClick={() => setSmooth(true)}>Curva</button>
+            </span>
+          </EditField>
+          <div className="st-actions">
+            <button className="st-act" onClick={() => toggleNotch(piece.id, node.id)}>
+              {node.notch ? "Quitar piquete" : "Poner piquete"}
+            </button>
+            <button className="st-act danger" onClick={del} title="Eliminar nodo (Supr)">Eliminar nodo</button>
+          </div>
         </div>
       )}
       <SizesSection />
@@ -530,6 +686,7 @@ function PropsPanel() {
         <Legend color="#EAF2FF" label="Línea de corte" />
         <Legend color="#F0662C" label="Hilo de tela" />
         <Legend color="#3FD0C9" label="Nodos" />
+        <Legend color="#E0A33C" label="Línea interna" />
       </div>
     </aside>
   );
@@ -597,7 +754,20 @@ function Legend({ color, label }: { color: string; label: string }) {
 
 // ─── Status bar ──────────────────────────────────────────────────────────────
 
+const TOOL_HINT: Record<Tool, string> = {
+  select: "Clic: seleccionar · arrastra: mover nodo, handle o pieza",
+  pan: "Arrastra para mover la vista",
+  notch: "Clic en un nodo para poner o quitar piquete",
+  line: "Clic: agregar punto · clic en el primero o Enter: cerrar · doble clic: línea abierta · Esc: cancelar",
+  curve: "Clic: agregar punto (curva suave) · clic en el primero o Enter: cerrar · doble clic: abierta",
+  rect: "Arrastra para dibujar un rectángulo",
+  circle: "Arrastra desde el centro para fijar el radio",
+  addnode: "Clic sobre un contorno para agregar un nodo",
+  measure: "Arrastra para medir una distancia",
+};
+
 function StatusBar() {
+  const tool = useEditor((s) => s.tool);
   const cursor = useEditor((s) => s.cursor);
   const zoom = useEditor((s) => s.zoom);
   const snap = useEditor((s) => s.snapGrid);
@@ -615,7 +785,9 @@ function StatusBar() {
       <span className="st-sep" />
       <span className={snap ? "ok" : "mut"}>snap {snap ? "on" : "off"}</span>
       <span className="st-sep" />
-      <span className="ok">● motor v0.1 activo</span>
+      <span className="mut">{TOOL_HINT[tool]}</span>
+      <span className="st-sep" />
+      <span className="ok">● motor v0.5 activo</span>
     </footer>
   );
 }

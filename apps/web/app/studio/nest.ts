@@ -24,6 +24,9 @@ export function buildNest(
   blockKind: BlockKind = "pantalon-denim",
 ): NestLayer[] {
   const grads = graduateBlock(blockKind, measurements, baseSize, activeSizes);
+  // si el patrón ya no coincide con el bloque paramétrico (piezas agregadas o
+  // quitadas), no se puede graduar por índice: sin nido hasta la graduación por reglas
+  if (grads.some((g) => g.doc.pieces.length !== base.pieces.length)) return [];
   // referencia: posiciones del primer nodo de cada pieza en el doc base
   const anchors = base.pieces.map((p) => p.nodes[0]?.at ?? { x: 0, y: 0 });
   return grads.map(({ size, doc }) => {
