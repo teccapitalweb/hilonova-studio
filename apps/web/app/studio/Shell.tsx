@@ -319,6 +319,9 @@ function ToolRail() {
       <RailBtn active={tool === "notch"} onClick={() => setTool("notch")} title="Piquete: clic en un nodo (N)">
         <svg {...ic}><path d="M12 4v16M9 8l3-4 3 4" {...st} /></svg>
       </RailBtn>
+      <RailBtn active={tool === "text"} onClick={() => setTool("text")} title="Texto: clic sobre una pieza para escribir una nota (T)">
+        <svg {...ic}><path d="M5 6V4h14v2M12 4v16M9 20h6" {...st} /></svg>
+      </RailBtn>
       <RailBtn active={tool === "measure"} onClick={() => setTool("measure")} title="Medir distancia: arrastra (M)">
         <svg {...ic}>
           <path d="M3 15 15 3l6 6L9 21Z" {...st} />
@@ -665,6 +668,12 @@ function PropsPanel() {
   const paste = useEditor((s) => s.pasteClipboard);
   const clipCount = useEditor((s) => s.clipboard.length);
   const count = (pieceId ? 1 : 0) + multi.length;
+  const selLabel = useEditor((s) => s.selectedLabel);
+  const patchLabel = useEditor((s) => s.patchSelectedLabel);
+  const delLabel = useEditor((s) => s.deleteSelectedLabel);
+  const label = selLabel
+    ? doc.pieces.find((p) => p.id === selLabel.pieceId)?.labels?.find((l) => l.id === selLabel.labelId) ?? null
+    : null;
   const piece = pieceId ? doc.pieces.find((p) => p.id === pieceId) : null;
   const node = piece && nodeId ? piece.nodes.find((n) => n.id === nodeId) : null;
   const isCurve = !!(node && (node.handleIn || node.handleOut));
@@ -674,7 +683,22 @@ function PropsPanel() {
       <div className="st-side-h">
         <span>Propiedades</span>
       </div>
-      {!piece && (
+      {label && (
+        <div className="st-group">
+          <div className="st-label">Texto</div>
+          <EditField name="Contenido">
+            <TextInput value={label.text} onCommit={(v) => patchLabel({ text: v || label.text })} />
+          </EditField>
+          <EditField name="Alto del texto">
+            <NumInput value={label.size} step={0.1} min={0.3} max={10} unit="cm" onCommit={(v) => patchLabel({ size: v })} />
+          </EditField>
+          <p className="st-hint">Arrástralo para moverlo. Se mueve y gira con su pieza y sale en DXF, SVG y PDF.</p>
+          <div className="st-actions">
+            <button className="st-act danger" onClick={delLabel} title="Eliminar texto (Supr)">Eliminar texto</button>
+          </div>
+        </div>
+      )}
+      {!piece && !label && (
         <div className="st-empty">
           Selecciona una pieza o un nodo en el lienzo para editarlo.
           <br />
@@ -850,6 +874,7 @@ const TOOL_HINT: Record<Tool, string> = {
   circle: "Arrastra desde el centro para fijar el radio",
   addnode: "Clic sobre un contorno para agregar un nodo",
   measure: "Arrastra para medir una distancia",
+  text: "Clic sobre una pieza para agregar un texto (nota, medida, instrucción)",
 };
 
 function StatusBar() {

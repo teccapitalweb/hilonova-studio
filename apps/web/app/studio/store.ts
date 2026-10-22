@@ -29,6 +29,11 @@ import {
   rotatePiece,
   rotatePieceAbout,
   piecesCenter,
+  addLabelToPiece,
+  updateLabel,
+  moveLabel,
+  removeLabel,
+  type PieceLabel,
   insertNodeOnSegment,
   removeNode,
   setNodeSmooth,
@@ -77,7 +82,7 @@ export const SIZE_COLORS: Record<string, string> = {
 
 export type Tool =
   | "select" | "pan" | "notch"
-  | "line" | "curve" | "rect" | "circle" | "addnode" | "measure";
+  | "line" | "curve" | "rect" | "circle" | "addnode" | "measure" | "text";
 
 /** Trazo en construcción (todavía no es parte del documento). */
 export type Draft =
@@ -102,6 +107,8 @@ interface EditorState {
   selectedPieceId: string | null;
   /** piezas seleccionadas además de la principal (selección múltiple) */
   multi: string[];
+  /** texto seleccionado (pertenece a una pieza) */
+  selectedLabel: { pieceId: string; labelId: string } | null;
   /** portapapeles de piezas (copiar y pegar) */
   clipboard: Piece[];
   pasteCount: number;
@@ -160,6 +167,13 @@ interface EditorState {
   selectPiece(id: string | null): void;
   /** Ctrl+clic: agrega o quita una pieza de la selección */
   toggleSelectPiece(id: string): void;
+  /** agrega un texto a la pieza en la posición dada (cm del documento) */
+  addLabelAt(pieceId: string, at: Vec2): void;
+  selectLabel(pieceId: string, labelId: string): void;
+  patchSelectedLabel(patch: Partial<Pick<PieceLabel, "text" | "size">>): void;
+  /** arrastre en vivo del texto seleccionado (requiere beginDrag antes) */
+  moveSelectedLabelTo(at: Vec2): void;
+  deleteSelectedLabel(): void;
   selectPieces(ids: string[]): void;
   selectAllPieces(): void;
   copySelected(): void;
@@ -225,6 +239,18 @@ interface EditorState {
   markSaved(id: string): void;
 }
 
+/** Reemplaza los textos de una pieza dentro del documento. */
+function patchPieceLabels(doc: PatternDoc, pieceId: string, piece: Piece): PatternDoc {
+  return {
+    ...doc,
+    pieces: doc.pieces.map((p) => {
+      if (p.id !== pieceId) return p;
+      const { labels: _old, ...rest } = p;
+      return piece.labels?.length ? { ...rest, labels: piece.labels } : rest;
+    }),
+  };
+}
+
 /** Ids de las piezas seleccionadas (la principal primero, sin repetidos). */
 export function selectionOf(s: { selectedPieceId: string | null; multi: string[] }): string[] {
   return [...new Set([...(s.selectedPieceId ? [s.selectedPieceId] : []), ...s.multi])];
@@ -246,6 +272,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   history: initHistory(demoJeanDoc()),
   selectedPieceId: null,
   multi: [],
+  selectedLabel: null,
   clipboard: [],
   pasteCount: 0,
   selectedNodeId: null,
@@ -290,25 +317,75 @@ export const useEditor = create<EditorState>((set, get) => ({
   })),
 
   selectPiece: (id) =>
-    set({ selectedPieceId: id, multi: [], selectedNodeId: null }),
+    set({ selectedPieceId: id, multi: [], selectedNodeId: null, selectedLabel: null }),
 
   selectNode: (pieceId, nodeId) =>
-    set({ selectedPieceId: pieceId, multi: [], selectedNodeId: nodeId }),
+    set({ selectedPieceId: pieceId, multi: [], selectedNodeId: nodeId, selectedLabel: null }),
 
-  clearSelection: () => set({ selectedPieceId: null, multi: [], selectedNodeId: null }),
+  clearSelection: () => set({ selectedPieceId: null, multi: [], selectedNodeId: null, selectedLabel: null }),
+
+  addLabelAt: (pieceId, at) => {
+    const { history, saved } = get();
+    const piece = history.present.pieces.find((p) => p.id === pieceId);
+    if (!piece) return;
+    const res = addLabelToPiece(piece, at);
+    set({
+      history: hCommit(history, patchPieceLabels(history.present, pieceId, res.piece)),
+      selectedPieceId: null,
+      multi: [],
+      selectedNodeId: null,
+      selectedLabel: { pieceId, labelId: res.labelId },
+      tool: "select",
+      saved: { ...saved, dirty: true },
+    });
+  },
+
+  selectLabel: (pieceId, labelId) =>
+    set({ selectedPieceId: null, multi: [], selectedNodeId: null, selectedLabel: { pieceId, labelId } }),
+
+  patchSelectedLabel: (patch) => {
+    const { selectedLabel, history, saved } = get();
+    if (!selectedLabel) return;
+    const piece = history.present.pieces.find((p) => p.id === selectedLabel.pieceId);
+    if (!piece) return;
+    set({
+      history: hCommit(history, patchPieceLabels(history.present, piece.id, updateLabel(piece, selectedLabel.labelId, patch))),
+      saved: { ...saved, dirty: true },
+    });
+  },
+
+  moveSelectedLabelTo: (at) => {
+    const { selectedLabel, history } = get();
+    if (!selectedLabel) return;
+    const piece = history.present.pieces.find((p) => p.id === selectedLabel.pieceId);
+    if (!piece) return;
+    set({ history: hReplace(history, patchPieceLabels(history.present, piece.id, moveLabel(piece, selectedLabel.labelId, at))) });
+  },
+
+  deleteSelectedLabel: () => {
+    const { selectedLabel, history, saved } = get();
+    if (!selectedLabel) return;
+    const piece = history.present.pieces.find((p) => p.id === selectedLabel.pieceId);
+    if (!piece) return;
+    set({
+      history: hCommit(history, patchPieceLabels(history.present, piece.id, removeLabel(piece, selectedLabel.labelId))),
+      selectedLabel: null,
+      saved: { ...saved, dirty: true },
+    });
+  },
 
   toggleSelectPiece: (id) => {
     const cur = selectionOf(get());
     const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
-    set({ selectedPieceId: next[0] ?? null, multi: next.slice(1), selectedNodeId: null });
+    set({ selectedPieceId: next[0] ?? null, multi: next.slice(1), selectedNodeId: null, selectedLabel: null });
   },
 
   selectPieces: (ids) =>
-    set({ selectedPieceId: ids[0] ?? null, multi: ids.slice(1), selectedNodeId: null }),
+    set({ selectedPieceId: ids[0] ?? null, multi: ids.slice(1), selectedNodeId: null, selectedLabel: null }),
 
   selectAllPieces: () => {
     const ids = get().history.present.pieces.map((p) => p.id);
-    set({ selectedPieceId: ids[0] ?? null, multi: ids.slice(1), selectedNodeId: null });
+    set({ selectedPieceId: ids[0] ?? null, multi: ids.slice(1), selectedNodeId: null, selectedLabel: null });
   },
 
   copySelected: () => {

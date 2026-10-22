@@ -19,6 +19,17 @@ export interface Node {
   grade?: { dx: number; dy: number };
 }
 
+/** Texto pegado a una pieza (nota, medida, instrucción). La posición es relativa
+ *  al primer nodo de la pieza, así que el texto acompaña a la pieza al moverla. */
+export interface PieceLabel {
+  id: string;
+  dx: number;
+  dy: number;
+  text: string;
+  /** alto del texto, cm */
+  size: number;
+}
+
 /** Una pieza del patrón (delantero, espalda, pretina, ...). */
 export interface Piece {
   id: string;
@@ -32,6 +43,8 @@ export interface Piece {
   /** path cerrado (silueta de pieza) o abierto (línea interna) */
   closed: boolean;
   nodes: Node[];
+  /** textos pegados a la pieza */
+  labels?: PieceLabel[];
 }
 
 /** Metadata editable del Tech Pack — ficha técnica para la maquila.

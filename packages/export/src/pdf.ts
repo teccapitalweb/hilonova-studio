@@ -3,7 +3,7 @@
 // dependencia aquí si el consumidor no la necesita.
 
 import type { PatternDoc, Piece, Vec2 } from "@hilonova/geometry";
-import { samplePath, offsetPolyline } from "@hilonova/geometry";
+import { samplePath, offsetPolyline, labelPosition } from "@hilonova/geometry";
 
 /** Interfaz mínima de jsPDF que usamos — permite tipar sin arrastrar @types. */
 export interface JsPdfLike {
@@ -136,6 +136,13 @@ export function renderPdfTiled(
           pdf.setDrawColor(240, 102, 44);
           pdf.setLineWidth(0.4);
           pdf.line(px(x), py(y), px(x), py(y - piece.seamAllowance * 0.9));
+        }
+
+        // textos pegados a la pieza (el alto en cm pasa a puntos: 1 cm ≈ 28.35 pt)
+        for (const l of piece.labels ?? []) {
+          const pos = labelPosition(piece, l);
+          pdf.setFontSize(Math.max(5, l.size * 28.35));
+          pdf.text(l.text, px(pos.x + offsetX), py(pos.y));
         }
 
         // etiqueta

@@ -2,7 +2,7 @@
 // servir como vista previa del documento. Mantiene las unidades del doc.
 
 import type { PatternDoc, Piece, Vec2 } from "@hilonova/geometry";
-import { samplePath, offsetPolyline } from "@hilonova/geometry";
+import { samplePath, offsetPolyline, labelPosition } from "@hilonova/geometry";
 
 const pathD = (pts: readonly Vec2[], closed: boolean): string => {
   if (pts.length === 0) return "";
@@ -43,6 +43,12 @@ function pieceSvg(piece: Piece, offset: Vec2): string {
     const x = n.at.x + offset.x;
     const y = n.at.y + offset.y;
     out += `<line class="notch" x1="${x.toFixed(3)}" y1="${y.toFixed(3)}" x2="${x.toFixed(3)}" y2="${(y - piece.seamAllowance * 0.9).toFixed(3)}" stroke="#F0662C" stroke-width="0.15"/>`;
+  }
+
+  // textos pegados a la pieza
+  for (const l of piece.labels ?? []) {
+    const pos = labelPosition(piece, l);
+    out += `<text class="label" x="${(pos.x + offset.x).toFixed(3)}" y="${(pos.y + offset.y).toFixed(3)}" font-family="Inter, sans-serif" font-size="${l.size.toFixed(2)}" fill="#14192A">${escapeText(l.text)}</text>`;
   }
 
   // etiqueta

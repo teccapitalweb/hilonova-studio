@@ -9,7 +9,7 @@
 // moderno respeta el header "$INSUNITS" para interpretar correctamente.
 
 import type { PatternDoc, Piece, Vec2 } from "@hilonova/geometry";
-import { samplePath, offsetPolyline, gradeDoc, compareSizes } from "@hilonova/geometry";
+import { samplePath, offsetPolyline, gradeDoc, compareSizes, labelPosition } from "@hilonova/geometry";
 
 const UNIT_CODE: Record<string, number> = { cm: 5, mm: 4, in: 1 };
 
@@ -138,6 +138,12 @@ function pieceEntities(piece: Piece, offset: Vec2, label = ""): string {
     Math.max(1.2, h * 0.025),
     "8_Text",
   );
+
+  // textos pegados a la pieza (notas, medidas, instrucciones)
+  for (const l of piece.labels ?? []) {
+    const pos = labelPosition(piece, l);
+    out += text({ x: pos.x + offset.x, y: pos.y + offset.y }, ascii(l.text), l.size, "8_Text");
+  }
 
   return out;
 }

@@ -3,7 +3,7 @@
 // herramientas de dibujo (línea, curva, rectángulo, círculo), agregar/quitar
 // nodos, espejar, rotar y duplicar.
 
-import { makeId, node as makeNode, type Node, type PatternDoc, type Piece } from "./doc";
+import { makeId, node as makeNode, type Node, type PatternDoc, type Piece, type PieceLabel } from "./doc";
 import { evalBezier, segmentBezier } from "./bezier";
 import { bounds, samplePath } from "./piece";
 import { dist, lerp, normalize, sub, type Vec2 } from "./vec";
@@ -44,7 +44,13 @@ export function cloneNodes(nodes: readonly Node[]): Node[] {
 
 /** Copia una pieza completa con ids nuevos. */
 export function clonePiece(piece: Piece, name = piece.name): Piece {
-  return { ...piece, id: makeId("pz"), name, nodes: cloneNodes(piece.nodes) };
+  return {
+    ...piece,
+    id: makeId("pz"),
+    name,
+    nodes: cloneNodes(piece.nodes),
+    ...(piece.labels ? { labels: piece.labels.map((l) => ({ ...l, id: makeId("lb") })) } : {}),
+  };
 }
 
 const hasLen = (v: Vec2 | undefined): v is Vec2 => !!v && Math.hypot(v.x, v.y) > EPS;
@@ -77,7 +83,15 @@ export function mirrorPiece(piece: Piece): Piece {
       return out;
     })
     .reverse();
-  return { ...piece, nodes, grainAngle: -piece.grainAngle };
+  const out: Piece = { ...piece, nodes, grainAngle: -piece.grainAngle };
+  if (piece.labels?.length) {
+    const origin = nodes[0]!.at;
+    out.labels = piece.labels.map((l) => {
+      const abs = labelPosition(piece, l);
+      return { ...l, dx: 2 * cx - abs.x - origin.x, dy: abs.y - origin.y };
+    });
+  }
+  return out;
 }
 
 /** Rota la pieza `deg` grados (sentido horario en pantalla) alrededor de su centro. */
@@ -102,7 +116,16 @@ export function rotatePieceAbout(piece: Piece, c: Vec2, deg: number): Piece {
     }
     return out;
   });
-  return { ...piece, nodes, grainAngle: (((piece.grainAngle + deg) % 360) + 360) % 360 };
+  const out: Piece = { ...piece, nodes, grainAngle: (((piece.grainAngle + deg) % 360) + 360) % 360 };
+  if (piece.labels?.length) {
+    const origin = nodes[0]!.at;
+    out.labels = piece.labels.map((l) => {
+      const abs = labelPosition(piece, l);
+      const d = rv({ x: abs.x - c.x, y: abs.y - c.y });
+      return { ...l, dx: c.x + d.x - origin.x, dy: c.y + d.y - origin.y };
+    });
+  }
+  return out;
 }
 
 /** Centro del rectángulo envolvente de varias piezas. */
@@ -324,4 +347,43 @@ export function pointInPiece(piece: Piece, p: Vec2): boolean {
     }
   }
   return inside;
+}
+
+// ─── textos pegados a la pieza ───────────────────────────────────────────────
+
+/** Posición del texto en coordenadas del documento. */
+export function labelPosition(piece: Piece, label: PieceLabel): Vec2 {
+  const o = piece.nodes[0]?.at ?? { x: 0, y: 0 };
+  return { x: o.x + label.dx, y: o.y + label.dy };
+}
+
+/** Agrega un texto a la pieza en la posición `at` (coordenadas del documento). */
+export function addLabelToPiece(piece: Piece, at: Vec2, text = "Texto", size = 1.5): { piece: Piece; labelId: string } {
+  const o = piece.nodes[0]?.at ?? { x: 0, y: 0 };
+  const label: PieceLabel = { id: makeId("lb"), dx: at.x - o.x, dy: at.y - o.y, text, size };
+  return { piece: { ...piece, labels: [...(piece.labels ?? []), label] }, labelId: label.id };
+}
+
+export function updateLabel(piece: Piece, labelId: string, patch: Partial<Pick<PieceLabel, "text" | "size">>): Piece {
+  return { ...piece, labels: (piece.labels ?? []).map((l) => (l.id === labelId ? { ...l, ...patch } : l)) };
+}
+
+export function moveLabel(piece: Piece, labelId: string, to: Vec2): Piece {
+  const o = piece.nodes[0]?.at ?? { x: 0, y: 0 };
+  return {
+    ...piece,
+    labels: (piece.labels ?? []).map((l) => (l.id === labelId ? { ...l, dx: to.x - o.x, dy: to.y - o.y } : l)),
+  };
+}
+
+export function removeLabel(piece: Piece, labelId: string): Piece {
+  const labels = (piece.labels ?? []).filter((l) => l.id !== labelId);
+  const { labels: _drop, ...rest } = piece;
+  return labels.length ? { ...piece, labels } : rest;
+}
+
+/** Caja aproximada del texto (ancho ≈ 0.55 × alto × nº de letras) para hit-test y dibujo. */
+export function labelBox(label: PieceLabel, at: Vec2) {
+  const w = Math.max(label.size, label.text.length * label.size * 0.55);
+  return { minX: at.x, maxX: at.x + w, minY: at.y - label.size, maxY: at.y + label.size * 0.25 };
 }

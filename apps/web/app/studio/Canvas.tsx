@@ -22,6 +22,8 @@ import {
   smoothNodesFromPoints,
   emptyPiece,
   bounds,
+  labelPosition,
+  labelBox,
 } from "@hilonova/geometry";
 import { useEditor, SIZE_COLORS, selectionOf, type Tool } from "./store";
 import { buildNest } from "./nest";
@@ -33,7 +35,7 @@ const EDGE_PX = 10;
 
 const TOOL_KEYS: Record<string, Tool> = {
   v: "select", h: "pan", n: "notch", l: "line", c: "curve",
-  r: "rect", o: "circle", a: "addnode", m: "measure",
+  r: "rect", o: "circle", a: "addnode", m: "measure", t: "text",
 };
 
 type Drag =
@@ -41,6 +43,7 @@ type Drag =
   | { kind: "node"; startPx: Vec2; moved: boolean }
   | { kind: "handle"; which: "in" | "out"; startPx: Vec2; moved: boolean }
   | { kind: "piece"; startPx: Vec2; last: Vec2; moved: boolean }
+  | { kind: "label"; startPx: Vec2; moved: boolean; grab: Vec2 }
   | { kind: "rect" | "circle" | "measure" | "marquee"; startPx: Vec2; origin: Vec2 };
 
 export default function Canvas() {
@@ -50,7 +53,7 @@ export default function Canvas() {
   const draw = useEditor((s) => s);
   const {
     zoom, pan, gridStep, snapGrid, showSeam, showNest, activeSizes, measurements, tool,
-    selectedPieceId, selectedNodeId, blockKind, draft, cursor, multi,
+    selectedPieceId, selectedNodeId, blockKind, draft, cursor, multi, selectedLabel,
     setCursor, setPan, setZoom, selectNode, selectPiece, clearSelection, toggleNotch, toggleSelectPiece,
   } = draw;
   const doc = useEditor((s) => s.history.present);
@@ -242,6 +245,28 @@ export default function Canvas() {
       }
     }
 
+    // textos pegados a las piezas
+    for (const piece of doc.pieces) {
+      for (const l of piece.labels ?? []) {
+        const at = labelPosition(piece, l);
+        const q = toPx(at);
+        const isSel = selectedLabel?.labelId === l.id;
+        ctx.font = `${Math.max(8, l.size * zoom)}px "IBM Plex Sans", sans-serif`;
+        ctx.fillStyle = isSel ? "#FFB48A" : "#FFD98F";
+        ctx.textBaseline = "alphabetic";
+        ctx.fillText(l.text, q.x, q.y);
+        if (isSel) {
+          const bx = labelBox(l, at);
+          const a = toPx({ x: bx.minX, y: bx.minY }), b = toPx({ x: bx.maxX, y: bx.maxY });
+          ctx.strokeStyle = "#F0662C";
+          ctx.lineWidth = 1;
+          ctx.setLineDash([3, 2]);
+          ctx.strokeRect(a.x - 2, a.y - 2, b.x - a.x + 4, b.y - a.y + 4);
+          ctx.setLineDash([]);
+        }
+      }
+    }
+
     // ─── trazo en construcción ────────────────────────────────────────────────
     if (draft) {
       ctx.save();
@@ -313,7 +338,7 @@ export default function Canvas() {
       }
       ctx.restore();
     }
-  }, [doc, zoom, pan, gridStep, selectedPieceId, selectedNodeId, showSeam, showNest, activeSizes, measurements, blockKind, draft, cursor, multi]);
+  }, [doc, zoom, pan, gridStep, selectedPieceId, selectedNodeId, showSeam, showNest, activeSizes, measurements, blockKind, draft, cursor, multi, selectedLabel]);
 
   // ─── resize observer (redraw al cambiar tamaño) ──────────────────────────
   useEffect(() => {
@@ -404,6 +429,22 @@ export default function Canvas() {
       dragState.current = { kind: "measure", startPx: pxStart, origin: p };
       return;
     }
+    if (tool === "text") {
+      // el texto se pega a la pieza bajo el cursor (o a la más cercana)
+      let target: string | null = null;
+      for (let i = doc.pieces.length - 1; i >= 0 && !target; i--) {
+        if (doc.pieces[i]!.closed && pointInPiece(doc.pieces[i]!, world)) target = doc.pieces[i]!.id;
+      }
+      if (!target) {
+        let best = 15; // cm
+        for (const piece of doc.pieces) {
+          const hit = nearestSegment(piece, world);
+          if (hit && hit.distance < best) { best = hit.distance; target = piece.id; }
+        }
+      }
+      if (target) st.addLabelAt(target, snapPoint(world));
+      return;
+    }
     if (tool === "addnode") {
       let best: { pieceId: string; seg: number; t: number; d: number } | null = null;
       for (const piece of doc.pieces) {
@@ -420,6 +461,21 @@ export default function Canvas() {
     }
 
     // ── selección / edición ──
+    // 0) textos (van por encima de las piezas)
+    if (tool === "select") {
+      for (const piece of doc.pieces) {
+        for (const l of piece.labels ?? []) {
+          const at = labelPosition(piece, l);
+          const bx = labelBox(l, at);
+          if (world.x >= bx.minX - 0.5 && world.x <= bx.maxX + 0.5 && world.y >= bx.minY - 0.5 && world.y <= bx.maxY + 0.5) {
+            st.selectLabel(piece.id, l.id);
+            dragState.current = { kind: "label", startPx: pxStart, moved: false, grab: { x: world.x - at.x, y: world.y - at.y } };
+            return;
+          }
+        }
+      }
+    }
+
     // 1) handles Bézier del nodo seleccionado
     if (selectedPieceId && selectedNodeId) {
       const piece = doc.pieces.find((p) => p.id === selectedPieceId);
@@ -499,6 +555,10 @@ export default function Canvas() {
       if (!moved && !d.moved) return;
       if (!d.moved) { st.beginDrag(); d.moved = true; }
       st.moveSelectedNode(snapGrid ? snapTo(world, gridStep * 0.5) : world);
+    } else if (d.kind === "label") {
+      if (!moved && !d.moved) return;
+      if (!d.moved) { st.beginDrag(); d.moved = true; }
+      st.moveSelectedLabelTo({ x: world.x - d.grab.x, y: world.y - d.grab.y });
     } else if (d.kind === "handle") {
       if (!moved && !d.moved) return;
       if (!d.moved) { st.beginDrag(); d.moved = true; }
@@ -585,6 +645,7 @@ export default function Canvas() {
         st.setDraft(pts.length ? { ...st.draft, points: pts } : null);
         return;
       }
+      if ((e.key === "Delete" || e.key === "Backspace") && st.selectedLabel) { st.deleteSelectedLabel(); return; }
       if (e.key === "Delete" || e.key === "Backspace") { st.deleteSelection(); return; }
       const next = TOOL_KEYS[k];
       if (next) st.setTool(next);
