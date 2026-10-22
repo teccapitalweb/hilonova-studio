@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 33
+> Rama: `dev/mvp-9-nov` · Commits: 36
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,63 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## test: 310 pruebas automáticas del motor, las 17 prendas, el trazo y el DXF
+
+- Commit: `bdff913`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: carpeta tests/ con cuatro archivos. geometry: margen de costura hacia afuera
+sin importar el sentido de dibujo, sin picos con puntos repetidos, tallas,
+graduación por reglas de nodo, espejar, rotar e insertar nodos. blocks: para cada
+una de las 17 prendas, número de piezas igual al catálogo, medidas de arranque,
+coordenadas finitas, áreas positivas, ids únicos, sin empalmes sobre la mesa,
+graduación que crece de talla en talla y ancla fija, reglas de tallaje editadas,
+y la biblioteca de piezas. nesting: todas las copias dentro de la tela y sin
+empalmes, métricas coherentes, avisos de piezas que no caben, espejo de pares,
+trazo combinado. dxf: estructura R12, solo entidades POLYLINE/VERTEX/SEQEND/
+LINE/TEXT, ASCII, capas declaradas, margen por fuera y sin picos, hilo y rótulo
+por pieza, todas las tallas en el graduado, y las 17 prendas exportan bien.
+Por qué: red de seguridad para los errores encontrados y los que vengan.
+Verificación: `pnpm test` → 310 pruebas pasan. Prueba de utilidad: con el
+offset.ts y dxf.ts de antes de las correcciones fallan 58 pruebas.
+También corrige un detalle que las pruebas encontraron: una pieza del trazo podía
+sobresalir hasta ~0.05 cm del borde de la tela (el ancho se tomaba del último
+centro de celda y no de la extensión real del contorno).
+Archivos: tests/*.ts, apps/web/app/studio/nesting.ts, README.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## chore: agregar Vitest para pruebas automáticas
+
+- Commit: `97e4557`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: se agrega vitest (^2.1.9) como dependencia de desarrollo en la raíz, los
+scripts `pnpm test` y `pnpm test:watch`, y vitest.config.ts con alias a los
+paquetes @hilonova/* para importar su código fuente. pnpm-workspace.yaml marca
+esbuild con allowBuilds: false (su script de instalación es opcional).
+Por qué: se encontraron tres errores en el DXF que las pruebas manuales no
+detectaron; hace falta una red de seguridad que se corra con un comando.
+Verificación: `pnpm install` y `pnpm test` corren sin errores.
+Archivos: package.json, pnpm-lock.yaml, pnpm-workspace.yaml, vitest.config.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `7d5537d`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md con la corrección del pico en el margen.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## fix(engine): el margen de costura ya no tiene un pico de 5 cm en el primer vértice
 
