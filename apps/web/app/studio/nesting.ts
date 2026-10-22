@@ -8,8 +8,10 @@
 // industrial, pero da consumos realistas y comparables entre tallas.
 
 import {
+  gradeDoc,
   offsetPolyline,
   samplePath,
+  type PatternDoc,
   type Piece,
   type Vec2,
 } from "@hilonova/geometry";
@@ -305,3 +307,24 @@ export function nestPieces(pieces: readonly Piece[], fabricWidth: number): Nesti
 
 /** Contorno de corte de la pieza colocada, en coordenadas del rollo. */
 export const placedPath = (p: PlacedPiece): Vec2[] => p.pts;
+
+export interface MarkerSet {
+  perSize: Array<{ size: string; result: NestingResult }>;
+  /** una prenda de cada talla en el mismo trazo */
+  combined: NestingResult;
+}
+
+/** Trazo de cada talla del documento y el combinado de todas. */
+export function nestBySize(doc: PatternDoc, fabricWidth: number): MarkerSet {
+  const graded = doc.sizes.map((size) => ({ size, doc: gradeDoc(doc, size) }));
+  return {
+    perSize: graded.map(({ size, doc: d }) => ({
+      size,
+      result: nestItems(d.pieces.map((piece) => ({ piece, size })), fabricWidth),
+    })),
+    combined: nestItems(
+      graded.flatMap(({ size, doc: d }) => d.pieces.map((piece) => ({ piece, size }))),
+      fabricWidth,
+    ),
+  };
+}

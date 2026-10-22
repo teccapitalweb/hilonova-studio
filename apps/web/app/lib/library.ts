@@ -117,3 +117,25 @@ export function useLibrary(): LibraryItem[] {
   }, []);
   return items;
 }
+
+// ─── respaldo ───────────────────────────────────────────────────────────────
+
+/** Todos los patrones guardados (para respaldo). */
+export function exportAllItems(): LibraryItem[] {
+  return readAll();
+}
+
+/** Importa patrones de un respaldo: agrega o actualiza por id; nunca borra. */
+export function importItems(items: LibraryItem[]): number {
+  const all = readAll();
+  let n = 0;
+  for (const it of items) {
+    if (!it || typeof it.id !== "string" || typeof it.doc !== "string") continue;
+    try { deserialize(it.doc); } catch { continue; } // se ignora lo que no sea un documento válido
+    const i = all.findIndex((x) => x.id === it.id);
+    if (i >= 0) all[i] = it; else all.push(it);
+    n++;
+  }
+  writeAll(all);
+  return n;
+}

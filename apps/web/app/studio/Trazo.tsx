@@ -6,10 +6,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { gradeDoc } from "@hilonova/geometry";
 import { useEditor, SIZE_COLORS } from "./store";
-import { nestItems, placedPath, type NestingResult, type PlacedPiece } from "./nesting";
+import { nestBySize, placedPath, type NestingResult, type PlacedPiece } from "./nesting";
 import { NumInput } from "./fields";
+import { materials } from "../lib/materials";
 
 const ALL = "all";
 const PIECE_COLORS = ["#7FB3FF", "#8FD99B", "#C79BFF", "#F2C879", "#FF9B8A", "#6FD3D0", "#E58BC4", "#B7C4DD"];
@@ -21,24 +21,14 @@ export default function Trazo() {
   const fabricPrice = useEditor((s) => s.fabricPrice);
   const setFabricPrice = useEditor((s) => s.setFabricPrice);
   const [sel, setSel] = useState<string>(doc.baseSize);
+  const fabrics = materials.useAll().filter((m) => m.kind !== "avio");
+  const activeFabric = fabrics.find((m) => m.widthCm === fabricWidth && m.price === fabricPrice);
 
   const sizes = doc.sizes;
   const current = sel === ALL || sizes.includes(sel) ? sel : doc.baseSize;
 
   // un trazo por talla + uno combinado (una prenda de cada talla)
-  const { perSize, combined } = useMemo(() => {
-    const graded = sizes.map((size) => ({ size, doc: gradeDoc(doc, size) }));
-    return {
-      perSize: graded.map(({ size, doc: d }) => ({
-        size,
-        result: nestItems(d.pieces.map((piece) => ({ piece, size })), fabricWidth),
-      })),
-      combined: nestItems(
-        graded.flatMap(({ size, doc: d }) => d.pieces.map((piece) => ({ piece, size }))),
-        fabricWidth,
-      ),
-    };
-  }, [doc, sizes, fabricWidth]);
+  const { perSize, combined } = useMemo(() => nestBySize(doc, fabricWidth), [doc, fabricWidth]);
 
   const result: NestingResult =
     current === ALL ? combined : perSize.find((r) => r.size === current)?.result ?? combined;
@@ -93,6 +83,21 @@ export default function Trazo() {
               />
               <span className="st-m-unit">cm</span>
             </div>
+          </div>
+          <div className="st-field" style={{ marginTop: 10 }}>
+            <span>Material</span>
+            <select
+              className="st-input"
+              style={{ width: 150, textAlign: "left" }}
+              value={activeFabric?.id ?? ""}
+              onChange={(e) => {
+                const m = fabrics.find((x) => x.id === e.target.value);
+                if (m) { setFabricWidth(m.widthCm); setFabricPrice(m.price); }
+              }}
+            >
+              <option value="">Personalizado</option>
+              {fabrics.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+            </select>
           </div>
           <div className="st-field" style={{ marginTop: 10 }}>
             <span>Precio por metro</span>

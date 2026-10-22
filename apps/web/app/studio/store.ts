@@ -36,6 +36,8 @@ import {
   ellipsePiece,
   bounds,
   setNodeGrade,
+  makeId,
+  type ModelVariant,
   type Piece,
   type PiecePatch,
 } from "@hilonova/geometry";
@@ -81,7 +83,9 @@ export type Draft =
   | { kind: "rect"; a: Vec2; b: Vec2 }
   | { kind: "circle"; c: Vec2; r: number }
   | { kind: "measure"; a: Vec2; b: Vec2 };
-export type View = "editor" | "graduacion" | "trazo" | "ficha";
+export type View =
+  | "proyectos" | "editor" | "graduacion" | "trazo" | "produccion"
+  | "materiales" | "libreria" | "reportes" | "config";
 
 /** Id del patrón vigente en la biblioteca (si fue abierto o guardado). */
 export interface SavedRef {
@@ -172,6 +176,16 @@ interface EditorState {
   patchSelectedPiece(patch: PiecePatch): void;
   /** inserta una pieza de la biblioteca a la derecha del patrón actual */
   insertLibraryPiece(entry: LibraryEntry): void;
+  /** inserta una pieza cualquiera (p. ej. de "mis piezas"), centrada en la vista */
+  insertPiece(piece: Piece): void;
+  /** variantes de modelo */
+  addVariant(name: string, color: string): void;
+  switchVariant(id: string): void;
+  patchVariant(id: string, patch: Partial<Pick<ModelVariant, "name" | "color" | "note">>): void;
+  deleteVariant(id: string): void;
+  duplicateVariant(id: string): void;
+  /** guarda lo que hay en el editor dentro de la variante activa */
+  saveActiveVariant(): void;
   /** define la gama de tallas y cuál es la base (activa todas en el nido) */
   setSizeRange(sizes: string[], base: string): void;
   /** edita una regla de tallaje (cm por talla de una medida) y re-gradúa las piezas */
@@ -195,6 +209,18 @@ interface EditorState {
   updateTechPack(patch: Partial<TechPackMeta>): void;
   /** marca que ya se guardó (resetea dirty) */
   markSaved(id: string): void;
+}
+
+/** Estado del documento que cambia entre variantes. */
+export function snapshotOf(doc: PatternDoc) {
+  return {
+    pieces: doc.pieces,
+    sizes: doc.sizes,
+    baseSize: doc.baseSize,
+    ...(doc.gradeSteps ? { gradeSteps: doc.gradeSteps } : {}),
+    ...(doc.measurements ? { measurements: doc.measurements } : {}),
+    ...(doc.blockKind ? { blockKind: doc.blockKind } : {}),
+  };
 }
 
 export const useEditor = create<EditorState>((set, get) => ({
@@ -434,22 +460,116 @@ export const useEditor = create<EditorState>((set, get) => ({
   },
 
   insertLibraryPiece: (entry) => {
-    const { history, saved, measurements, pan, zoom, viewSize } = get();
-    const doc = history.present;
-    const piece: Piece = entry.make(measurements);
+    get().insertPiece(entry.make(get().measurements));
+  },
+
+  insertPiece: (piece) => {
+    const { history, saved, pan, zoom, viewSize } = get();
     const pb = bounds(piece);
     // centrada en lo que se ve del lienzo, para que aparezca a la vista
     const cx = (viewSize.w / 2 - pan.x) / zoom;
     const cy = (viewSize.h / 2 - pan.y) / zoom;
     const placed = translatePiece(
-      piece,
+      clonePiece(piece),
       cx - (pb.minX + pb.maxX) / 2,
       cy - (pb.minY + pb.maxY) / 2,
     );
     set({
-      history: hCommit(history, addPiece(doc, placed)),
+      history: hCommit(history, addPiece(history.present, placed)),
       selectedPieceId: placed.id,
       selectedNodeId: null,
+      saved: { ...saved, dirty: true },
+    });
+  },
+
+  addVariant: (name, color) => {
+    const { history, saved } = get();
+    const cur = history.present;
+    const variant: ModelVariant = {
+      id: makeId("var"),
+      name: name.trim() || `Variante ${(cur.variants?.length ?? 0) + 1}`,
+      color,
+      snapshot: snapshotOf(cur),
+    };
+    const variants = [...(cur.variants ?? []), variant];
+    set({
+      history: hCommit(history, { ...cur, variants, activeVariant: variant.id }),
+      saved: { ...saved, dirty: true },
+    });
+  },
+
+  switchVariant: (id) => {
+    const { history, saved } = get();
+    const cur = history.present;
+    const variants = cur.variants ?? [];
+    const target = variants.find((v) => v.id === id);
+    if (!target) return;
+    const next: PatternDoc = {
+      ...cur,
+      ...target.snapshot,
+      variants,
+      activeVariant: id,
+    };
+    set({
+      history: hCommit(history, next),
+      measurements: { ...DEFAULT_MEASUREMENTS, ...(target.snapshot.measurements ?? {}) } as BodyMeasurements,
+      blockKind: (target.snapshot.blockKind as BlockKind | undefined) ?? get().blockKind,
+      activeSizes: [...target.snapshot.sizes],
+      selectedPieceId: null,
+      selectedNodeId: null,
+      saved: { ...saved, dirty: true },
+    });
+  },
+
+  patchVariant: (id, patch) => {
+    const { history, saved } = get();
+    const cur = history.present;
+    set({
+      history: hCommit(history, {
+        ...cur,
+        variants: (cur.variants ?? []).map((v) => (v.id === id ? { ...v, ...patch } : v)),
+      }),
+      saved: { ...saved, dirty: true },
+    });
+  },
+
+  deleteVariant: (id) => {
+    const { history, saved } = get();
+    const cur = history.present;
+    set({
+      history: hCommit(history, {
+        ...cur,
+        variants: (cur.variants ?? []).filter((v) => v.id !== id),
+        ...(cur.activeVariant === id ? { activeVariant: undefined } : {}),
+      }),
+      saved: { ...saved, dirty: true },
+    });
+  },
+
+  saveActiveVariant: () => {
+    const { history, saved } = get();
+    const cur = history.present;
+    if (!cur.activeVariant) return;
+    set({
+      history: hCommit(history, {
+        ...cur,
+        variants: (cur.variants ?? []).map((v) =>
+          v.id === cur.activeVariant ? { ...v, snapshot: snapshotOf(cur) } : v,
+        ),
+      }),
+      saved: { ...saved, dirty: true },
+    });
+  },
+
+  duplicateVariant: (id) => {
+    const { history, saved } = get();
+    const cur = history.present;
+    const variants = cur.variants ?? [];
+    const src = variants.find((v) => v.id === id);
+    if (!src) return;
+    const copy: ModelVariant = { ...src, id: makeId("var"), name: `${src.name} copia` };
+    set({
+      history: hCommit(history, { ...cur, variants: [...variants, copy] }),
       saved: { ...saved, dirty: true },
     });
   },
@@ -476,13 +596,15 @@ export const useEditor = create<EditorState>((set, get) => ({
     const { history, saved, blockKind } = get();
     const cur = history.present;
     const next = draftBlock(blockKind, m, cur.gradeSteps);
-    // conservar nombre, ficha técnica y gama de tallas del documento vigente
+    // conservar nombre, ficha técnica, gama de tallas y variantes del documento vigente
     const named: PatternDoc = {
       ...next,
       name: cur.name,
       sizes: cur.sizes,
       baseSize: cur.baseSize,
       ...(cur.techPack ? { techPack: cur.techPack } : {}),
+      ...(cur.variants ? { variants: cur.variants } : {}),
+      ...(cur.activeVariant ? { activeVariant: cur.activeVariant } : {}),
     };
     set({
       measurements: { ...m },
@@ -543,6 +665,7 @@ export const useEditor = create<EditorState>((set, get) => ({
       selectedNodeId: null,
       blockKind: (doc.blockKind as BlockKind | undefined) ?? "pantalon-denim",
       activeSizes: [...doc.sizes],
+      measurements: { ...DEFAULT_MEASUREMENTS, ...(doc.measurements ?? {}) } as BodyMeasurements,
       draft: null,
       saved: { id: savedId ?? null, dirty: false, lastSaved: new Date().toISOString() },
     }),

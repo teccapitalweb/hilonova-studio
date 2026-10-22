@@ -10,7 +10,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Canvas from "./Canvas";
 import Trazo from "./Trazo";
 import ExportModal from "./ExportModal";
-import { useEditor, SIZE_COLORS, type Tool } from "./store";
+import { useEditor, SIZE_COLORS, type Tool, type View } from "./store";
 import { bounds, samplePath, type Piece } from "@hilonova/geometry";
 import {
   findBlock,
@@ -21,8 +21,15 @@ import {
 } from "@hilonova/blocks";
 import { loadDoc as libLoad, saveItem, renameItem } from "../lib/library";
 import { MeasurementSilhouette } from "./MeasurementSilhouette";
-import TechPack from "./TechPack";
 import GradePanel from "./Graduacion";
+import Produccion from "./Produccion";
+import Proyectos from "./Proyectos";
+import Materiales from "./Materiales";
+import Libreria from "./Libreria";
+import Reportes from "./Reportes";
+import Config from "./Config";
+import { loadPrefs } from "../lib/prefs";
+import { saveUserPiece } from "../lib/pieces";
 import { NumInput, TextInput } from "./fields";
 
 export default function Shell() {
@@ -41,9 +48,22 @@ export default function Shell() {
 
   }, []);
 
+  // preferencias guardadas (rejilla, snap, margen de costura, ancho de tela)
+  useEffect(() => {
+    const p = loadPrefs();
+    useEditor.setState({
+      gridStep: p.gridStep,
+      snapGrid: p.snapGrid,
+      showSeam: p.showSeam,
+      fabricWidth: p.fabricWidth,
+    });
+  }, []);
+
   return (
     <div className="studio">
       <TopBar />
+      <div className="st-shell">
+      <SideNav />
       <div className={`studio-body${view !== "editor" ? " studio-body--trazo" : ""}`}>
         {view === "editor" && (
           <>
@@ -68,45 +88,79 @@ export default function Shell() {
           </div>
         )}
         {view === "trazo" && <Trazo />}
-        {view === "ficha" && <TechPack />}
+        {view === "produccion" && <Produccion />}
+        {view === "proyectos" && <Proyectos />}
+        {view === "materiales" && <Materiales />}
+        {view === "libreria" && <Libreria />}
+        {view === "reportes" && <Reportes />}
+        {view === "config" && <Config />}
+      </div>
       </div>
     </div>
+  );
+}
+
+// ─── Menú lateral ────────────────────────────────────────────────────────────
+
+const NAV: Array<{ view: View; label: string; icon: string; sepBefore?: boolean }> = [
+  { view: "proyectos", label: "Proyectos", icon: "M3 7h6l2 2h10v10H3z" },
+  { view: "editor", label: "Patronaje 2D", icon: "M5 4h14v16H5zM9 4v16M5 10h4" },
+  { view: "graduacion", label: "Graduación", icon: "M4 20 20 4M8 20 20 8M12 20 20 12" },
+  { view: "trazo", label: "Trazo", icon: "M3 5h18v14H3zM3 11h10M13 5v14" },
+  { view: "produccion", label: "Producción", icon: "M4 20V9l5 3V9l5 3V6h6v14z" },
+  { view: "materiales", label: "Materiales", icon: "M4 6c4-2 12-2 16 0v12c-4 2-12 2-16 0zM4 12c4 2 12 2 16 0", sepBefore: true },
+  { view: "libreria", label: "Librería", icon: "M5 4h4v16H5zM11 4h4v16h-4zM17 6l3 1-3 13-3-1z" },
+  { view: "reportes", label: "Reportes", icon: "M6 3h9l4 4v14H6zM9 12h7M9 16h7M9 8h3" },
+  { view: "config", label: "Configuración", icon: "M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM4 12h2m12 0h2M12 4v2m0 12v2M6.3 6.3l1.4 1.4m8.6 8.6 1.4 1.4m0-11.4-1.4 1.4M7.7 16.3l-1.4 1.4" },
+];
+
+function SideNav() {
+  const view = useEditor((s) => s.view);
+  const setView = useEditor((s) => s.setView);
+  return (
+    <nav className="st-nav" aria-label="Secciones">
+      {NAV.map((n) => (
+        <div key={n.view}>
+          {n.sepBefore && <div className="st-nav-sep" />}
+          <button
+            className={`st-nav-item${view === n.view ? " on" : ""}`}
+            onClick={() => setView(n.view)}
+            title={n.label}
+            aria-current={view === n.view ? "page" : undefined}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d={n.icon} stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span>{n.label}</span>
+          </button>
+        </div>
+      ))}
+    </nav>
   );
 }
 
 function ViewSwitch() {
   const view = useEditor((s) => s.view);
   const setView = useEditor((s) => s.setView);
+  const tabs: Array<{ view: View; label: string }> = [
+    { view: "editor", label: "Diseño" },
+    { view: "graduacion", label: "Graduación" },
+    { view: "trazo", label: "Trazo" },
+    { view: "produccion", label: "Producción" },
+  ];
   return (
     <nav className="st-switch" role="tablist" aria-label="Vista del studio">
-      <button
-        role="tab" aria-selected={view === "editor"}
-        className={view === "editor" ? "on" : ""}
-        onClick={() => setView("editor")}
-      >
-        Editor
-      </button>
-      <button
-        role="tab" aria-selected={view === "graduacion"}
-        className={view === "graduacion" ? "on" : ""}
-        onClick={() => setView("graduacion")}
-      >
-        Graduación
-      </button>
-      <button
-        role="tab" aria-selected={view === "trazo"}
-        className={view === "trazo" ? "on" : ""}
-        onClick={() => setView("trazo")}
-      >
-        Trazo
-      </button>
-      <button
-        role="tab" aria-selected={view === "ficha"}
-        className={view === "ficha" ? "on" : ""}
-        onClick={() => setView("ficha")}
-      >
-        Ficha
-      </button>
+      {tabs.map((t) => (
+        <button
+          key={t.view}
+          role="tab"
+          aria-selected={view === t.view}
+          className={view === t.view ? "on" : ""}
+          onClick={() => setView(t.view)}
+        >
+          {t.label}
+        </button>
+      ))}
     </nav>
   );
 }
@@ -552,6 +606,20 @@ function PieceThumb({ piece }: { piece: Piece }) {
 
 // ─── Panel de propiedades ────────────────────────────────────────────────────
 
+function SavePieceButton({ piece }: { piece: Piece }) {
+  const [saved, setSaved] = useState(false);
+  useEffect(() => setSaved(false), [piece.id]);
+  return (
+    <button
+      className="st-act"
+      onClick={() => { saveUserPiece(piece); setSaved(true); }}
+      title="Guardar esta pieza en Librería → Mis piezas"
+    >
+      {saved ? "Guardada ✓" : "Guardar en librería"}
+    </button>
+  );
+}
+
 function EditField({ name, children }: { name: string; children: React.ReactNode }) {
   return (
     <div className="st-field">
@@ -620,6 +688,7 @@ function PropsPanel() {
             <button className="st-act" onClick={mirror} title="Espejar horizontalmente">Espejar</button>
             <button className="st-act" onClick={() => rotate(-90)} title="Rotar 90° a la izquierda">⟲ 90°</button>
             <button className="st-act" onClick={() => rotate(90)} title="Rotar 90° a la derecha">⟳ 90°</button>
+            <SavePieceButton piece={piece} />
             <button className="st-act danger" onClick={() => { useEditor.getState().selectPiece(piece.id); del(); }} title="Eliminar pieza (Supr)">Eliminar</button>
           </div>
         </div>
