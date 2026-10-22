@@ -104,7 +104,7 @@ export default function Canvas() {
 
     // nido de tallas (debajo del trazo principal)
     if (showNest) {
-      const layers = buildNest(doc, measurements, doc.baseSize, activeSizes, blockKind);
+      const layers = buildNest(doc, activeSizes);
       for (const layer of layers) {
         if (layer.size === doc.baseSize) continue; // la base la pintamos abajo con el trazo principal
         const color = SIZE_COLORS[layer.size] ?? "#8A91FF";

@@ -22,6 +22,8 @@ import {
 import { loadDoc as libLoad, saveItem, renameItem } from "../lib/library";
 import { MeasurementSilhouette } from "./MeasurementSilhouette";
 import TechPack from "./TechPack";
+import GradePanel from "./Graduacion";
+import { NumInput, TextInput } from "./fields";
 
 export default function Shell() {
   const view = useEditor((s) => s.view);
@@ -55,6 +57,16 @@ export default function Shell() {
             <PropsPanel />
           </>
         )}
+        {view === "graduacion" && (
+          <div className="st-grad">
+            <div className="st-stage">
+              <Canvas />
+              <NestLegend />
+              <StatusBar />
+            </div>
+            <GradePanel />
+          </div>
+        )}
         {view === "trazo" && <Trazo />}
         {view === "ficha" && <TechPack />}
       </div>
@@ -73,6 +85,13 @@ function ViewSwitch() {
         onClick={() => setView("editor")}
       >
         Editor
+      </button>
+      <button
+        role="tab" aria-selected={view === "graduacion"}
+        className={view === "graduacion" ? "on" : ""}
+        onClick={() => setView("graduacion")}
+      >
+        Graduación
       </button>
       <button
         role="tab" aria-selected={view === "trazo"}
@@ -532,58 +551,6 @@ function PieceThumb({ piece }: { piece: Piece }) {
 }
 
 // ─── Panel de propiedades ────────────────────────────────────────────────────
-
-/** Campo numérico que confirma al salir o con Enter (evita una entrada de deshacer por tecla). */
-function NumInput({
-  value, onCommit, step = 0.1, min, max, unit,
-}: {
-  value: number;
-  onCommit: (v: number) => void;
-  step?: number;
-  min?: number;
-  max?: number;
-  unit?: string;
-}) {
-  const shown = Number.isFinite(value) ? String(Math.round(value * 100) / 100) : "";
-  const [text, setText] = useState(shown);
-  useEffect(() => setText(shown), [shown]);
-  function commit() {
-    let v = parseFloat(text.replace(",", "."));
-    if (!Number.isFinite(v)) { setText(shown); return; }
-    if (min !== undefined) v = Math.max(min, v);
-    if (max !== undefined) v = Math.min(max, v);
-    if (v !== value) onCommit(v);
-    else setText(shown);
-  }
-  return (
-    <span className="st-input-wrap">
-      <input
-        className="st-input mono"
-        type="number"
-        step={step}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-      />
-      {unit && <em>{unit}</em>}
-    </span>
-  );
-}
-
-function TextInput({ value, onCommit }: { value: string; onCommit: (v: string) => void }) {
-  const [text, setText] = useState(value);
-  useEffect(() => setText(value), [value]);
-  return (
-    <input
-      className="st-input st-input-text"
-      value={text}
-      onChange={(e) => setText(e.target.value)}
-      onBlur={() => { if (text !== value) onCommit(text); }}
-      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-    />
-  );
-}
 
 function EditField({ name, children }: { name: string; children: React.ReactNode }) {
   return (

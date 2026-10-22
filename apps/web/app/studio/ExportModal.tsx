@@ -146,7 +146,7 @@ async function buildBlob(fmt: Format, doc: PatternDoc, mime: string, measurement
       // Tech pack: medidas por talla usando las reglas del bloque vigente
       const blockMeta = findBlock(blockKind);
       const measurementRows = doc.sizes.map((size) => {
-        const m = measurementsForBlockSize(blockKind, size, measurements, doc.baseSize);
+        const m = measurementsForBlockSize(blockKind, size, measurements, doc.baseSize, doc.gradeSteps);
         return {
           size,
           values: blockMeta.fields.map((f) => ({

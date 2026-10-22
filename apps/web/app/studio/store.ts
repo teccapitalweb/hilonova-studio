@@ -35,6 +35,7 @@ import {
   rectPiece,
   ellipsePiece,
   bounds,
+  setNodeGrade,
   type Piece,
   type PiecePatch,
 } from "@hilonova/geometry";
@@ -42,6 +43,7 @@ import {
   demoJeanDoc,
   draftBlock,
   compareSizes,
+  rederiveGrades,
   graduatePantalon,
   DEFAULT_MEASUREMENTS,
   type LibraryEntry,
@@ -79,7 +81,7 @@ export type Draft =
   | { kind: "rect"; a: Vec2; b: Vec2 }
   | { kind: "circle"; c: Vec2; r: number }
   | { kind: "measure"; a: Vec2; b: Vec2 };
-export type View = "editor" | "trazo" | "ficha";
+export type View = "editor" | "graduacion" | "trazo" | "ficha";
 
 /** Id del patrón vigente en la biblioteca (si fue abierto o guardado). */
 export interface SavedRef {
@@ -167,6 +169,14 @@ interface EditorState {
   patchSelectedPiece(patch: PiecePatch): void;
   /** inserta una pieza de la biblioteca a la derecha del patrón actual */
   insertLibraryPiece(entry: LibraryEntry): void;
+  /** define la gama de tallas y cuál es la base (activa todas en el nido) */
+  setSizeRange(sizes: string[], base: string): void;
+  /** edita una regla de tallaje (cm por talla de una medida) y re-gradúa las piezas */
+  setGradeStep(field: keyof BodyMeasurements, cmPerSize: number): void;
+  /** restablece las reglas de tallaje a las de fábrica del bloque */
+  resetGradeSteps(): void;
+  /** graduación manual: cuánto se mueve un nodo por talla (null = sin regla) */
+  setNodeGradeOf(pieceId: string, nodeId: string, grade: { dx: number; dy: number } | null): void;
   /** marca o desmarca un piquete en el nodo dado */
   toggleNotch(pieceId: string, nodeId: string): void;
   /** regenera el documento desde unas medidas nuevas (empuja al historial) */
@@ -459,14 +469,53 @@ export const useEditor = create<EditorState>((set, get) => ({
 
   applyMeasurements: (m) => {
     const { history, saved, blockKind } = get();
-    const next = draftBlock(blockKind, m);
-    // conservar el nombre del documento vigente
-    const named = { ...next, name: history.present.name };
+    const cur = history.present;
+    const next = draftBlock(blockKind, m, cur.gradeSteps);
+    // conservar nombre, ficha técnica y gama de tallas del documento vigente
+    const named: PatternDoc = {
+      ...next,
+      name: cur.name,
+      sizes: cur.sizes,
+      baseSize: cur.baseSize,
+      ...(cur.techPack ? { techPack: cur.techPack } : {}),
+    };
     set({
       measurements: { ...m },
       history: hCommit(history, named),
       selectedPieceId: null,
       selectedNodeId: null,
+      saved: { ...saved, dirty: true },
+    });
+  },
+
+  setSizeRange: (sizes, base) => {
+    const { history, saved } = get();
+    const next: PatternDoc = { ...history.present, sizes, baseSize: base };
+    set({
+      history: hCommit(history, next),
+      activeSizes: [...sizes],
+      saved: { ...saved, dirty: true },
+    });
+  },
+
+  setGradeStep: (field, cmPerSize) => {
+    const { history, saved, blockKind, measurements } = get();
+    const cur = history.present;
+    const rules = { ...(cur.gradeSteps ?? {}), [field]: cmPerSize };
+    const next = rederiveGrades(cur, blockKind, measurements, rules);
+    set({ history: hCommit(history, next), saved: { ...saved, dirty: true } });
+  },
+
+  resetGradeSteps: () => {
+    const { history, saved, blockKind, measurements } = get();
+    const next = rederiveGrades(history.present, blockKind, measurements, undefined);
+    set({ history: hCommit(history, next), saved: { ...saved, dirty: true } });
+  },
+
+  setNodeGradeOf: (pieceId, nodeId, grade) => {
+    const { history, saved } = get();
+    set({
+      history: hCommit(history, setNodeGrade(history.present, pieceId, nodeId, grade)),
       saved: { ...saved, dirty: true },
     });
   },

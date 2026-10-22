@@ -966,3 +966,25 @@
 
 .st-input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 .st-input::-webkit-outer-spin-button, .st-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* ─── Vista Graduación ─── */
+.st-grad { display: grid; grid-template-columns: 1fr 400px; min-height: 0; }
+.st-grad-side {
+  border-left: 1px solid var(--hair); overflow-y: auto; padding: 4px 16px 24px;
+  background: var(--panel, rgba(255,255,255,.02));
+}
+.st-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.st-mini.on { background: var(--accent); border-color: transparent; color: #fff; }
+.st-sub { font-size: 11px; color: var(--t-faint); margin: 10px 0 6px; }
+.st-hint { font-size: 12px; color: var(--t-faint); line-height: 1.45; margin: 8px 0 0; }
+.st-table-wrap { overflow-x: auto; }
+.st-grade-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.st-grade-table th, .st-grade-table td {
+  text-align: right; padding: 5px 6px; border-bottom: 1px solid var(--hair);
+  white-space: nowrap; color: var(--t);
+}
+.st-grade-table th:first-child, .st-grade-table td:first-child { text-align: left; }
+.st-grade-table th { font-weight: 600; color: var(--t-faint); font-size: 11px; }
+.st-grade-table .base { color: #fff; background: rgba(240,102,44,.14); }
+select.st-input { text-align: left; }
+@media (max-width: 1080px) { .st-grad { grid-template-columns: 1fr; } .st-grad-side { border-left: 0; border-top: 1px solid var(--hair); } }

@@ -34,7 +34,7 @@ export default function TechPack() {
 
   // tabla de medidas por talla (para el preview)
   const measRows = doc.sizes.map((size) => {
-    const m = measurementsForBlockSize(blockKind, size, measurements, doc.baseSize);
+    const m = measurementsForBlockSize(blockKind, size, measurements, doc.baseSize, doc.gradeSteps);
     return { size, values: meta.fields.map((f) => ({ field: f, value: m[f] ?? 0 })) };
   });
 
