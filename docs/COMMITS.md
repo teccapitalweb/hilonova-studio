@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 45
+> Rama: `dev/mvp-9-nov` · Commits: 47
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,43 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## fix(blocks): entrepierna y bajo del pantalón de mezclilla y de vestir
+
+- Commit: `23ee69a`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: el bloque de pantalón de mezclilla (y el de vestir, que se deriva de él)
+colocaba la entrepierna hacia adentro del centro (x = +8.7 en vez de salir hacia
+afuera) y usaba la medida de bajo a la mitad. La pierna medía solo 28 cm de
+contorno en la entrepierna con un muslo de 56, y en el de vestir la rodilla
+quedaba más ancha (72 cm) que la entrepierna. Ahora el delantero toma el 47 % y
+la espalda el 53 % del contorno de muslo, rodilla y bajo, igual que ya hacían
+short, bermuda, cargo y jogger. En el de vestir el bajo pasa a ser 0.9 × el
+muslo (pierna recta).
+Por qué: la vista 3D del pantalón de vestir salía como un jarrón; el defecto
+estaba en el patrón, no en la vista.
+Verificación: 494 pruebas (12 nuevas: en los 6 pantalones el contorno del muslo
+queda cerca de la medida, no se estrecha en la entrepierna y la rodilla nunca es
+más ancha que el muslo); revisado en la app en 3D y en 2D. Cambia la forma del
+patrón de mezclilla y de vestir: conviene que la patronista lo revise.
+Archivos: packages/blocks/src/index.ts, tests/pants.test.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `77af61e`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md con la vista 3D.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## feat(studio): vista 3D de la prenda armada
 
