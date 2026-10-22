@@ -31,6 +31,8 @@ export interface PlacedPiece {
   pts: Vec2[];
   /** línea de la pieza (sin margen) en coordenadas del rollo */
   inner: Vec2[];
+  /** piquetes de la pieza en coordenadas del rollo */
+  notches: Vec2[];
   rotated: boolean;
   mirrored: boolean;
 }
@@ -86,7 +88,7 @@ function orient(
   inner: readonly Vec2[],
   rotated: boolean,
   mirrored: boolean,
-): { outer: Vec2[]; inner: Vec2[]; w: number; h: number } {
+): { outer: Vec2[]; inner: Vec2[]; w: number; h: number; map: (p: Vec2) => Vec2 } {
   const b = box(outer);
   const w = b.maxX - b.minX;
   const h = b.maxY - b.minY;
@@ -97,7 +99,7 @@ function orient(
     if (rotated) { x = w - x; y = h - y; }
     return { x, y };
   };
-  return { outer: outer.map(f), inner: inner.map(f), w, h };
+  return { outer: outer.map(f), inner: inner.map(f), w, h, map: f };
 }
 
 /** Tramos [a, b] de celdas ocupadas por fila (relleno par-impar al centro de cada celda). */
@@ -187,6 +189,7 @@ interface Candidate {
   copy: number;
   outer: Vec2[];
   inner: Vec2[];
+  notches: Vec2[];
   mirrored: boolean;
   area: number;
   height: number;
@@ -222,6 +225,7 @@ export function nestItems(items: readonly NestItem[], fabricWidth: number): Nest
         copy: c,
         outer,
         inner: line,
+        notches: p.nodes.filter((n) => n.notch).map((n) => n.at),
         // las copias impares de un par son la pieza opuesta (izquierda/derecha)
         mirrored: p.quantity % 2 === 0 && c % 2 === 1,
         area: polyArea(outer),
@@ -286,6 +290,7 @@ export function nestItems(items: readonly NestItem[], fabricWidth: number): Nest
       height: best.o.h,
       pts: best.o.outer.map(shift),
       inner: best.o.inner.map(shift),
+      notches: cand.notches.map((n) => shift(best!.o.map(n))),
       rotated: best.rotated,
       mirrored: cand.mirrored,
     });
@@ -328,5 +333,23 @@ export function nestBySize(doc: PatternDoc, fabricWidth: number): MarkerSet {
       graded.flatMap(({ size, doc: d }) => d.pieces.map((piece) => ({ piece, size }))),
       fabricWidth,
     ),
+  };
+}
+
+/** El trazo en el formato que entienden los exportadores (DXF, SVG, PDF). */
+export function markerLayoutOf(result: NestingResult, fabricWidth: number, title: string) {
+  return {
+    title,
+    fabricWidth,
+    length: result.markerLength,
+    pieces: result.placed.map((pp) => ({
+      name: pp.piece.name,
+      ...(pp.size ? { size: pp.size } : {}),
+      pts: pp.pts,
+      inner: pp.inner,
+      notches: pp.notches,
+      mirrored: pp.mirrored,
+      rotated: pp.rotated,
+    })),
   };
 }

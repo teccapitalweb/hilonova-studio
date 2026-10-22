@@ -14,14 +14,14 @@ import { samplePath, offsetPolyline, gradeDoc, compareSizes } from "@hilonova/ge
 const UNIT_CODE: Record<string, number> = { cm: 5, mm: 4, in: 1 };
 
 /** DXF R12 es ASCII: se quitan acentos y símbolos ("Puño" → "Puno", "×" → "x"). */
-const ascii = (t: string): string =>
+export const ascii = (t: string): string =>
   t.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/×/g, "x").replace(/[^ -~]/g, "-");
 
 /** Línea DXF: pair de código+valor en dos líneas de texto. */
-const pair = (code: number, value: string | number): string =>
+export const pair = (code: number, value: string | number): string =>
   `${code}\n${value}\n`;
 
-function header(unit: string): string {
+export function header(unit: string): string {
   return (
     pair(0, "SECTION") +
     pair(2, "HEADER") +
@@ -32,13 +32,14 @@ function header(unit: string): string {
 }
 
 /** Tabla de capas AAMA/ASTM con sus códigos de color estándar de AutoCAD. */
-function tables(): string {
+export function tables(extra: Array<[number, string, number]> = []): string {
   const layers: Array<[number, string, number]> = [
     [1, "Boundary", 7],
     [4, "Notch", 1],
     [5, "Grainline", 3],
     [8, "Text", 7],
     [15, "SeamAllowance", 4],
+    ...extra,
   ];
   let out =
     pair(0, "SECTION") +
@@ -59,7 +60,7 @@ function tables(): string {
 }
 
 /** Polilínea en formato R12 (POLYLINE + VERTEX + SEQEND), el que leen todos los CAD. */
-function polyline(points: readonly Vec2[], layer: string, closed: boolean): string {
+export function polyline(points: readonly Vec2[], layer: string, closed: boolean): string {
   let out =
     pair(0, "POLYLINE") +
     pair(8, layer) +
@@ -74,7 +75,7 @@ function polyline(points: readonly Vec2[], layer: string, closed: boolean): stri
 // invertimos Y para que el DXF salga en el espacio de dibujo tradicional (+Y arriba)
 const fmt = (n: number): string => n.toFixed(4);
 
-function line(a: Vec2, b: Vec2, layer: string): string {
+export function line(a: Vec2, b: Vec2, layer: string): string {
   return (
     pair(0, "LINE") +
     pair(8, layer) +
@@ -83,7 +84,7 @@ function line(a: Vec2, b: Vec2, layer: string): string {
   );
 }
 
-function text(at: Vec2, value: string, height: number, layer: string): string {
+export function text(at: Vec2, value: string, height: number, layer: string): string {
   return (
     pair(0, "TEXT") +
     pair(8, layer) +

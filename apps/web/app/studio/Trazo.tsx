@@ -7,7 +7,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useEditor, SIZE_COLORS } from "./store";
-import { nestBySize, placedPath, type NestingResult, type PlacedPiece } from "./nesting";
+import { nestBySize, placedPath, markerLayoutOf, type NestingResult, type PlacedPiece } from "./nesting";
+import { exportMarkerDxf, exportMarkerSvg, markerPdfPlan, renderMarkerPdf } from "@hilonova/export";
+import { download, sanitize } from "./download";
 import { NumInput } from "./fields";
 import { materials } from "../lib/materials";
 
@@ -35,6 +37,35 @@ export default function Trazo() {
   const garments = current === ALL ? Math.max(1, sizes.length) : 1;
   const perGarmentM = result.markerLength / garments / 100;
   const maxLen = Math.max(1, ...perSize.map((r) => r.result.markerLength));
+  const [exportMsg, setExportMsg] = useState<string | null>(null);
+
+  async function exportMarker(kind: "dxf" | "svg" | "pdf") {
+    if (result.placed.length === 0) { setExportMsg("No hay piezas que exportar."); return; }
+    const what = current === ALL ? "combinado" : `talla ${current}`;
+    const title = `${doc.name} - trazo ${what} - tela ${fabricWidth} cm`;
+    const layout = markerLayoutOf(result, fabricWidth, title);
+    const base = `${sanitize(doc.name)}-trazo-${current === ALL ? "combinado" : current}-${fabricWidth}cm`;
+    try {
+      if (kind === "dxf") {
+        download(new Blob([exportMarkerDxf(layout)], { type: "application/dxf" }), `${base}.dxf`);
+      } else if (kind === "svg") {
+        download(new Blob([exportMarkerSvg(layout)], { type: "image/svg+xml" }), `${base}.svg`);
+      } else {
+        const { default: JsPDF } = await import("jspdf");
+        const plan = markerPdfPlan(layout);
+        const pdf = new JsPDF({
+          unit: "mm",
+          format: [plan.pageW, plan.pageH],
+          orientation: plan.pageW > plan.pageH ? "landscape" : "portrait",
+        });
+        renderMarkerPdf(pdf as unknown as Parameters<typeof renderMarkerPdf>[0], layout);
+        download(pdf.output("blob"), `${base}.pdf`);
+      }
+      setExportMsg(`Listo: ${base}.${kind}`);
+    } catch (err) {
+      setExportMsg("No se pudo exportar: " + (err instanceof Error ? err.message : String(err)));
+    }
+  }
 
   return (
     <div className="st-trazo">
@@ -159,6 +190,19 @@ export default function Trazo() {
               <b className="mono">{fabricPrice > 0 ? `$${(perGarmentM * fabricPrice).toFixed(2)}` : "—"}</b>
             </li>
           </ul>
+        </div>
+
+        <div className="st-group">
+          <div className="st-label">Exportar este trazo</div>
+          <div className="st-actions" style={{ marginTop: 0 }}>
+            <button className="st-act" onClick={() => exportMarker("dxf")} title="DXF con capas AAMA y el borde de la tela, para Gerber, Lectra o corte">DXF</button>
+            <button className="st-act" onClick={() => exportMarker("pdf")} title="PDF a escala 1:1 del tamaño del trazo, para plotter">PDF 1:1</button>
+            <button className="st-act" onClick={() => exportMarker("svg")} title="SVG a escala 1:1">SVG</button>
+          </div>
+          <p className="st-hint">
+            {current === ALL ? "Trazo combinado" : `Talla ${current}`} · tela de {fabricWidth} cm · {(result.markerLength / 100).toFixed(2)} m.
+          </p>
+          {exportMsg && <p className="st-msg" role="status">{exportMsg}</p>}
         </div>
       </aside>
     </div>

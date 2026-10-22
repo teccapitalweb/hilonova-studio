@@ -7,6 +7,7 @@ export * from "./dxf";
 export * from "./svg";
 export * from "./pdf";
 export * from "./techpack";
+export * from "./marker";
 
 export type ExportFormat = "dxf-aama" | "svg" | "pdf-tiled" | "pdf-plot";
 
