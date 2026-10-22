@@ -4,9 +4,12 @@
 // industrial. No más polígonos fijos: cambias una medida, cambia el patrón.
 
 import {
+  clonePiece,
   emptyDoc,
   emptyPiece,
   node,
+  pieceFromPoints,
+  rectPiece,
   type Node,
   type PatternDoc,
   type Piece,
@@ -766,4 +769,121 @@ export function graduateBlock(
 export const findBlock = (kind: BlockKind): BlockMeta =>
   BLOCK_CATALOG.find((b) => b.kind === kind) ?? BLOCK_CATALOG[0]!;
 
-export const VERSION = "0.4.0";
+// ─── biblioteca de piezas ───────────────────────────────────────────────────
+
+export type LibraryCategory =
+  | "Delanteros"
+  | "Espaldas"
+  | "Mangas"
+  | "Cuellos"
+  | "Puños y vistas"
+  | "Bolsillos"
+  | "Complementos";
+
+export interface LibraryEntry {
+  id: string;
+  name: string;
+  category: LibraryCategory;
+  /** de dónde sale (prenda o "genérico") */
+  source: string;
+  /** Genera la pieza con ids nuevos, ajustada a las medidas dadas. */
+  make(m: BodyMeasurements): Piece;
+}
+
+/** Entrada de biblioteca tomada de una pieza de un bloque paramétrico. */
+function fromBlock(
+  kind: BlockKind,
+  pieceName: string,
+  name: string,
+  category: LibraryCategory,
+  source: string,
+): LibraryEntry {
+  return {
+    id: `${kind}:${pieceName}`,
+    name,
+    category,
+    source,
+    make: (m) => {
+      const piece = draftBlock(kind, m).pieces.find((p) => p.name === pieceName);
+      if (!piece) throw new Error(`biblioteca: pieza "${pieceName}" no existe en ${kind}`);
+      return clonePiece(piece, name);
+    },
+  };
+}
+
+const withQty = (p: Piece, quantity: number, fabric?: string): Piece => ({
+  ...p,
+  quantity,
+  ...(fabric ? { fabric } : {}),
+});
+
+/** Piezas reutilizables para insertar en cualquier patrón. */
+export const PIECE_LIBRARY: readonly LibraryEntry[] = [
+  fromBlock("blusa-clasica", "Delantero", "Delantero de blusa", "Delanteros", "Blusa clásica"),
+  fromBlock("playera-basica", "Delantero playera", "Delantero de playera", "Delanteros", "Playera básica"),
+  fromBlock("pantalon-denim", "Delantero", "Delantero de pantalón", "Delanteros", "Pantalón"),
+  fromBlock("falda-recta", "Delantero falda", "Delantero de falda", "Delanteros", "Falda recta"),
+  fromBlock("blusa-clasica", "Espalda", "Espalda de blusa", "Espaldas", "Blusa clásica"),
+  fromBlock("playera-basica", "Espalda playera", "Espalda de playera", "Espaldas", "Playera básica"),
+  fromBlock("pantalon-denim", "Espalda", "Espalda de pantalón", "Espaldas", "Pantalón"),
+  fromBlock("falda-recta", "Espalda falda", "Espalda de falda", "Espaldas", "Falda recta"),
+  fromBlock("blusa-clasica", "Manga", "Manga larga", "Mangas", "Blusa clásica"),
+  fromBlock("playera-basica", "Manga", "Manga corta", "Mangas", "Playera básica"),
+  fromBlock("blusa-clasica", "Cuello", "Cuello camisero", "Cuellos", "Blusa clásica"),
+  fromBlock("blusa-clasica", "Pie de cuello", "Pie de cuello", "Cuellos", "Blusa clásica"),
+  fromBlock("blusa-clasica", "Puño", "Puño de camisa", "Puños y vistas", "Blusa clásica"),
+  fromBlock("blusa-clasica", "Vista", "Vista delantera", "Puños y vistas", "Blusa clásica"),
+  {
+    id: "generico:bolsillo-parche",
+    name: "Bolsillo parche",
+    category: "Bolsillos",
+    source: "Genérico",
+    make: () =>
+      withQty(rectPiece("Bolsillo parche", { x: 0, y: 0 }, { x: 12, y: 14 }), 2),
+  },
+  {
+    id: "generico:bolsillo-trasero",
+    name: "Bolsillo trasero (pico)",
+    category: "Bolsillos",
+    source: "Pantalón",
+    make: () =>
+      withQty(
+        pieceFromPoints(
+          "Bolsillo trasero",
+          [
+            { x: 0, y: 0 }, { x: 14, y: 0 }, { x: 14, y: 12 },
+            { x: 7, y: 16 }, { x: 0, y: 12 },
+          ],
+          { closed: true, smooth: false },
+        ),
+        2,
+        "mezclilla 12 oz",
+      ),
+  },
+  {
+    id: "generico:pretina",
+    name: "Pretina",
+    category: "Complementos",
+    source: "Pantalón y falda",
+    make: (m) => withQty(rectPiece("Pretina", { x: 0, y: 0 }, { x: m.cintura + 4, y: 8 }), 1),
+  },
+  {
+    id: "generico:trabilla",
+    name: "Trabilla",
+    category: "Complementos",
+    source: "Pantalón",
+    make: () => withQty(rectPiece("Trabilla", { x: 0, y: 0 }, { x: 8, y: 2.5 }), 5),
+  },
+];
+
+export const LIBRARY_CATEGORIES: readonly LibraryCategory[] = [
+  "Delanteros",
+  "Espaldas",
+  "Mangas",
+  "Cuellos",
+  "Puños y vistas",
+  "Bolsillos",
+  "Complementos",
+];
+
+export const VERSION = "0.5.0";

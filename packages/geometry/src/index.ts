@@ -8,6 +8,7 @@ export * from "./doc";
 export * from "./piece";
 export * from "./offset";
 export * from "./history";
+export * from "./edit";
 
 // --- utilidades de unidades (compat con v0) ---
 export const cmToMm = (v: number): number => v * 10;

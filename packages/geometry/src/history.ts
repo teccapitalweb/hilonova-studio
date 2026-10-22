@@ -24,6 +24,17 @@ export function commit(h: History, next: PatternDoc): History {
   return { past, present: next, future: [] };
 }
 
+/** Empuja el presente al past sin cambiarlo: punto de retorno antes de un arrastre. */
+export function checkpoint(h: History): History {
+  const past = [...h.past, h.present].slice(-CAP);
+  return { past, present: h.present, future: [] };
+}
+
+/** Reemplaza el presente sin tocar el past: ediciones en vivo (arrastre) tras un checkpoint. */
+export function replacePresent(h: History, next: PatternDoc): History {
+  return next === h.present ? h : { ...h, present: next };
+}
+
 export function undo(h: History): History {
   if (h.past.length === 0) return h;
   const prev = h.past[h.past.length - 1]!;
