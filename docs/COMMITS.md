@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 24
+> Rama: `dev/mvp-9-nov` · Commits: 27
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,65 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## feat(studio): la galería usa las medidas propias de cada prenda y soporta los nuevos bloques
+
+- Commit: `53dd085`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: "Nuevo patrón" crea cada prenda con sus medidas de arranque (un short no
+nace con 104 cm de largo); la silueta del panel de medidas cubre las prendas
+nuevas; el control de largo acepta desde 30 cm; el texto de la galería ya no
+dice "talla 32".
+Por qué: los bloques nuevos tienen largos muy distintos al pantalón.
+Verificación: tsc y build de producción OK; recorrido en el navegador de las
+siete prendas nuevas.
+Archivos: apps/web/app/app/new/page.tsx,
+apps/web/app/studio/{MeasurementSilhouette,Shell}.tsx
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## feat(blocks): siete prendas nuevas (chamarra, short, bermuda, vestido, sudadera, falda en A, jogger)
+
+- Commit: `572d59f`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: nuevos bloques paramétricos con sus reglas de graduación: Chamarra de
+mezclilla (9 piezas: delantero, espalda, manga, cuello, puño, faja delantera y
+trasera, bolsillo de pecho y solapa), Short y Bermuda (delantero, espalda,
+pretina y bolsillos), Vestido básico sin mangas (delantero, espalda con cierre y
+vistas de escote), Sudadera con capucha (delantero, espalda, manga, capucha,
+puño y pretina de rib, bolsillo canguro), Falda en A (delantero al doblez,
+espalda, pretina) y Pants jogger (pierna ahusada, puño de tobillo, pretina
+elástica). El catálogo suma "defaults" por prenda (largo de short 45 cm,
+bermuda 58 cm, etc.) y defaultMeasurementsFor(); ayudas compartidas (armholeNodes,
+sleeveNodes, collarNodes, layoutRows). La biblioteca de piezas suma 20 piezas
+de estas prendas (capucha, bolsillo canguro, bolsillo de pecho, solapa, cuello
+de chamarra, delanteros/espaldas/mangas nuevos, puños, pretina elástica).
+Por qué: se pidieron más patrones antes de la vista 3D.
+Verificación: tsc OK. En el navegador cada prenda se crea con sus piezas
+(chamarra 9, short 4, vestido 4, sudadera 7, falda en A 3, jogger 4); el jogger
+gradúa S/M/L/XL (cintura 76-80-84-88, largo 99-100-101-102) y entra al trazo
+(62-69 %). Limitaciones: bloques base sin pinzas ni detalles de costura; las
+curvas se calibran con una patronista.
+Archivos: packages/blocks/src/index.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `0791572`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md con la corrección de desplegables.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## fix(studio): desplegables legibles, límite en cm/talla y talla base real
 
