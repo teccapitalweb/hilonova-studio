@@ -1,0 +1,19 @@
+{
+  "name": "@hilonova/blocks",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Bloques paramétricos de patronaje (mezclilla/denim primero).",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hilonova/geometry": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "5.7.3"
+  }
+}

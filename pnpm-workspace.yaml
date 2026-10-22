@@ -1,0 +1,7 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+# sharp es opcional (optimización de imágenes de Next en prod). Su build nativo
+# no es necesario en dev; se habilitará si hace falta.
+allowBuilds:
+  sharp: false

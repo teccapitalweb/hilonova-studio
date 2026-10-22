@@ -1,0 +1,24 @@
+# deps
+node_modules/
+.pnpm-store/
+
+# builds
+.next/
+out/
+dist/
+build/
+.turbo/
+
+# env / secretos
+.env
+.env.*
+!.env.example
+
+# logs / sistema
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+coverage/
+*.tsbuildinfo
+next-env.d.ts

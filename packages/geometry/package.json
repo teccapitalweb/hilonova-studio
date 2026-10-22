@@ -1,0 +1,16 @@
+{
+  "name": "@hilonova/geometry",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Motor de geometría de patronaje (núcleo). TypeScript puro, sin dependencias de UI.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "5.7.3"
+  }
+}

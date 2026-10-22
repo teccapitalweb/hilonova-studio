@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" fill="none">
+  <!-- fondo navy con esquinas suaves -->
+  <rect x="4" y="4" width="192" height="192" rx="46" fill="#14192A"/>
+  <!-- monograma HN trazado en blanco -->
+  <path d="M55 148 V52 M55 52 C85 62 115 138 145 148 M145 52 V148"
+        stroke="#FFFFFF" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- pespunte horizontal naranja -->
+  <path d="M55 100 H145"
+        stroke="#F0662C" stroke-width="13" stroke-linecap="round"
+        stroke-dasharray="2 16"/>
+</svg>

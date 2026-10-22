@@ -1,0 +1,177 @@
+<title>Hilonova Logo Kit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap">
+<style>
+  :root{
+    color-scheme: light;
+    --bg:#F4F2EC; --ink:#14192A; --ink-2:#555E76; --accent:#F0662C; --line:rgba(20,25,42,.1);
+    --font-d:"Bricolage Grotesque",system-ui,sans-serif;
+    --font-s:"Plus Jakarta Sans",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink-2);font-family:var(--font-s);line-height:1.5;padding:40px 24px}
+  h1,h2{font-family:var(--font-d);color:var(--ink);margin:0;letter-spacing:-.02em}
+  .wrap{max-width:1080px;margin:0 auto}
+  header{margin-bottom:40px}
+  header h1{font-size:40px;font-weight:800}
+  header p{margin-top:8px;font-size:16px;max-width:60ch}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  @media(max-width:860px){.grid{grid-template-columns:1fr}}
+  .card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:22px;display:flex;flex-direction:column;gap:14px}
+  .card .preview{aspect-ratio:1/1;border-radius:14px;display:grid;place-items:center;overflow:hidden}
+  .card.on-dark .preview{background:#14192A}
+  .card.on-light .preview{background:#F4F2EC;border:1px dashed var(--line)}
+  .card.transparent .preview{background:
+    linear-gradient(45deg,#eee 25%,transparent 25%) 0 0/18px 18px,
+    linear-gradient(-45deg,#eee 25%,transparent 25%) 0 0/18px 18px,
+    linear-gradient(45deg,transparent 75%,#eee 75%) 0 0/18px 18px,
+    linear-gradient(-45deg,transparent 75%,#eee 75%) 0 0/18px 18px,
+    #fff}
+  .preview svg{width:62%;height:62%}
+  .card h2{font-size:18px;font-weight:700}
+  .meta{font-size:13.5px;color:var(--ink-2)}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+  .btn{background:var(--ink);color:#fff;border:0;border-radius:999px;padding:9px 15px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
+  .btn:hover{background:#1F2A48}
+  .btn.alt{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+  .btn.alt:hover{border-color:var(--ink)}
+  .hint{margin-top:34px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px 22px;font-size:14px}
+  .hint b{color:var(--ink)}
+  .hint code{background:#eceef6;padding:2px 7px;border-radius:6px;font-size:13px}
+
+  /* ---- logo SVGs ---- */
+  .mk-dark .bg{fill:#14192A}
+  .mk .hn{stroke-width:13;stroke-linecap:round;stroke-linejoin:round;fill:none}
+  .mk .stitch{stroke:#F0662C;stroke-width:13;stroke-linecap:round;stroke-dasharray:2 16;fill:none}
+  .mk-dark .hn{stroke:#fff}
+  .mk-light .hn{stroke:#14192A}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Hilonova · Logo kit</h1>
+    <p>Descarga el monograma HN en el formato que necesites. Para Flow / Nano Banana, usa el <b>PNG transparente 1024×1024</b> como ingrediente de video.</p>
+  </header>
+
+  <div class="grid">
+    <!-- 1. mark sobre oscuro (fondo navy integrado) -->
+    <div class="card on-dark" data-variant="dark">
+      <div class="preview">
+        <svg class="mk mk-dark" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <rect class="bg" x="4" y="4" width="192" height="192" rx="46"/>
+          <path class="hn" d="M55 148 V52 M55 52 C85 62 115 138 145 148 M145 52 V148"/>
+          <path class="stitch" d="M55 100 H145"/>
+        </svg>
+      </div>
+      <h2>Mark · fondo navy</h2>
+      <div class="meta">Monograma self-contained con fondo. Ideal para avatares y favicon.</div>
+      <div class="row">
+        <button class="btn" data-size="1024">PNG 1024</button>
+        <button class="btn" data-size="2048">PNG 2048</button>
+        <button class="btn alt" data-svg>SVG</button>
+      </div>
+    </div>
+
+    <!-- 2. mark transparente, trazo blanco (para fondos oscuros) -->
+    <div class="card transparent" data-variant="transparent-white">
+      <div class="preview">
+        <svg class="mk" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <path class="hn" style="stroke:#14192A" d="M55 148 V52 M55 52 C85 62 115 138 145 148 M145 52 V148"/>
+          <path class="stitch" d="M55 100 H145"/>
+        </svg>
+      </div>
+      <h2>Mark · transparente</h2>
+      <div class="meta">Sin fondo. Para Flow / Nano Banana, usa esta versión como ingrediente del video.</div>
+      <div class="row">
+        <button class="btn" data-size="1024">PNG 1024</button>
+        <button class="btn" data-size="2048">PNG 2048</button>
+        <button class="btn alt" data-svg>SVG</button>
+      </div>
+    </div>
+
+    <!-- 3. mark sobre claro -->
+    <div class="card on-light" data-variant="light">
+      <div class="preview">
+        <svg class="mk mk-light" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <path class="hn" d="M55 148 V52 M55 52 C85 62 115 138 145 148 M145 52 V148"/>
+          <path class="stitch" d="M55 100 H145"/>
+        </svg>
+      </div>
+      <h2>Mark · fondo claro</h2>
+      <div class="meta">Para fondos crema / papel. Trazo oscuro, pespunte naranja.</div>
+      <div class="row">
+        <button class="btn" data-size="1024">PNG 1024</button>
+        <button class="btn" data-size="2048">PNG 2048</button>
+        <button class="btn alt" data-svg>SVG</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="hint">
+    <b>Dónde van en el proyecto:</b> yo ya dejé los SVG en <code>apps/web/public/brand/</code> (<code>logo-mark.svg</code>, <code>logo-mark-light.svg</code>, <code>logo-full.svg</code>). Los PNG que descargues de aquí úsalos como <b>ingrediente en Flow</b> para el video del logo.
+  </div>
+</div>
+
+<script>
+(function(){
+  function serializeSvg(card){
+    var svg = card.querySelector('svg').cloneNode(true);
+    svg.setAttribute('xmlns','http://www.w3.org/2000/svg');
+    // inline los estilos clave para que PNG renderice idéntico
+    var styleAttrs = {
+      '.mk .hn':'stroke-width:13;stroke-linecap:round;stroke-linejoin:round;fill:none;',
+      '.mk .stitch':'stroke:#F0662C;stroke-width:13;stroke-linecap:round;stroke-dasharray:2 16;fill:none;',
+      '.mk-dark .hn':'stroke:#fff;',
+      '.mk-light .hn':'stroke:#14192A;',
+      '.mk-dark .bg':'fill:#14192A;'
+    };
+    // añade un <style> embebido para asegurar los colores
+    var style = document.createElementNS('http://www.w3.org/2000/svg','style');
+    style.textContent = Object.keys(styleAttrs).map(function(k){return k+'{'+styleAttrs[k]+'}';}).join('');
+    svg.insertBefore(style, svg.firstChild);
+    return new XMLSerializer().serializeToString(svg);
+  }
+  function downloadBlob(blob, name){
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 100);
+  }
+  async function pngFromSvg(svgText, size){
+    var blob = new Blob([svgText], {type:'image/svg+xml;charset=utf-8'});
+    var url = URL.createObjectURL(blob);
+    try{
+      var img = new Image();
+      img.decoding = 'sync';
+      await new Promise(function(res,rej){ img.onload = res; img.onerror = rej; img.src = url; });
+      var canvas = document.createElement('canvas');
+      canvas.width = size; canvas.height = size;
+      var ctx = canvas.getContext('2d');
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, size, size);
+      return await new Promise(function(res){ canvas.toBlob(function(b){ res(b); }, 'image/png'); });
+    } finally { URL.revokeObjectURL(url); }
+  }
+  document.querySelectorAll('.card').forEach(function(card){
+    var variant = card.dataset.variant;
+    card.querySelectorAll('button').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        var svgText = serializeSvg(card);
+        if (btn.hasAttribute('data-svg')) {
+          downloadBlob(new Blob([svgText],{type:'image/svg+xml'}), 'hilonova-mark-'+variant+'.svg');
+          return;
+        }
+        var size = parseInt(btn.dataset.size,10);
+        btn.disabled = true; var old = btn.textContent; btn.textContent = '…';
+        try{
+          var png = await pngFromSvg(svgText, size);
+          downloadBlob(png, 'hilonova-mark-'+variant+'-'+size+'.png');
+        } catch(e){ alert('No pude generar el PNG: '+e); }
+        finally { btn.disabled = false; btn.textContent = old; }
+      });
+    });
+  });
+})();
+</script>

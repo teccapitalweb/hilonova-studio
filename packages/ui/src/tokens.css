@@ -1,0 +1,75 @@
+/* ============================================================
+   HILONOVA · design tokens (fuente de verdad)
+   Marca moderna, fotográfica. Índigo denim + acento naranja de
+   pespunte. Dos superficies: light (estudio claro) y dark (editor
+   taller) manejadas por tokens.
+   Fuentes inyectadas por next/font como:
+   --font-bricolage · --font-jakarta · --font-plex-mono
+   ============================================================ */
+:root {
+  color-scheme: light;
+
+  /* ---- tipografía ---- */
+  --font-d: var(--font-bricolage), "Bricolage Grotesque", system-ui, sans-serif;
+  --font-s: var(--font-jakarta), "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-m: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* ---- superficies (estudio claro) ---- */
+  --bg: #f4f2ec;
+  --bg-2: #ffffff;
+  --surface: #eceef6;
+  --surface-2: #e6e9f3;
+
+  /* ---- tinta ---- */
+  --ink: #14192a;
+  --ink-2: #555e76;
+  --ink-3: #8a91a6;
+
+  /* ---- marca ---- */
+  --indigo: #1f2a48;
+  --indigo-2: #2a3a64;
+  --indigo-deep: #0d1428;
+  --accent: #f0662c;
+  --accent-2: #ff7e45;
+  --accent-soft: #fbe7dc;
+
+  /* ---- líneas ---- */
+  --line: rgba(20, 25, 42, 0.09);
+  --line-2: rgba(20, 25, 42, 0.15);
+
+  /* ---- taller oscuro (editor y showcase) ---- */
+  --void: #0b1324;
+  --panel: #16213c;
+  --panel-2: #1a2744;
+  --panel-3: #243356;
+  --hair: rgba(255, 255, 255, 0.08);
+  --hair-strong: rgba(255, 255, 255, 0.2);
+  --t-hi: #ffffff;
+  --t: #c4cee2;
+  --t-mut: #9facc6;
+  --t-faint: #7f8ca8;
+
+  /* ---- líneas de patrón (editor) ---- */
+  --cut: #eaf2ff;
+  --seam: #3fd0c9;
+  --grain: #f0662c;
+  --aux: #6e8ca8;
+  --pt: #3fd0c9;
+
+  /* ---- nido de tallas ---- */
+  --s28: #3fd0c9;
+  --s30: #5bc8e8;
+  --s32: #f0662c;
+  --s34: #e0a33c;
+  --s36: #e07cc0;
+
+  /* ---- métricas ---- */
+  --r: 30px;
+  --r-md: 22px;
+  --r-sm: 14px;
+  --pill: 999px;
+  --maxw: 1200px;
+  --gut: clamp(16px, 4vw, 34px);
+  --sh: 0 24px 60px -34px rgba(16, 22, 44, 0.4);
+  --sh-sm: 0 10px 30px -18px rgba(16, 22, 44, 0.35);
+}

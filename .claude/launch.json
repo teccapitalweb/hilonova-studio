@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "hilonova-web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@hilonova/web", "dev"],
+      "port": 4321
+    }
+  ]
+}

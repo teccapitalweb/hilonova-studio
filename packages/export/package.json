@@ -1,0 +1,19 @@
+{
+  "name": "@hilonova/export",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Exportadores de patrones: DXF-AAMA, SVG y PDF (mosaico / plotter).",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hilonova/geometry": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "5.7.3"
+  }
+}
