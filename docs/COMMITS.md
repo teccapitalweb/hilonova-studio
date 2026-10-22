@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 36
+> Rama: `dev/mvp-9-nov` · Commits: 42
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,147 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## feat(studio): verificar costuras y mangas que encajan en la sisa
+
+- Commit: `27358db`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: nueva herramienta Costura (S): se marcan tramos del contorno con dos clics en
+nodos de una pieza; el lado A es la referencia y el lado B lo que se cose contra
+A (cada lado puede sumar varios tramos, p. ej. sisa del delantero + sisa de la
+espalda contra la cabeza de manga). El panel muestra A, B, la diferencia, una
+holgura prevista editable (coincide si |B − A − holgura| ≤ 0.5 cm) y, al abrir una
+comparación, el resultado de cada talla. Los tramos se resaltan en el lienzo (A
+turquesa, B rosa). Las comprobaciones se guardan con el proyecto y sobreviven a
+cambiar las medidas (se ubican por nombre de pieza e índice de nodo). Motor:
+contourRun, sideLength, seamResult, makeSeamRun, resolveSeamRun.
+Corrección de patrones encontrada con esta herramienta: las mangas de blusa,
+camisas, chamarra, sudadera y polo tenían una altura de cabeza fija y no
+cerraban con la sisa (blusa +4.7 a +6.3 cm de más; sudadera −3 a −5 cm de menos;
+polo con formas rotas en S y XL). Ahora la cabeza de manga se ajusta a
+sisa + holgura (2.5 cm tejido plano, 3 chamarra, 0 sudadera, 0.5 polo) por
+bisección, limitada al 62 % del largo de la manga (si no alcanza, ensancha la manga).
+Por qué: el concepto pide verificar que las costuras midan lo mismo.
+Verificación: 411 pruebas (32 de costuras: tramos, comparación, flujo del
+editor, supervivencia al cambio de medidas, mangas = sisa + holgura ±0.9 cm en
+todas las tallas, hombros iguales ±0.6 cm, cabeza menor que la manga); tsc y build OK;
+en la app, hombro del delantero 14.9 cm vs espalda 14.5 cm (✓ en S, M, L y XL).
+Limitaciones: playera básica y camisas con canesú no están en la comprobación
+automática del hombro; el margen de costura alrededor de pinzas angostas es aproximado.
+Archivos: packages/geometry/src/{doc,edit}.ts, packages/blocks/src/index.ts,
+apps/web/app/studio/{store,Canvas,Shell}.ts(x), studio.css, tests/seams.test.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## feat(studio): herramienta de pinzas
+
+- Commit: `bb74b94`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: nueva herramienta Pinza (P): 1.er clic en el contorno (la boca) y 2.º clic
+dentro de la pieza (la punta). Abre una "V" en el contorno con el ancho de boca
+configurado (0.5 a 12 cm, por defecto 2.5) centrada en el punto elegido; vista
+previa mientras se mueve el cursor y avisos claros si la punta queda fuera de la
+pieza o la boca no cabe en el tramo. Los nodos nuevos heredan una regla de
+graduación interpolada de sus vecinos (también al agregar un nodo normal), así la
+pinza se gradúa con la pieza. Motor: addDart y segmentTangent.
+Por qué: el concepto y la práctica de patronaje piden pinzas; sin ellas los
+patrones base de pecho, cintura y cadera quedan incompletos.
+Verificación: 379 pruebas (13 nuevas de pinza: geometría, área quitada = triángulo,
+boca exacta, límites, curvas, herencia de graduación, editor, DXF graduado con
+pinza válido); en la app se abrió una pinza en el borde inferior del delantero de
+una falda en A. Limitación: el margen de costura alrededor de una pinza muy
+angosta es aproximado.
+Archivos: packages/geometry/src/edit.ts, apps/web/app/studio/{store,Canvas,Shell}.ts(x),
+tests/darts.test.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## feat(studio): herramienta de texto pegado a la pieza
+
+- Commit: `f4bc422`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: nueva herramienta Texto (T): clic sobre una pieza (o cerca de ella) agrega
+una nota. Se edita en el panel (contenido y alto), se arrastra, se borra con Supr,
+y acompaña a su pieza: se mueve, gira, espeja y se copia con ella. Sale en el DXF
+(capa 8_Text, ASCII, también en el graduado, una vez por talla), en el SVG y en el
+PDF mosaico. El modelo suma Piece.labels y el motor addLabelToPiece, updateLabel,
+moveLabel, removeLabel, labelPosition y labelBox.
+Por qué: el concepto pide herramienta de texto; las notas se pegan a la pieza
+porque el DXF y el PDF reacomodan las piezas y un texto suelto quedaría fuera de
+lugar.
+Verificación: 366 pruebas (14 nuevas de textos: motor, editor y exportación); en
+la app se agregó "Doblez al centro" sobre el delantero de una falda en A y se editó.
+Archivos: packages/geometry/src/{doc,edit}.ts, packages/export/src/{dxf,svg,pdf}.ts,
+apps/web/app/studio/{store,Canvas,Shell}.ts(x), tests/labels.test.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## feat(studio): selección múltiple, copiar y pegar, y rotar a cualquier ángulo
+
+- Commit: `d5f88aa`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: Ctrl+clic agrega o quita piezas de la selección (también en el panel de
+piezas), Ctrl+arrastre en el vacío dibuja un recuadro que selecciona las piezas
+que toca, Ctrl+A selecciona todo. Arrastrar una pieza seleccionada mueve todo el
+grupo; Duplicar, Espejar, Copiar y Eliminar actúan sobre el grupo; Rotar gira el
+grupo como un cuerpo rígido alrededor de su centro. Copiar/Pegar (Ctrl+C / Ctrl+V
+y botones) con portapapeles que sobrevive al abrir otro proyecto; cada pegado
+se desplaza 6 cm más. Nueva fila "Rotar" con ángulo libre (⟲ ⟳) para una pieza o
+el grupo. El motor suma rotatePieceAbout y piecesCenter.
+Por qué: faltaban herramientas básicas de un CAD profesional.
+Verificación: 352 pruebas (12 nuevas del editor: selección, mover grupo,
+rotación rígida y de ángulo libre, copiar/pegar entre proyectos, duplicar, borrar
+con deshacer, espejar); en la app, Ctrl+A seleccionó 7 piezas y rotarlas 30° las
+giró juntas.
+Archivos: packages/geometry/src/edit.ts, apps/web/app/studio/{store,Canvas,Shell}.ts(x),
+tests/editor.test.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## feat(export): exportar el trazo a DXF, PDF 1:1 y SVG
+
+- Commit: `4540990`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: nuevo exportador del trazo (packages/export/src/marker.ts) y tres botones en
+la vista Trazo: DXF (capas AAMA más 20_Fabric con el borde de la tela; línea de la
+pieza, línea de corte con margen, hilo, piquetes y rótulos con la talla), PDF a
+escala 1:1 del tamaño real del trazo para plotter (con regla de control de 10 cm;
+si el trazo pasa de 5 m se reparte en páginas continuas) y SVG a escala 1:1. Sirve
+para una talla o para el trazo combinado. El trazo ahora guarda los piquetes ya
+colocados. El DXF reutiliza los ayudantes de dxf.ts (ahora exportados).
+Por qué: el concepto habla de preparación para corte en producción; el trazo solo
+se veía en pantalla.
+Verificación: 340 pruebas (30 nuevas del exportador); en la app, con una blusa, se
+generaron los tres archivos: DXF con 13 piezas, 28 piquetes y 13 hilos, sin
+observaciones del validador; PDF de 1524 × 1197.5 mm en una página (150 cm de tela
++ márgenes = escala 1:1). No se probó el DXF en Gerber/Lectra reales.
+Archivos: packages/export/src/{marker,dxf,index}.ts,
+apps/web/app/studio/{Trazo.tsx,nesting.ts,download.ts}, tests/marker.test.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `212a9f8`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md con las pruebas automáticas.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## test: 310 pruebas automáticas del motor, las 17 prendas, el trazo y el DXF
 
