@@ -4,6 +4,8 @@ Fecha: 23 de octubre de 2026. Todo local; nada está publicado.
 
 ## Estado
 
+**Proyecto creado el 23 de octubre de 2026:** `hilonova-studio` (plan Spark, gratis) en la cuenta de Google del negocio. Ya están activados el acceso con correo/contraseña y con Google, y creada la base de datos Firestore (ubicación en Estados Unidos). Su configuración pública está en `apps/web/app/lib/firebase-config.ts`. Falta probar el registro con una cuenta real y confirmar que las reglas de `firebase/firestore.rules` estén publicadas.
+
 | Parte | Estado |
 |---|---|
 | Crear cuenta con correo y contraseña | Hecho y probado contra el emulador local de Firebase |
