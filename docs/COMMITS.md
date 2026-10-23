@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 64
+> Rama: `dev/mvp-9-nov` · Commits: 68
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,78 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## feat(web): las 17 prendas con su foto en la galería de bloques
+
+- Commit: `13553e0`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: se agregan las fotos de chamarra de mezclilla, sudadera con capucha, falda en A, pants jogger y camisa
+de hombre; la galería ya no tiene ningún ícono. El mapa de fotos (PHOTOS) pasa a ser un Record completo de
+BlockKind, así que agregar una prenda nueva sin foto es un error de tipos.
+Por qué: con los paneles, cordones y el cuello con botones, las 5 prendas pendientes ya coinciden con su foto.
+Verificación: revisado en la app: las 17 fotos cargan; tipos y build de producción correctos.
+Archivos: apps/web/app/app/new/page.tsx, apps/web/public/img/prendas/{chamarra-mezclilla,sudadera-capucha,falda-a,pants-jogger,camisa-hombre}.webp
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## feat(blocks): paneles, cordones y cuello con botones para cerrar las últimas 5 prendas
+
+- Commit: `6002329`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: la falda en A lleva el delantero en un panel central y dos del costado (dos costuras que salen de la
+cintura y se abren hacia el bajo, sin pinzas de delantero; la espalda conserva su pinza); la chamarra lleva
+canesú delantero y trasero (corte a 13 cm del cuello) y el delantero en panel central y panel del costado
+(costura vertical a ~45 % del ancho); la sudadera trae el cordón de la capucha (3 veces el contorno del
+cuello) y el jogger el cordón de la pretina (cintura + 40 cm); la camisa de hombre de manga larga trae una
+marca de ojal en cada punta del cuello (cuello con botones). Para los paneles hay un corte general de piezas
+(`splitByLine`) y se corrigió que en los lados rectos el nodo del corte quedaba fuera de la línea. La
+biblioteca de piezas de la chamarra pasa a Delantero centro, Delantero costado, Canesú delantero y Canesú espalda.
+Por qué: eran las 5 prendas que seguían con un detalle distinto al de su foto de referencia.
+Verificación: 550 pruebas (98 de la auditoría): la manga cierra con la sisa repartida entre canesú y paneles,
+el hombro delantero = trasero, el borde del canesú mide lo mismo que los bordes de arriba de los paneles, el
+corte del canesú es recto, costados iguales, cordón y ojales presentes; tipos sin errores y build correcto.
+Archivos: packages/blocks/src/index.ts, tests/audit-patrones.test.ts, tests/blocks.test.ts, tests/seams.test.ts
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## fix(blocks): las pinzas ya no le quitan medida a la cintura ni al costado
+
+- Commit: `d22b20e`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: al poner pinzas en los patrones base (aa74a43) se abrió la V de la pinza en un borde que ya medía
+justo la medida, y al coserla la prenda perdía lo que la pinza se come: la falda recta quedaba con
+71 cm de cintura neta (para 80) y la falda en A con 73; el delantero de la blusa y del vestido quedaba
+más corto en el costado que la espalda por el ancho de la pinza de busto (2-5 cm); y las pinzas
+traseras del bermuda, el cargo y el pantalón de vestir también restaban cintura. Ahora el borde de la
+cintura se ensancha lo que se come cada pinza (falda recta, falda en A, bermuda, cargo, pantalón de vestir) y
+el costado del delantero se alarga lo que se come la pinza de busto (blusa, vestido), así que ya cosidos
+miden lo que deben.
+Por qué: lo encontré al preparar los paneles de la falda en A; mi auditoría anterior no lo vio porque
+medía el ancho de la pieza incluyendo el hueco de la pinza.
+Verificación: 540 pruebas. La auditoría ahora mide la prenda cosida (el hueco y la boca de cada pinza no
+cuentan): cintura neta de las faldas = medida + holgura de 0 a 6 cm, y costado delantero = costado
+trasero en blusa y vestido con la boca de la pinza descontada. Antes del arreglo la cintura de la
+falda recta daba 71.2 y la de la falda en A 72.7.
+Archivos: packages/blocks/src/index.ts, tests/audit-patrones.test.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `250cafd`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## feat(web): fotos de las prendas en la galería de bloques
 
