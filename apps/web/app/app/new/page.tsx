@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import SaasNav from "../../(saas)/SaasNav";
 import { useSession } from "../../lib/auth";
 import { saveItem } from "../../lib/library";
+import { withBase } from "../../lib/paths";
 import {
   BLOCK_CATALOG,
   defaultMeasurementsFor,
@@ -18,6 +19,26 @@ import {
 } from "@hilonova/blocks";
 import "../../(saas)/saas.css";
 import "./new.css";
+
+/**
+ * Prendas cuyo patrón ya coincide con la foto de referencia: en su tarjeta va la foto en lugar del
+ * ícono. Se suman aquí a medida que las demás se terminen (chamarra, sudadera, falda en A, jogger y
+ * camisa de hombre tienen detalles pendientes: paneles, cordones y cuello con botones).
+ */
+const PHOTOS: Partial<Record<BlockKind, string>> = {
+  "pantalon-denim": "pantalon-denim",
+  "pantalon-vestir": "pantalon-vestir",
+  "playera-basica": "playera-basica",
+  "falda-recta": "falda-recta",
+  "blusa-clasica": "blusa-clasica",
+  short: "short",
+  bermuda: "bermuda",
+  "vestido-basico": "vestido-basico",
+  "camisa-manga-corta": "camisa-manga-corta",
+  polo: "polo",
+  chaleco: "chaleco",
+  "pantalon-cargo": "pantalon-cargo",
+};
 
 export default function NewPatternPage() {
   const router = useRouter();
@@ -83,10 +104,14 @@ export default function NewPatternPage() {
               disabled={busy !== null}
               aria-label={`Crear patrón de ${b.name}`}
             >
-              <div className="block-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none">
-                  <path d={b.iconPath} stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-                </svg>
+              <div className={`block-icon${PHOTOS[b.kind] ? " has-photo" : ""}`} aria-hidden="true">
+                {PHOTOS[b.kind] ? (
+                  <img src={withBase(`/img/prendas/${PHOTOS[b.kind]}.webp`)} alt="" width={96} height={96} />
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d={b.iconPath} stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+                  </svg>
+                )}
               </div>
               <div className="block-body">
                 <div className="block-tag">{b.tag}</div>

@@ -80,6 +80,8 @@
   color: var(--accent);
 }
 .block-icon svg { width: 32px; height: 32px; }
+.block-icon.has-photo { flex-basis: 96px; height: 96px; padding: 0; overflow: hidden; background: #fcfaf6; }
+.block-icon.has-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 .block-body { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .block-tag {
@@ -143,4 +145,5 @@
   .block-card { padding: 16px; gap: 12px; }
   .block-icon { flex-basis: 48px; height: 48px; }
   .block-icon svg { width: 26px; height: 26px; }
+  .block-icon.has-photo { flex-basis: 72px; height: 72px; }
 }
