@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 102
+> Rama: `dev/mvp-9-nov` · Commits: 104
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,53 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## feat: cobro con Stripe (funciones propias, pantalla «Activa tu plan» y estado en la cuenta), apagado hasta probarlo
+
+- Commit: `dbb8955`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: se escriben las funciones en la nube del cobro (firebase/functions): crearPago (pantalla de pago de Stripe de $490 al
+mes con campo para código de promoción y, si se configura, el IVA), portalDePago (tarjeta, recibos y cancelar) y webhookStripe
+(avisos firmados de Stripe que dejan el estado de la suscripción en customers/{uid}/subscription/current; un aviso viejo no
+pisa a uno nuevo). La lógica vive en billing-core.js y recibe Stripe y Firestore ya armados para poder probarla. Las llaves de
+Stripe van como secretos de Firebase, nunca en el código. En el programa: lib/billing-core.ts (quién tiene acceso: suscripción
+active, trialing o past_due, o un documento access/{uid} dado a mano con fecha opcional), lib/billing.ts (estado en tiempo
+real, pagar, administrar suscripción, confianza de 7 días sin conexión), componente PlanGate («Activa tu plan», «Confirmando tu
+pago…», «No pudimos comprobar tu plan») en el editor, «Tus patrones» y «Nuevo patrón», y la tarjeta de Facturación de la cuenta
+con estado, próximo cargo y botón «Administrar suscripción». Las reglas de Firestore agregan customers y access de solo lectura
+para su dueño. El interruptor lib/billing-config.ts viene en enabled:false: hasta probar todo en modo de prueba de Stripe,
+todas las cuentas entran como hoy. Se quita el límite de exportaciones (lib/oferta.ts eliminado): el cupón será un código de
+promoción de Stripe. Se agrega docs/COBRO-PASOS.md con las decisiones y los pasos para Blaze, Stripe, publicar y probar.
+Por qué: el negocio decidió cobrar $490 al mes con la cuenta de Stripe de Bioorigen y dejó la implementación a criterio; la
+extensión «Run Payments with Stripe» de Firebase está archivada y la plataforma de extensiones se cierra, así que se hicieron
+funciones propias.
+Verificación: 35 pruebas nuevas (cobro: pago, portal, avisos, orden de avisos, dirección de retorno permitida, y la firma real
+de Stripe con su librería oficial sin internet; plan-acceso: acceso por suscripción, cortesía con y sin fecha, fecha inválida
+que no regala acceso, gracia sin conexión, interruptor apagado); las funciones cargan con sus tres entradas y las librerías
+instaladas tienen los métodos usados; la pantalla «Activa tu plan» se revisó en el navegador; 686 pruebas pasan y los tipos
+compilan. NO probado: Stripe real ni la publicación de las funciones (requieren plan Blaze, llaves y publicar con la cuenta del
+negocio, ver docs/COBRO-PASOS.md).
+Archivos: firebase/functions/{billing-core.js,index.js,package.json,package-lock.json,.env.example}, firebase/{firebase.json,
+firestore.rules}, apps/web/app/lib/{billing,billing-core,billing-config}.ts, apps/web/app/components/PlanGate.tsx,
+apps/web/app/{account/page.tsx,app/page.tsx,app/new/page.tsx,studio/page.tsx,(saas)/saas.css}, tests/{cobro,plan-acceso,oferta}.test.ts,
+docs/{COBRO-PASOS,PROPUESTA-PLANES}.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `c2f5b67`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## feat: guardar los patrones en la nube con la cuenta (Firestore) sin perder el trabajo local
 
