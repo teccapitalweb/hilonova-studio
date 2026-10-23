@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 88
+> Rama: `dev/mvp-9-nov` · Commits: 90
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,51 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## feat: cuentas reales con Firebase (correo y contraseña, Google) con modo de prueba de respaldo
+
+- Commit: `db2b9d9`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: la capa de cuentas (lib/auth.ts) ahora usa Firebase Authentication cuando hay un proyecto configurado en
+lib/firebase-config.ts: crear cuenta con correo y contraseña (mínimo 8 caracteres, correo de verificación), entrar,
+salir, «Olvidé mi contraseña» y «Continuar con Google». El nombre y el taller se guardan en Firestore (users/{uid})
+con reglas que solo dejan a cada persona leer y escribir lo suyo (firebase/firestore.rules). El SDK se descarga solo
+cuando hay proyecto configurado. Sin configuración el programa sigue en «modo de prueba» (cuenta local) y la
+pantalla lo dice. Se quitan los botones falsos de Google y Apple que creaban una cuenta inventada; Apple queda fuera
+(pide cuenta de desarrollador de pago). Los errores salen en español (auth-errors.ts) y un correo o contraseña mal
+puestos no dicen cuál falló. signOut ahora se espera antes de cambiar de página (si no, la cuenta quedaba abierta).
+Si el perfil no se puede leer se conserva el nombre del taller que ya había. «Crea tu cuenta gratis» pasa a «Crea tu
+cuenta» (no es gratis). next.config acepta NEXT_DIST_DIR para tener un segundo servidor de pruebas. Se agrega
+docs/FIREBASE-PASOS.md con los pasos para crear el proyecto, cómo probarlo y lo que falta antes de publicar.
+Por qué: el registro era de mentira (localStorage) y no había forma de tener usuarios reales; Firebase encaja con el
+ecosistema de Google que ya usa el negocio y con Stripe más adelante.
+Verificación: contra el emulador local de Authentication y el programa en el navegador: contraseña corta rechazada;
+crear cuenta (existe en el emulador con su nombre); entra al panel; recargar mantiene la sesión; cerrar sesión desde
+el menú la cierra; contraseña equivocada dice «Correo o contraseña incorrectos»; contraseña correcta entra. Modo de
+prueba revisado en el servidor normal (aviso visible, sin botones falsos). 16 pruebas nuevas (tests/cuentas.test.ts);
+619 pruebas pasan y los tipos compilan. NO probado: Google, correos reales (verificación y restablecer contraseña) y
+Firestore (no hay Java para su emulador); eso requiere el proyecto real.
+Archivos: apps/web/app/lib/{auth.ts,auth-errors.ts,firebase.ts,firebase-config.ts}, apps/web/app/auth/{SsoButtons,signin,signup}.tsx,
+apps/web/app/(saas)/{SaasNav.tsx,saas.css}, apps/web/app/account/page.tsx, apps/web/{next.config.mjs,package.json},
+firebase/{firebase.json,firestore.rules}, docs/FIREBASE-PASOS.md, tests/cuentas.test.ts, pnpm-lock.yaml,
+pnpm-workspace.yaml, .gitignore
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `cd32fb0`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## fix: PDF del mosaico sin hojas de más y ficha técnica igual a la vista previa
 
