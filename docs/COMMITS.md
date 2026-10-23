@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 55
+> Rama: `dev/mvp-9-nov` · Commits: 57
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,45 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## feat(studio): guardado automático, aviso si no se puede guardar y recordatorio de respaldo
+
+- Commit: `859f121`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: el proyecto abierto se guarda solo 1.5 s después del último cambio y el nombre de la
+barra muestra "guardado 06:23 p.m."; si hay cambios sin guardar y se intenta cerrar la
+pestaña, el navegador avisa. Antes, cuando el navegador no podía guardar (sin espacio, modo
+privado o almacenamiento bloqueado) el error se ignoraba y el patrón parecía guardado: ahora se
+lanza un error y el editor lo muestra en la barra de estado ("No se pudo guardar... Descarga un
+respaldo desde Configuración"); crear, duplicar y guardar desde otras pantallas también avisan.
+Se pide al navegador almacenamiento persistente para que no borre los datos si le falta espacio.
+En Proyectos aparece un recordatorio si nunca se ha descargado un respaldo o si pasaron 7 días
+(el respaldo completo y la exportación de un proyecto ya existían en Configuración).
+Por qué: los proyectos viven solo en el navegador del alumno; perderlos por no haber guardado o por
+un fallo silencioso era el mayor riesgo de pérdida de trabajo.
+Verificación: 517 pruebas (14 nuevas de la biblioteca con un almacenamiento simulado: guardar,
+actualizar, borrar, fallo de escritura, respaldo y restauración sin duplicar, recordatorio); en la app:
+el cambio de nombre se guardó solo, con el almacenamiento bloqueado apareció el aviso y quedó "sin
+guardar", y al restaurarlo volvió a guardar y el aviso desapareció.
+Archivos: apps/web/app/lib/library.ts, apps/web/app/studio/{Shell,Proyectos,Config}.tsx,
+apps/web/app/app/page.tsx, apps/web/app/app/new/page.tsx, tests/library.test.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `ea04f34`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## fix(blocks): cuello de la chamarra y capucha de la sudadera miden lo que su escote + auditoría de los 17 patrones
 
