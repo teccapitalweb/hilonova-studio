@@ -42,7 +42,7 @@ Mientras `apps/web/app/lib/firebase-config.ts` esté vacío, el programa funcion
 
 ## Lo que falta antes de publicar (no depende de Firebase)
 
-- **Aviso de privacidad y términos:** los enlaces del registro apuntan a `#`. Hay que escribir las páginas con el texto de la empresa.
+- **Aviso de privacidad y términos:** ya existen como **borrador** en `/privacidad` y `/terminos` (se abren desde el registro). Los datos de la empresa están resaltados como «POR COMPLETAR» (razón social, domicilio, correo de contacto, cómo se cancela, fecha, tribunales). Hay que llenarlos y que un abogado revise el texto antes de publicar.
 - **Todas las cuentas tienen hoy el plan completo gratis.** El control de quién pagó o canjeó un cupón se construye en el servidor (pasos 4 y 5).
 - **Versión de Next.js:** la 15.1.6 tiene una vulnerabilidad conocida (CVE-2025-66478). Hay que subir a una versión corregida antes de publicar.
 - **Cloud Functions y Stripe** necesitan el plan **Blaze** de Firebase (pago por uso, pide tarjeta; con poco tráfico casi no se paga). El registro y el guardado de patrones funcionan en el plan gratis.

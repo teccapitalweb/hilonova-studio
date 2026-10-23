@@ -137,7 +137,7 @@ function SignUpForm() {
             </div>
             <label className="check-row">
               <input type="checkbox" checked={accept} onChange={(e) => setAccept(e.target.checked)} />
-              <span>Acepto los <a href="#">términos</a> y la <a href="#">privacidad</a>.</span>
+              <span>Acepto los <Link href="/terminos" target="_blank">términos</Link> y la <Link href="/privacidad" target="_blank">privacidad</Link>.</span>
             </label>
             <button className="cta" type="submit" disabled={busy}>
               {busy ? "Creando tu cuenta…" : "Crear cuenta y entrar"}
