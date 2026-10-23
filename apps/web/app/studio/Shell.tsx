@@ -31,9 +31,11 @@ import Config from "./Config";
 import { loadPrefs } from "../lib/prefs";
 import { saveUserPiece } from "../lib/pieces";
 import { NumInput, TextInput } from "./fields";
+import { EmptyGuide, HelpButton } from "./Ayuda";
 
 export default function Shell() {
   const view = useEditor((s) => s.view);
+  const emptyCanvas = useEditor((s) => s.history.present.pieces.length === 0);
   const params = useSearchParams();
   const loadDoc = useEditor((s) => s.loadDoc);
   const resetDoc = useEditor((s) => s.resetDoc);
@@ -71,6 +73,7 @@ export default function Shell() {
             <PiecesPanel />
             <div className="st-stage">
               <Canvas />
+              {emptyCanvas && <EmptyGuide />}
               <NestLegend />
               <StatusBar />
             </div>
@@ -187,6 +190,7 @@ function TopBar() {
       <AutoSave />
       <MeasurementsButton />
       <div className="st-top-actions">
+        <HelpButton />
         <button className="st-ic" disabled={!canUndo} onClick={undo} title="Deshacer (Ctrl+Z)">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
             <path d="M9 14 4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -443,7 +447,19 @@ function MeasurementsButton() {
   const [open, setOpen] = useState(false);
   const measurements = useEditor((s) => s.measurements);
   const blockKind = useEditor((s) => s.blockKind);
+  const isBlank = useEditor((s) => !s.history.present.blockKind);
   const meta = findBlock(blockKind);
+  if (isBlank) {
+    // un patrón en blanco no sale de una prenda base: no hay medidas que cambiar (y cambiarlas lo borraría)
+    return (
+      <span
+        className="st-measure-btn is-off"
+        title="Este patrón está en blanco: no viene de una prenda base, así que no tiene medidas del cuerpo. Todo se dibuja en centímetros."
+      >
+        En blanco · sin medidas
+      </span>
+    );
+  }
   // Resumen corto: las primeras 2-3 medidas del bloque
   const summary = meta.fields.slice(0, 3)
     .map((f) => `${FIELD_META[f].label[0]} ${measurements[f] ?? "—"}`)
@@ -588,7 +604,8 @@ function PiecesPanel() {
   const selectPiece = useEditor((s) => s.selectPiece);
   const toggleSelectPiece = useEditor((s) => s.toggleSelectPiece);
   const insertLibraryPiece = useEditor((s) => s.insertLibraryPiece);
-  const [libOpen, setLibOpen] = useState(false);
+  const libOpen = useEditor((s) => s.libOpen);
+  const setLibOpen = useEditor((s) => s.setLibOpen);
   return (
     <aside className="st-side">
       <div className="st-side-h">
@@ -597,7 +614,7 @@ function PiecesPanel() {
           <span className="st-chip">{doc.pieces.length}</span>
           <button
             className="st-mini"
-            onClick={() => setLibOpen((o) => !o)}
+            onClick={() => setLibOpen(!libOpen)}
             aria-pressed={libOpen}
             title="Biblioteca de piezas: insertar delantero, espalda, manga, cuello, puño, bolsillos…"
           >

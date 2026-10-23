@@ -346,7 +346,8 @@ export function draftPantalonDenim(m: BodyMeasurements): PatternDoc {
 
 /** Documento demo precargado — ahora derivado del paramétrico con la talla base. */
 export function demoJeanDoc(): PatternDoc {
-  return draftPantalonDenim(DEFAULT_MEASUREMENTS);
+  // por draftBlock para que traiga el tipo de prenda y las medidas (si no, el editor lo tomaría por un patrón en blanco)
+  return draftBlock("pantalon-denim", DEFAULT_MEASUREMENTS);
 }
 
 // ─── graduación por reglas ───────────────────────────────────────────────────

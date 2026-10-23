@@ -171,6 +171,8 @@ interface EditorState {
   measurements: BodyMeasurements;
   /** tipo de bloque vigente (para saber qué draft usar al cambiar medidas) */
   blockKind: BlockKind;
+  /** el panel de la biblioteca de piezas está abierto */
+  libOpen: boolean;
   /** vinculación con la biblioteca del usuario */
   saved: SavedRef;
   /** trazo en construcción con las herramientas de dibujo */
@@ -255,8 +257,10 @@ interface EditorState {
   setNodeGradeOf(pieceId: string, nodeId: string, grade: { dx: number; dy: number } | null): void;
   /** marca o desmarca un piquete en el nodo dado */
   toggleNotch(pieceId: string, nodeId: string): void;
-  /** regenera el documento desde unas medidas nuevas (empuja al historial) */
+  /** regenera el documento desde unas medidas nuevas (empuja al historial); no hace nada en un patrón en blanco */
   applyMeasurements(m: BodyMeasurements): void;
+  /** abre o cierra la biblioteca de piezas del panel izquierdo */
+  setLibOpen(open: boolean): void;
   undo(): void;
   redo(): void;
   resetDoc(): void;
@@ -420,6 +424,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   activeSizes: ["28", "30", "32", "34", "36"],
   measurements: { ...DEFAULT_MEASUREMENTS },
   blockKind: "pantalon-denim",
+  libOpen: false,
   saved: { id: null, dirty: false, lastSaved: null },
   draft: null,
   viewSize: { w: 800, h: 500 },
@@ -883,9 +888,13 @@ export const useEditor = create<EditorState>((set, get) => ({
     set({ history: hCommit(history, nextDoc), saved: { ...saved, dirty: true } });
   },
 
+  setLibOpen: (open) => set({ libOpen: open }),
+
   applyMeasurements: (m) => {
     const { history, saved, blockKind } = get();
     const cur = history.present;
+    // un patrón en blanco no sale de una prenda base: no hay con qué redibujarlo, y hacerlo borraría lo dibujado
+    if (!cur.blockKind) return;
     const next = draftBlock(blockKind, m, cur.gradeSteps);
     // conservar nombre, ficha técnica, gama de tallas y variantes del documento vigente
     const named: PatternDoc = {

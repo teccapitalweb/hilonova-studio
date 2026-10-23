@@ -75,7 +75,7 @@ export default function Proyectos() {
           <p>Tus patrones guardados en este navegador. Descarga un respaldo desde Configuración.</p>
         </div>
         <div className="st-page-actions">
-          <button className="st-act" onClick={blank}>+ En blanco</button>
+          <button className="st-act" onClick={blank} title="Un lienzo vacío para dibujar tus propias piezas (la guía te explica cómo empezar)">+ En blanco</button>
           <button className="st-btn-primary" onClick={() => router.push("/app/new")}>+ Desde una prenda base</button>
         </div>
       </header>

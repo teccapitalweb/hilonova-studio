@@ -1159,3 +1159,67 @@ select.st-input option { background-color: #1a2540; color: #EAF2FF; }
 .st-seam-body { padding: 2px 10px 10px; font-size: 12.5px; }
 .st-seam-ok { color: #8fd99b; }
 .st-seam-bad { color: #ffb08a; }
+
+/* ── ayuda y guía del lienzo vacío ── */
+.st-measure-btn.is-off { opacity: .65; cursor: default; }
+.st-help-btn {
+  display: inline-flex; align-items: center; gap: 6px; position: relative;
+  height: 32px; padding: 0 12px; border-radius: 16px; cursor: pointer;
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12);
+  color: var(--t-hi, #fff); font: inherit; font-size: 12.5px;
+}
+.st-help-btn:hover { background: rgba(255,255,255,.1); }
+.st-help-q {
+  width: 16px; height: 16px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--accent-2, #FF7A3D); color: #1a1208; font-weight: 700; font-size: 11px;
+}
+.st-help-dot {
+  position: absolute; top: 3px; right: 4px; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent, #F0662C); box-shadow: 0 0 0 3px rgba(240,102,44,.25);
+}
+.st-help-back {
+  position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center;
+  background: rgba(5,8,18,.62); padding: 16px;
+}
+.st-help {
+  width: min(720px, 100%); max-height: min(640px, 100%); display: flex; flex-direction: column;
+  background: #121a30; color: #e8ecf8; border: 1px solid rgba(255,255,255,.12); border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.5); overflow: hidden;
+}
+.st-help-h { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; font-size: 16px; }
+.st-help-tabs { display: flex; gap: 4px; padding: 0 14px; border-bottom: 1px solid rgba(255,255,255,.1); flex-wrap: wrap; }
+.st-help-tabs button {
+  background: none; border: 0; color: #9aa6c6; font: inherit; font-size: 13px; padding: 9px 10px; cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+.st-help-tabs button.on { color: #fff; border-bottom-color: var(--accent, #F0662C); }
+.st-help-body { overflow: auto; padding: 16px 20px 20px; }
+.st-help-sec h3 { margin: 0 0 10px; font-size: 16px; color: #fff; }
+.st-help-sec ul { margin: 0; padding-left: 18px; display: grid; gap: 8px; font-size: 14px; line-height: 1.5; }
+.st-help-tips { margin-top: 14px; padding: 10px 12px; border-radius: 10px; background: rgba(255,122,61,.1); font-size: 13px; line-height: 1.5; }
+.st-help-tips p { margin: 4px 0; }
+.st-help-keys { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+.st-help-keys th { text-align: left; font-weight: 400; padding: 5px 10px 5px 0; white-space: nowrap; vertical-align: top; }
+.st-help-keys td { padding: 5px 0; color: #c8d1ea; }
+.st-help-keys kbd {
+  font-family: var(--font-mono, monospace); font-size: 12px; padding: 2px 7px; border-radius: 6px;
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14);
+}
+.st-empty-guide {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  pointer-events: none; padding: 16px; z-index: 5;
+}
+.st-empty-card {
+  pointer-events: auto; max-width: 520px; padding: 20px 22px; border-radius: 14px;
+  background: rgba(18,26,48,.94); border: 1px solid rgba(255,255,255,.14); color: #e8ecf8;
+  box-shadow: 0 18px 50px rgba(0,0,0,.45);
+}
+.st-empty-card h3 { margin: 0 0 4px; font-size: 18px; color: #fff; }
+.st-empty-card p { margin: 0 0 10px; color: #b4bfdc; font-size: 14px; }
+.st-empty-card ol { margin: 0; padding-left: 20px; display: grid; gap: 12px; font-size: 14px; line-height: 1.45; }
+.st-empty-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.st-empty-btns .st-act { margin-top: 0; }
+.st-empty-more {
+  margin-top: 14px; background: none; border: 0; padding: 0; cursor: pointer; font: inherit; font-size: 13px;
+  color: var(--accent-2, #FF7A3D); text-decoration: underline;
+}

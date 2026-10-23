@@ -37,7 +37,7 @@ const HIT_PX = 8;
 /** Distancia (px) a un contorno para insertar un nodo con la herramienta "agregar nodo". */
 const EDGE_PX = 10;
 
-const TOOL_KEYS: Record<string, Tool> = {
+export const TOOL_KEYS: Record<string, Tool> = {
   v: "select", h: "pan", n: "notch", l: "line", c: "curve",
   r: "rect", o: "circle", a: "addnode", m: "measure", t: "text", p: "dart", s: "seam",
 };
