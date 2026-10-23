@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 92
+> Rama: `dev/mvp-9-nov` · Commits: 94
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,41 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## fix: términos y privacidad completos, sin campos pendientes ni letrero de borrador
+
+- Commit: `e1fa21a`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: se quitan los campos «POR COMPLETAR», el letrero de borrador y los estilos que usaban. Los textos quedan
+completos sin datos de identificación de la empresa (por decisión del negocio no se piden razón social, domicilio ni
+correo): HiloNova es el responsable y se le escribe por los medios de contacto que publica en su sitio. Dónde antes
+había un pendiente ahora hay una frase verdadera para hoy: no se piden datos de pago (cuando exista el cobro se
+actualizará el aviso), no se usan datos para publicidad, el cobro todavía no está activo, las condiciones de
+cancelación y reembolso se darán a conocer antes de activar el cobro, y la ley aplicable es la de México. Las páginas
+llevan la fecha de hoy. La guía docs/FIREBASE-PASOS.md refleja la decisión.
+Por qué: el negocio pidió dejar las páginas listas y sin esos datos.
+Verificación: ambas páginas revisadas en el navegador (0 campos pendientes, sin letrero; el precio sale de las
+constantes). Las pruebas de tests/legal.test.ts ahora exigen lo contrario: sin «por completar», sin borrador y sin
+correos, teléfonos, razón social ni domicilio escritos a mano. 626 pruebas pasan y los tipos compilan.
+Archivos: apps/web/app/legal/{LegalPage,PrivacidadContent,TerminosContent}.tsx, apps/web/app/(saas)/saas.css,
+tests/legal.test.ts, docs/FIREBASE-PASOS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `aa42593`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## feat: borradores de términos de uso y aviso de privacidad, enlazados desde el registro
 
