@@ -20,20 +20,21 @@ import {
 import "../../(saas)/saas.css";
 import "./new.css";
 
-/**
- * Prendas cuyo patrón ya coincide con la foto de referencia: en su tarjeta va la foto en lugar del
- * ícono. Se suman aquí a medida que las demás se terminen (chamarra, sudadera, falda en A, jogger y
- * camisa de hombre tienen detalles pendientes: paneles, cordones y cuello con botones).
- */
-const PHOTOS: Partial<Record<BlockKind, string>> = {
+/** Foto de referencia de cada prenda (recortes de las imágenes del cliente) para su tarjeta. */
+const PHOTOS: Record<BlockKind, string> = {
   "pantalon-denim": "pantalon-denim",
   "pantalon-vestir": "pantalon-vestir",
   "playera-basica": "playera-basica",
   "falda-recta": "falda-recta",
   "blusa-clasica": "blusa-clasica",
+  "chamarra-mezclilla": "chamarra-mezclilla",
   short: "short",
   bermuda: "bermuda",
   "vestido-basico": "vestido-basico",
+  "sudadera-capucha": "sudadera-capucha",
+  "falda-a": "falda-a",
+  "pants-jogger": "pants-jogger",
+  "camisa-hombre": "camisa-hombre",
   "camisa-manga-corta": "camisa-manga-corta",
   polo: "polo",
   chaleco: "chaleco",
