@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 70
+> Rama: `dev/mvp-9-nov` · Commits: 72
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,38 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## docs: análisis de cumplimiento y preguntas para el maestro costurero
+
+- Commit: `ba499c6`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: docs/ANALISIS-CUMPLIMIENTO.md con el estado de cada requisito pedido (cumple / parcial / no cumple /
+depende de otros), los límites de cada módulo (CAD, graduación, trazo, producción, menú, Stripe), el detalle
+de las 17 prendas con sus simplificaciones, la calidad y confiabilidad, 40 preguntas para el maestro costurero
+ordenadas por tema (medidas y tallas, holguras, márgenes, detalles de cada prenda, tela y trazo, ficha técnica,
+archivos de fábrica, alcance del curso), los riesgos conocidos y los siguientes pasos.
+Por qué: preparar la reunión con el maestro costurero y decidir los siguientes trabajos.
+Verificación: los datos de tallas, reglas de graduación, número de piezas, holguras y límites se comprobaron en el
+código (catálogo de bloques, reglas de graduación, presets de tallas, trazo); lo no probado (Gerber, otros
+navegadores, rendimiento) está marcado como tal.
+Archivos: docs/ANALISIS-CUMPLIMIENTO.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `bbce2d4`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## feat(studio): ayuda dentro de la app, guía del lienzo vacío y arreglo del patrón en blanco
 
