@@ -362,49 +362,27 @@ export default function HomePage() {
           <h2>Un plan por cada tamaño de taller.</h2>
           <p>Empieza en minutos, crece cuando lo necesites. Sin instalación, sin contratos atados.</p>
         </div>
-        <div className="pricing">
-          <div className="plan">
-            <h3>Aprendiz</h3>
-            <div className="pd">Para los alumnos del curso: aprende y practica con todo el editor.</div>
-            <div className="price"><span className="amt mono">$149</span><span className="per">/ mes</span></div>
-            <div className="note">Los primeros 3 meses incluidos con el curso</div>
-            <button className="pcta out">Empezar</button>
-            <ul className="feats">
-              <li><Check /> 1 usuario</li>
-              <li><Check /> Hasta 10 proyectos</li>
-              <li><Check /> 17 prendas base</li>
-              <li><Check /> Graduación, trazo y ficha técnica</li>
-            </ul>
-          </div>
+        <div className="pricing" style={{ gridTemplateColumns: "minmax(0, 420px)", justifyContent: "center" }}>
           <div className="plan pop">
-            <span className="badge">Recomendado</span>
-            <h3>Taller</h3>
-            <div className="pd">Para el patronista independiente y talleres chicos.</div>
-            <div className="price"><span className="amt mono">$390</span><span className="per">/ mes</span></div>
-            <div className="note">Precio de lanzamiento · después $490</div>
+            <h3>Estudio</h3>
+            <div className="pd">Todo el programa, para el patronista, el taller chico y el alumno del curso.</div>
+            <div className="price"><span className="amt mono">$490</span><span className="per">/ mes</span></div>
+            <div className="note">MXN · más IVA</div>
             <button className="pcta fill">Crear cuenta</button>
             <ul className="feats">
-              <li><Check /> 2 usuarios</li>
+              <li><Check /> Hasta 2 usuarios</li>
               <li><Check /> Proyectos ilimitados</li>
+              <li><Check /> 17 prendas base</li>
+              <li><Check /> Graduación, trazo y ficha técnica</li>
+              <li><Check /> PDF, SVG y plotter 1:1</li>
               <li><Check /> DXF estilo AAMA (en validación)</li>
-              <li><Check /> PDF 1:1 para plotter</li>
-            </ul>
-          </div>
-          <div className="plan">
-            <h3>Equipo</h3>
-            <div className="pd">Para talleres y maquilas con varias personas.</div>
-            <div className="price"><span className="amt mono">$990</span><span className="per">/ mes</span></div>
-            <div className="note">Precio de lanzamiento · después $1,290</div>
-            <button className="pcta out">Crear cuenta</button>
-            <ul className="feats">
-              <li><Check /> Hasta 8 usuarios</li>
-              <li><Check /> Todo lo de Taller</li>
-              <li><Check /> Soporte por correo en 1 día hábil</li>
             </ul>
           </div>
         </div>
-        <p style={{ textAlign: "center", fontSize: 13, opacity: 0.7, marginTop: 14 }}>
-          Precios en MXN más IVA. Propuesta en revisión: el cobro todavía no está activo.
+        <p style={{ textAlign: "center", fontSize: 13, opacity: 0.75, marginTop: 14 }}>
+          ¿Tomaste el curso? Recibes un código de descuento de un solo uso, válido 24 horas desde que lo recibes.
+          <br />
+          Propuesta en revisión: el cobro todavía no está activo.
         </p>
       </section>
 

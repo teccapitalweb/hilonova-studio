@@ -7,37 +7,35 @@ un dibujo: nadie paga y nada se bloquea. Para construirlo necesito que me contes
 
 ## 1. ¿Cómo se vende el software?
 
-- **A.** El software se vende aparte, con suscripción mensual (como muestra la pantalla de planes).
-- **B.** El software se vende aparte, con un solo pago.
-- **C.** El software viene incluido con el curso de $550 (no se cobra aparte).
-- **D.** Una mezcla: incluido unos meses con el curso y después se paga.
+El software se vende aparte del curso. Se propone una **suscripción mensual** (con renovación), igual para todos; los alumnos del curso la pagan con un código de descuento (sección 3).
 
-## 2. Los planes
+- **A.** Suscripción mensual (propuesto).
+- **B.** Un solo pago.
 
-Hoy la pantalla tiene tres planes que puso el compañero que empezó el proyecto:
+## 2. El plan y el precio
 
-| Plan | Precio | Usuarios | Patrones | Incluye |
-|---|---|---|---|---|
-| Taller | $490 al mes | 2 | 50 | Bloques, nido de tallas, PDF |
-| Maquila | $1,290 al mes | 8 | 200 | Todo lo de Taller + exportar a DXF (Gerber), ficha técnica, trazo y consumo |
-| Industrial | A medida | ilimitados | ilimitados | Todo + acceso por empresa y soporte prioritario |
+Se propone **un solo plan con un solo precio**: **$490 al mes** más IVA, con todo el programa (hasta 2 usuarios, proyectos ilimitados, 17 prendas, graduación, trazo, ficha técnica y exportación). Sin precio de lanzamiento, sin plan de aprendiz y sin meses gratis incluidos. Los planes anteriores (Taller $490, Maquila $1,290, Industrial) se quitaron porque prometían cosas que no existen.
 
-- **¿Dejamos estos tres planes y estos precios?** Sí / No / Cambiar: ________
-- **¿El plan Taller debe quedarse sin exportar a DXF?** (así se ve hoy) Sí / No
-- **¿Hace falta el plan Industrial ahora, o lo dejamos para después?** Ahora / Después
+- **¿Se aprueba el plan único a $490?** Sí / No / Otro precio: ________
+- **¿El precio lleva IVA incluido o se suma?** ________
+- **¿Se ofrece después un plan de equipo con varios usuarios y roles?** Sí / No
 
-## 3. ¿Y los alumnos del curso?
+## 3. Código de descuento para los alumnos del curso
 
-- **A.** Entran gratis al software mientras dura el curso.
-- **B.** Tienen un precio especial: $________
-- **C.** Pagan el plan normal.
+Los alumnos pagan el mismo plan con un **código de descuento de un solo uso que vale 24 horas**.
+
+- **¿De cuánto es el descuento?** ________ % o $________
+- **¿Aplica solo al primer pago, a los primeros ____ meses, o siempre?** ________
+- **¿Desde cuándo cuentan las 24 horas?** Desde que se le entrega el código / desde que lo abre.
+- **¿Cómo le llega el código al alumno?** Lo envía el curso al terminar / se genera cuando lo pide: ________
+- **Si el código vence, ¿cómo pide otro?** ________
 
 ## 4. Cómo se paga
 
 - **¿Con tarjeta (Stripe), con código de acceso, o las dos?** ________
 - **¿Ya existe una cuenta de Stripe de la empresa?** Sí (quién la maneja: ________) / No
-- **¿Se necesita factura (CFDI)?** Sí / No. (La pantalla actual dice que sí en planes anuales.)
-- **¿Hay plan anual con descuento?** Sí (la pantalla dice "2 meses gratis") / No
+- **¿Se necesita factura (CFDI)?** Sí / No.
+- **¿Se ofrece también pago anual?** No por ahora (un solo precio mensual) / Sí, con este descuento: ________
 
 ## 5. Fechas
 
@@ -46,6 +44,5 @@ Hoy la pantalla tiene tres planes que puso el compañero que empezó el proyecto
 
 ## Lo que yo haría si no hay preferencia
 
-Un solo plan para empezar (el del curso), cobro con tarjeta por Stripe, con cuenta de usuario real,
-y dejar los planes Maquila e Industrial para una segunda etapa. Es lo más rápido y lo más fácil
-de tener funcionando antes del 9 de noviembre.
+El plan único de $490 al mes con código de descuento para alumnos, cobro con tarjeta por Stripe y cuenta de usuario
+real. Es lo más rápido y lo más fácil de tener funcionando antes del 9 de noviembre.

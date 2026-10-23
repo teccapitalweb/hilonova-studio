@@ -7,16 +7,14 @@
 
 import { useEffect, useState } from "react";
 
-export type PlanId = "aprendiz" | "taller" | "equipo";
+export type PlanId = "estudio";
 
-/** Usuarios que incluye cada plan. */
-const SEATS: Record<PlanId, number> = { aprendiz: 1, taller: 2, equipo: 8 };
+/** Usuarios que incluye el plan. */
+const SEATS: Record<PlanId, number> = { estudio: 2 };
 
-/** Las sesiones guardadas con los planes anteriores (maquila, industrial) pasan al plan que los reemplaza. */
-export function normalizePlan(plan: string | undefined): PlanId {
-  if (plan === "aprendiz" || plan === "taller" || plan === "equipo") return plan;
-  if (plan === "maquila" || plan === "industrial") return "equipo";
-  return "taller";
+/** Las sesiones guardadas con planes anteriores (taller, maquila, industrial, aprendiz, equipo) pasan al plan único. */
+export function normalizePlan(_plan?: string): PlanId {
+  return "estudio";
 }
 
 export interface Session {
@@ -56,7 +54,7 @@ const uid = (): string =>
   "u_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 
 /** Crea una sesión mock a partir del nombre+email. Simula el "crear cuenta". */
-export function signUp(name: string, email: string, orgName?: string, plan: PlanId = "taller"): Session {
+export function signUp(name: string, email: string, orgName?: string, plan: PlanId = "estudio"): Session {
   const session: Session = {
     user: { id: uid(), name, email },
     org: {
@@ -91,7 +89,7 @@ export function signInWithProvider(provider: "google" | "apple"): Session {
   const email = provider === "google" ? "miguel.g@gmail.com" : "miguel.g@icloud.com";
   const existing = readSession();
   if (existing && existing.user.email === email) return existing;
-  return signUp(name, email, undefined, "taller");
+  return signUp(name, email, undefined, "estudio");
 }
 
 export function getSession(): Session | null {
@@ -130,13 +128,9 @@ export function useSession(): Session | null {
 export interface PlanMeta {
   id: PlanId;
   name: string;
-  /** precio mensual vigente, en MXN, más IVA */
+  /** precio mensual en MXN, más IVA: el mismo para todos (los alumnos del curso lo pagan con un código de descuento) */
   priceMxn: number;
-  /** precio normal al terminar el lanzamiento (si lo hay) */
-  regularPriceMxn?: number;
   pricePer: string;
-  /** aclaración corta bajo el precio */
-  priceNote?: string;
   seats: number;
   blurb: string;
   features: string[];
@@ -144,58 +138,27 @@ export interface PlanMeta {
 }
 
 /**
- * Los planes solo prometen lo que el software hace hoy (ver docs/PROPUESTA-PLANES.md). El cobro, las cuentas
- * reales y los límites por plan todavía no existen: esta lista es lo que se mostraría al activarlos.
+ * Un solo plan con un solo precio. Solo promete lo que el software hace hoy (ver docs/PROPUESTA-PLANES.md).
+ * El cobro, las cuentas reales y el código de descuento de los alumnos todavía no existen.
  */
 export const PLANS: readonly PlanMeta[] = [
   {
-    id: "aprendiz",
-    name: "Aprendiz",
-    priceMxn: 149,
+    id: "estudio",
+    name: "Estudio",
+    priceMxn: 490,
     pricePer: "/ mes",
-    priceNote: "Los primeros 3 meses van incluidos con el curso",
-    seats: SEATS.aprendiz,
-    blurb: "Para los alumnos del curso: aprende y practica con todo el editor.",
-    features: [
-      "1 usuario",
-      "Hasta 10 proyectos guardados",
-      "17 prendas base con sus piezas",
-      "Graduación y trazo con consumo por talla",
-      "Ficha técnica en PDF",
-      "Exportar PDF y SVG",
-      "Ayuda dentro de la app",
-    ],
-  },
-  {
-    id: "taller",
-    name: "Taller",
-    priceMxn: 390,
-    regularPriceMxn: 490,
-    pricePer: "/ mes",
-    seats: SEATS.taller,
-    blurb: "Para el patronista independiente y talleres chicos.",
+    seats: SEATS.estudio,
+    blurb: "Todo el programa, para el patronista, el taller chico y el alumno del curso.",
     popular: true,
     features: [
-      "2 usuarios",
+      "Hasta 2 usuarios",
       "Proyectos ilimitados",
-      "Todo lo de Aprendiz",
+      "17 prendas base con sus piezas",
+      "Graduación (S–XL, XS–XXL y 28–36) y trazo con consumo por talla",
+      "Ficha técnica en PDF y variantes de modelo",
+      "Exportar PDF, SVG y PDF a escala 1:1 para plotter",
       "Exportar DXF estilo AAMA (en validación)",
-      "PDF a escala 1:1 para plotter",
-      "Soporte por correo",
-    ],
-  },
-  {
-    id: "equipo",
-    name: "Equipo",
-    priceMxn: 990,
-    regularPriceMxn: 1290,
-    pricePer: "/ mes",
-    seats: SEATS.equipo,
-    blurb: "Para talleres y maquilas con varias personas.",
-    features: [
-      "Hasta 8 usuarios (las cuentas de equipo con roles llegan después)",
-      "Todo lo de Taller",
-      "Soporte por correo con respuesta en 1 día hábil",
+      "Ayuda dentro de la app y soporte por correo",
     ],
   },
 ] as const;

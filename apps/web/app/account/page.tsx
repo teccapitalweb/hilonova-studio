@@ -8,7 +8,7 @@ import { signOut, useSession, findPlan } from "../lib/auth";
 import { useLibrary } from "../lib/library";
 import "../(saas)/saas.css";
 
-const PATTERN_LIMIT: Record<string, number> = { aprendiz: 10, taller: 9999, equipo: 9999 };
+const PATTERN_LIMIT: Record<string, number> = { estudio: 9999 };
 
 export default function AccountPage() {
   const session = useSession();
