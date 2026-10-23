@@ -814,7 +814,9 @@ export function draftChamarraMezclilla(m: BodyMeasurements): PatternDoc {
   const wrist = 24;
   const armLen = pathLen(armholeNodes(sx, 4.5, t.qF, under, 1)) + pathLen(armholeNodes(sx, 4.2, t.qB, under, 0.8));
   const sleeve = mk("Manga", 2, F, fitSleeve(bicep, t.largoManga - 7, wrist, armLen + 3, under * 1.2));
-  const collar = mk("Cuello", 2, F, collarNodes(t.cuello / 2 + 1, 7.5));
+  // el cuello se cose a todo el escote: delantero (×2) + espalda (×2 medios arcos)
+  const neckLen = 2 * (pathLen([front.nodes[1]!, front.nodes[2]!]) + pathLen([back.nodes[0]!, back.nodes[1]!]));
+  const collar = mk("Cuello", 2, F, collarNodes(neckLen / 2, 7.5));
   const cuff = rectPiece("Puño", { x: 0, y: 0 }, { x: wrist, y: 7 });
   cuff.quantity = 2; cuff.fabric = F;
   const fajaF = rectPiece("Faja delantera", { x: 0, y: 0 }, { x: t.qF + ext, y: 6 });
@@ -1106,11 +1108,13 @@ export function draftSudadera(m: BodyMeasurements): PatternDoc {
   const sleeve = mk("Manga", 2, F, fitSleeve(t.busto * 0.3 + 12, t.largoManga - 8, wrist, armLen, under * 1.2));
 
   const s = t.cuello / 38;               // la capucha crece con el cuello
+  // el borde de abajo de cada mitad de capucha se cose a la mitad del escote (arco delantero + trasero)
+  const hoodNeck = pathLen([front.nodes[0]!, front.nodes[1]!]) + pathLen([back.nodes[0]!, back.nodes[1]!]);
   const hood = pieceFromPoints(
     "Capucha",
     [
-      { x: 0, y: 36 * s }, { x: 0, y: 12 * s }, { x: 6 * s, y: 2 * s }, { x: 20 * s, y: 0 },
-      { x: 32 * s, y: 8 * s }, { x: 36 * s, y: 24 * s }, { x: 34 * s, y: 36 * s }, { x: 18 * s, y: 38 * s },
+      { x: 0, y: 37 * s }, { x: 0, y: 12 * s }, { x: 6 * s, y: 2 * s }, { x: 20 * s, y: 0 },
+      { x: 32 * s, y: 8 * s }, { x: 36 * s, y: 24 * s }, { x: hoodNeck * 0.95, y: 36 * s }, { x: hoodNeck * 0.475, y: 38.5 * s },
     ],
     { closed: true, smooth: true, quantity: 2 },
   );
