@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 100
+> Rama: `dev/mvp-9-nov` · Commits: 102
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,50 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## feat: guardar los patrones en la nube con la cuenta (Firestore) sin perder el trabajo local
+
+- Commit: `c8d6930`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: cada patrón se guarda también en Firestore (users/{uid}/patterns/{id}). El navegador sigue siendo la copia de
+trabajo; cada cambio (guardar, renombrar, borrar, importar respaldo) se anota en una cola y se sube a los 20 segundos,
+al cerrar sesión y al salir de la página (para no gastar el límite diario de escrituras del plan gratis). Al entrar con
+la cuenta se baja lo de la nube y se mezcla con lo del navegador: gana lo editado más recientemente, lo que solo hay aquí
+se sube (nada se pierde la primera vez) y lo borrado sin conexión no reaparece. Si el navegador tenía patrones de otra
+cuenta se apartan en una copia local y no se suben a la nueva. Sin internet todo sigue funcionando y los cambios esperan
+en la cola. El editor muestra «en la nube», «subiendo a la nube…» o «sin conexión con la nube». Se separa el acceso básico
+al almacenamiento (library-raw.ts), la mezcla pura (cloud-merge.ts) y la sincronización (cloud.ts). Las reglas de
+seguridad (firebase/firestore.rules) agregan users/{uid}/patterns con validación de campos y tamaño y acceso solo para el
+dueño. Se actualizan los textos que decían que los proyectos viven solo en el navegador (ayuda, Proyectos, Configuración,
+cuenta, términos y aviso de privacidad), aclarando que materiales, «Mis piezas» y preferencias siguen solo en el navegador.
+Por qué: sin esto los patrones solo existían en el navegador donde se crearon y se perdían al limpiarlo o cambiar de
+computadora.
+Verificación: 20 pruebas nuevas con una nube de mentira (tests/nube.test.ts): primera subida, otra computadora, mezcla por
+fecha, una mezcla por sesión, sin internet, borrar con y sin conexión, edición durante una subida, cerrar sesión, dos cuentas
+en el mismo navegador; se rompieron a propósito la regla de fechas y la separación de cuentas y las pruebas fallaron como
+debían. En pantalla con el emulador de cuentas: al crear un patrón queda en la cola y dice «subiendo a la nube…»; al no
+alcanzar Firestore dice «sin conexión con la nube», el patrón sigue en el navegador y en la cola. 651 pruebas pasan, tipos
+sin errores. NO probado: Firestore real (falta que el negocio publique las reglas nuevas y pruebe con su cuenta).
+Archivos: apps/web/app/lib/{cloud,cloud-merge,library-raw,library,auth}.ts, apps/web/app/studio/{Shell,Proyectos,Config}.tsx,
+apps/web/app/studio/ayuda-contenido.ts, apps/web/app/account/page.tsx, apps/web/app/legal/*.tsx, firebase/firestore.rules,
+docs/FIREBASE-PASOS.md, tests/{nube,legal}.test.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `8416f88`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## fix: correos de cuenta de Firebase en español
 
