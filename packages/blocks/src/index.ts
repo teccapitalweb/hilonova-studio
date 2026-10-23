@@ -663,8 +663,8 @@ export function draftBlusaClasica(m: BodyMeasurements): PatternDoc {
     ),
     node({ x: qF, y: sisa }, { notch: true, handleIn: { x: -2.5, y: -1.5 } }),
     node({ x: qWF, y: largoT }),
-    node({ x: qHF, y: hemY }),
-    node({ x: -ext, y: hemY }),
+    node({ x: qHF, y: hemY - 6 }, { handleOut: { x: -qHF * 0.4, y: 5.5 } }),
+    node({ x: -ext, y: hemY }, { handleIn: { x: qHF * 0.35, y: 0 } }),
   ];
 
   // pinza de busto en el costado (la mitad izquierda sale igual porque el delantero va ×2)
@@ -691,8 +691,8 @@ export function draftBlusaClasica(m: BodyMeasurements): PatternDoc {
     ),
     node({ x: qB, y: sisa }, { notch: true, handleIn: { x: -2.5, y: -1.5 } }),
     node({ x: qWB, y: largoT }),
-    node({ x: qHB, y: hemY }),
-    node({ x: 0, y: hemY }, { notch: true }),
+    node({ x: qHB, y: hemY - 6 }, { handleOut: { x: -qHB * 0.4, y: 5.5 } }),
+    node({ x: 0, y: hemY }, { notch: true, handleIn: { x: qHB * 0.35, y: 0 } }),
   ]);
 
   // ── manga larga ───────────────────────────────────────────────────────────

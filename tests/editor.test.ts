@@ -64,12 +64,17 @@ describe("rotar", () => {
   });
 
   it("un grupo gira como un cuerpo rígido: las distancias entre piezas no cambian", () => {
+    // el centro de la caja que rodea a la pieza cambia al girar una forma asimétrica: se usa el promedio de sus nodos
+    const mean = (p: ReturnType<typeof pieces>[number]) => ({
+      x: p.nodes.reduce((a, n) => a + n.at.x, 0) / p.nodes.length,
+      y: p.nodes.reduce((a, n) => a + n.at.y, 0) / p.nodes.length,
+    });
     const [a, b] = pieces();
-    const d0 = dist(pieceCenter(a!), pieceCenter(b!));
+    const d0 = dist(mean(a!), mean(b!));
     get().selectPieces([a!.id, b!.id]);
     get().rotateSelected(37);
     const [ra, rb] = pieces();
-    expect(dist(pieceCenter(ra!), pieceCenter(rb!))).toBeCloseTo(d0, 0);
+    expect(dist(mean(ra!), mean(rb!))).toBeCloseTo(d0, 1);
     expect(area(ra!)).toBeCloseTo(area(a!), 1);
     expect(area(rb!)).toBeCloseTo(area(b!), 1);
   });

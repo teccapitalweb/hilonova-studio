@@ -422,7 +422,7 @@ describe("el resto de prendas según las fotos de referencia", () => {
     }
   });
 
-  it.each(["camisa-hombre", "camisa-manga-corta"] as BlockKind[])("%s: el ruedo es curvo (los costados quedan 5-7 cm más arriba que el centro)", (kind) => {
+  it.each(["camisa-hombre", "camisa-manga-corta", "blusa-clasica"] as BlockKind[])("%s: el ruedo es curvo (los costados quedan 5-7 cm más arriba que el centro)", (kind) => {
     for (const size of draft(kind).sizes) {
       const d = gradeDoc(draft(kind), size);
       for (const p of [front(d), back(d)]) {
