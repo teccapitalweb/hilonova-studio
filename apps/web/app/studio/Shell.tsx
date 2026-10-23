@@ -184,6 +184,7 @@ function TopBar() {
       <DocName />
       <ViewSwitch />
       <SaveButton />
+      <AutoSave />
       <MeasurementsButton />
       <div className="st-top-actions">
         <button className="st-ic" disabled={!canUndo} onClick={undo} title="Deshacer (Ctrl+Z)">
@@ -223,6 +224,9 @@ function DocName() {
       <span className="st-doc-meta">
         {doc.unit} · talla {doc.baseSize}
         {saved.dirty && <span className="st-dirty"> · sin guardar</span>}
+        {!saved.dirty && saved.id && saved.lastSaved && (
+          <span className="mut"> · guardado {new Date(saved.lastSaved).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}</span>
+        )}
       </span>
     </div>
   );
@@ -234,12 +238,17 @@ function SaveButton() {
   const markSaved = useEditor((s) => s.markSaved);
   const router = useRouter();
   function onSave() {
-    const id = saveItem(doc, doc.name, saved.id ?? undefined);
-    if (saved.id !== id) {
-      // nuevo guardado: reflejar id en la URL
-      try { router.replace(`/studio?id=${id}`); } catch { /* ignore */ }
+    try {
+      const id = saveItem(doc, doc.name, saved.id ?? undefined);
+      if (saved.id !== id) {
+        // nuevo guardado: reflejar id en la URL
+        try { router.replace(`/studio?id=${id}`); } catch { /* ignore */ }
+      }
+      markSaved(id);
+      useEditor.setState({ notice: null });
+    } catch (e) {
+      useEditor.setState({ notice: `${e instanceof Error ? e.message : "No se pudo guardar."} Descarga un respaldo desde Configuración.` });
     }
-    markSaved(id);
   }
   return (
     <button
@@ -254,6 +263,45 @@ function SaveButton() {
       </svg>
     </button>
   );
+}
+
+/**
+ * Guarda solo los cambios del proyecto abierto (1.5 s después del último cambio) y avisa si el
+ * navegador intenta cerrar la pestaña con cambios sin guardar. No crea proyectos nuevos: los que aún
+ * no están en la biblioteca se guardan con el botón.
+ */
+function AutoSave() {
+  const doc = useEditor((s) => s.history.present);
+  const saved = useEditor((s) => s.saved);
+  const markSaved = useEditor((s) => s.markSaved);
+
+  useEffect(() => {
+    if (!saved.dirty || !saved.id) return;
+    const t = setTimeout(() => {
+      try {
+        const id = saveItem(doc, doc.name, saved.id ?? undefined);
+        markSaved(id);
+        if (useEditor.getState().notice?.startsWith("No se pudo guardar")) useEditor.setState({ notice: null });
+      } catch (e) {
+        useEditor.setState({
+          notice: `${e instanceof Error ? e.message : "No se pudo guardar."} Descarga un respaldo desde Configuración.`,
+        });
+      }
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [doc, saved.dirty, saved.id, markSaved]);
+
+  useEffect(() => {
+    if (!saved.dirty) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [saved.dirty]);
+
+  return null;
 }
 
 function ExportButton() {

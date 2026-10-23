@@ -37,8 +37,13 @@ export default function NewPatternPage() {
     // generamos con un pequeño delay para dejar que la UI muestre el loading
     setTimeout(() => {
       const doc = draftBlock(kind, defaultMeasurementsFor(kind));
-      const id = saveItem(doc, name);
-      router.push(`/studio?id=${id}`);
+      try {
+        const id = saveItem(doc, name);
+        router.push(`/studio?id=${id}`);
+      } catch (e) {
+        window.alert(e instanceof Error ? e.message : "No se pudo crear el patrón.");
+        setBusy(null);
+      }
     }, 180);
   }
 

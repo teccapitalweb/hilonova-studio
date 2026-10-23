@@ -10,7 +10,7 @@ import { VERSION as BLOCKS_VERSION } from "@hilonova/blocks";
 import { useEditor } from "./store";
 import { NumInput } from "./fields";
 import { DEFAULT_PREFS, loadPrefs, savePrefs, type Prefs } from "../lib/prefs";
-import { exportAllItems, importItems, saveItem, type LibraryItem } from "../lib/library";
+import { exportAllItems, importItems, markBackup, saveItem, type LibraryItem } from "../lib/library";
 import { materials, type Material } from "../lib/materials";
 import { userPieces, type UserPiece } from "../lib/pieces";
 
@@ -83,6 +83,7 @@ export default function Config() {
       pieces: userPieces.list(),
     };
     downloadText(JSON.stringify(backup), `hilonova-respaldo-${new Date().toISOString().slice(0, 10)}.json`);
+    markBackup();
     setMsg(`Respaldo descargado: ${backup.library.length} proyectos, ${backup.materials.length} materiales, ${backup.pieces.length} piezas.`);
   }
 

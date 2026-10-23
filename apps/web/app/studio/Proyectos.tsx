@@ -6,7 +6,8 @@
 import { useRouter } from "next/navigation";
 import { deserialize, emptyDoc, type PatternDoc } from "@hilonova/geometry";
 import { findBlock, type BlockKind } from "@hilonova/blocks";
-import { useLibrary, saveItem, deleteItem, loadDoc as libLoad } from "../lib/library";
+import { useEffect, useState } from "react";
+import { useLibrary, saveItem, deleteItem, loadDoc as libLoad, daysSinceBackup } from "../lib/library";
 import { useEditor } from "./store";
 import { PiecesThumb } from "./thumbs";
 
@@ -36,7 +37,11 @@ export default function Proyectos() {
   function duplicate(id: string) {
     const doc = libLoad(id);
     if (!doc) return;
-    saveItem(doc, `${doc.name} copia`);
+    try {
+      saveItem(doc, `${doc.name} copia`);
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : "No se pudo duplicar.");
+    }
   }
 
   function remove(id: string, name: string) {
@@ -49,9 +54,18 @@ export default function Proyectos() {
     const doc = emptyDoc("Patrón sin título");
     doc.sizes = ["S", "M", "L", "XL"];
     doc.baseSize = "M";
-    const id = saveItem(doc, doc.name);
-    open(id);
+    try {
+      const id = saveItem(doc, doc.name);
+      open(id);
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : "No se pudo crear el proyecto.");
+    }
   }
+
+  // recordatorio: los proyectos viven solo en este navegador, así que se pide un respaldo cada semana
+  const [backupDays, setBackupDays] = useState<number | null | undefined>(undefined);
+  useEffect(() => setBackupDays(daysSinceBackup()), [items.length]);
+  const needsBackup = items.length > 0 && backupDays !== undefined && (backupDays === null || backupDays >= 7);
 
   return (
     <div className="st-page">
@@ -65,6 +79,19 @@ export default function Proyectos() {
           <button className="st-btn-primary" onClick={() => router.push("/app/new")}>+ Desde una prenda base</button>
         </div>
       </header>
+
+      {needsBackup && (
+        <div className="st-empty-big" style={{ margin: "0 0 16px", padding: "12px 16px", alignItems: "flex-start", textAlign: "left" }}>
+          <strong>Descarga un respaldo de tus proyectos.</strong>
+          <span>
+            {backupDays === null
+              ? "Todavía no has descargado ninguno."
+              : `Tu último respaldo fue hace ${backupDays} días.`}{" "}
+            Tus proyectos se guardan solo en este navegador: si lo limpias o cambias de computadora, se pierden.{" "}
+            <button className="st-act" onClick={() => setView("config")}>Ir a Configuración</button>
+          </span>
+        </div>
+      )}
 
       {items.length === 0 ? (
         <div className="st-empty-big">

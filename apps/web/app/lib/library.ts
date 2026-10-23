@@ -29,13 +29,57 @@ function readAll(): LibraryItem[] {
   }
 }
 
+/** Mensaje cuando el navegador no deja guardar (sin espacio, modo privado o almacenamiento bloqueado). */
+export const SAVE_ERROR =
+  "No se pudo guardar en este navegador (sin espacio, modo privado o almacenamiento bloqueado).";
+
+let persistAsked = false;
+
+/** Pide al navegador que no borre los datos del sitio cuando le falte espacio. Solo se pide una vez. */
+function askPersistentStorage() {
+  if (persistAsked || typeof navigator === "undefined") return;
+  persistAsked = true;
+  try {
+    void navigator.storage?.persist?.();
+  } catch {
+    /* ignore */
+  }
+}
+
 function writeAll(items: LibraryItem[]) {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(KEY, JSON.stringify(items));
-    window.dispatchEvent(new Event("hilonova:library"));
+  } catch {
+    // antes se ignoraba: el patrón parecía guardado y no lo estaba
+    throw new Error(SAVE_ERROR);
+  }
+  askPersistentStorage();
+  window.dispatchEvent(new Event("hilonova:library"));
+}
+
+// ─── recordatorio de respaldo ───────────────────────────────────────────────
+
+const BACKUP_KEY = "hilonova.lastBackup.v1";
+
+/** Marca que se descargó un respaldo ahora. */
+export function markBackup(): void {
+  try {
+    window.localStorage.setItem(BACKUP_KEY, new Date().toISOString());
   } catch {
     /* ignore */
+  }
+}
+
+/** Días desde el último respaldo descargado; null si nunca se ha descargado uno. */
+export function daysSinceBackup(now: Date = new Date()): number | null {
+  try {
+    const raw = typeof window === "undefined" ? null : window.localStorage.getItem(BACKUP_KEY);
+    if (!raw) return null;
+    const t = Date.parse(raw);
+    return Number.isNaN(t) ? null : Math.floor((now.getTime() - t) / 86_400_000);
+  } catch {
+    return null;
   }
 }
 
@@ -51,7 +95,7 @@ export function getItem(id: string): LibraryItem | null {
   return readAll().find((it) => it.id === id) ?? null;
 }
 
-/** Guarda (upsert) un patrón. Devuelve el id. */
+/** Guarda (upsert) un patrón. Devuelve el id. Lanza un Error con `SAVE_ERROR` si el navegador no deja guardar. */
 export function saveItem(doc: PatternDoc, nameOverride?: string, id?: string): string {
   const all = readAll();
   const now = new Date().toISOString();

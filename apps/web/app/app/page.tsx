@@ -126,7 +126,11 @@ export default function AppDashboard() {
                       title="Duplicar"
                       onClick={() => {
                         if (!doc) return;
-                        saveItem(doc, `${it.name} (copia)`);
+                        try {
+                          saveItem(doc, `${it.name} (copia)`);
+                        } catch (e) {
+                          window.alert(e instanceof Error ? e.message : "No se pudo duplicar.");
+                        }
                       }}
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
