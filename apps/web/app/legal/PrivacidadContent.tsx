@@ -24,8 +24,9 @@ export default function PrivacidadContent() {
           <b>Si entras con Google:</b> el nombre y el correo que Google comparte con nosotros. No recibimos tu contraseña de Google.
         </li>
         <li>
-          <b>Tus patrones y medidas:</b> hoy se guardan en tu propio navegador. Cuando esté disponible el guardado en la
-          nube, se guardarán también en nuestros servidores asociados a tu cuenta y actualizaremos este aviso.
+          <b>Tus patrones y medidas:</b> se guardan en tu navegador y también en nuestros servidores (Firebase, de
+          Google), asociados a tu cuenta, para que puedas abrirlos desde otra computadora. Puedes borrarlos desde el
+          programa. Los materiales, las piezas guardadas y tus preferencias se guardan solo en tu navegador.
         </li>
         <li>
           <b>Datos de pago:</b> hoy no los pedimos. Cuando exista el cobro lo procesará un proveedor de pagos y

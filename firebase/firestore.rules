@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// Cada persona solo puede leer y escribir su propio perfil. Lo demás está cerrado.
+// Cada persona solo puede leer y escribir su propio perfil y sus propios patrones. Lo demás está cerrado.
 // Se pega en la consola de Firebase → Firestore Database → Reglas → Publicar.
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -14,6 +14,17 @@ service cloud.firestore {
                     && request.resource.data.keys().hasOnly(['name', 'orgName', 'createdAt'])
                     && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if false;
+    }
+    // Los patrones de cada persona: solo ella los lee, los escribe y los borra.
+    match /users/{uid}/patterns/{pid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+                            && request.resource.data.keys().hasOnly(['name', 'doc', 'createdAt', 'updatedAt'])
+                            && request.resource.data.name is string && request.resource.data.name.size() <= 200
+                            && request.resource.data.doc is string && request.resource.data.doc.size() <= 900000
+                            && request.resource.data.createdAt is string
+                            && request.resource.data.updatedAt is string;
+      allow delete: if request.auth != null && request.auth.uid == uid;
     }
     match /{document=**} {
       allow read, write: if false;

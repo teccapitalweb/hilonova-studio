@@ -1,62 +1,16 @@
-// Biblioteca de patrones del usuario, persistida en localStorage.
+// Biblioteca de patrones del usuario. La copia de trabajo vive en localStorage (library-raw.ts); con una cuenta de
+// Firebase cada cambio se anota para subirlo a la nube (cloud.ts). La API pública es la de siempre.
 // Un "item" guarda el PatternDoc + metadata (nombre, timestamps, thumbnail).
-// En producción real esto será una tabla en Supabase; la API es la misma.
 
 "use client";
 
 import { useEffect, useState } from "react";
 import { serialize, deserialize, type PatternDoc } from "@hilonova/geometry";
+import { cloudNotify } from "./cloud";
+import { SAVE_ERROR, readAll, writeAll, type LibraryItem } from "./library-raw";
 
-export interface LibraryItem {
-  id: string;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-  /** JSON del documento (serializado) */
-  doc: string;
-}
-
-const KEY = "hilonova.library.v1";
-
-function readAll(): LibraryItem[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(KEY);
-    if (!raw) return [];
-    return JSON.parse(raw) as LibraryItem[];
-  } catch {
-    return [];
-  }
-}
-
-/** Mensaje cuando el navegador no deja guardar (sin espacio, modo privado o almacenamiento bloqueado). */
-export const SAVE_ERROR =
-  "No se pudo guardar en este navegador (sin espacio, modo privado o almacenamiento bloqueado).";
-
-let persistAsked = false;
-
-/** Pide al navegador que no borre los datos del sitio cuando le falte espacio. Solo se pide una vez. */
-function askPersistentStorage() {
-  if (persistAsked || typeof navigator === "undefined") return;
-  persistAsked = true;
-  try {
-    void navigator.storage?.persist?.();
-  } catch {
-    /* ignore */
-  }
-}
-
-function writeAll(items: LibraryItem[]) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(KEY, JSON.stringify(items));
-  } catch {
-    // antes se ignoraba: el patrón parecía guardado y no lo estaba
-    throw new Error(SAVE_ERROR);
-  }
-  askPersistentStorage();
-  window.dispatchEvent(new Event("hilonova:library"));
-}
+export { SAVE_ERROR };
+export type { LibraryItem };
 
 // ─── recordatorio de respaldo ───────────────────────────────────────────────
 
@@ -106,17 +60,20 @@ export function saveItem(doc: PatternDoc, nameOverride?: string, id?: string): s
     if (idx >= 0) {
       all[idx] = { ...all[idx]!, name, doc: serialized, updatedAt: now };
       writeAll(all);
+      cloudNotify(id, "put");
       return id;
     }
   }
   const newId = uid();
   all.push({ id: newId, name, doc: serialized, createdAt: now, updatedAt: now });
   writeAll(all);
+  cloudNotify(newId, "put");
   return newId;
 }
 
 export function deleteItem(id: string): void {
   writeAll(readAll().filter((it) => it.id !== id));
+  cloudNotify(id, "del");
 }
 
 export function renameItem(id: string, name: string): void {
@@ -132,6 +89,7 @@ export function renameItem(id: string, name: string): void {
     updatedAt: new Date().toISOString(),
   };
   writeAll(all);
+  cloudNotify(id, "put");
 }
 
 /** Carga el doc parseado de un item. */
@@ -181,5 +139,6 @@ export function importItems(items: LibraryItem[]): number {
     n++;
   }
   writeAll(all);
+  for (const it of items) if (it && typeof it.id === "string") cloudNotify(it.id, "put");
   return n;
 }

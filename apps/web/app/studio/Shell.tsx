@@ -19,6 +19,7 @@ import {
   type BodyMeasurements,
   type BlockKind,
 } from "@hilonova/blocks";
+import { useCloudStatus } from "../lib/cloud";
 import { loadDoc as libLoad, saveItem, renameItem } from "../lib/library";
 import { MeasurementSilhouette } from "./MeasurementSilhouette";
 import GradePanel from "./Graduacion";
@@ -217,6 +218,7 @@ function DocName() {
   const doc = useEditor((s) => s.history.present);
   const saved = useEditor((s) => s.saved);
   const renameDoc = useEditor((s) => s.renameDoc);
+  const cloud = useCloudStatus();
   return (
     <div className="st-doc">
       <input
@@ -230,6 +232,11 @@ function DocName() {
         {saved.dirty && <span className="st-dirty"> · sin guardar</span>}
         {!saved.dirty && saved.id && saved.lastSaved && (
           <span className="mut"> · guardado {new Date(saved.lastSaved).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}</span>
+        )}
+        {cloud.status === "ok" && <span className="mut" title="Una copia de tus patrones está en tu cuenta"> · en la nube</span>}
+        {(cloud.status === "pending" || cloud.status === "syncing") && <span className="mut"> · subiendo a la nube…</span>}
+        {cloud.status === "error" && (
+          <span className="st-dirty" title="Tus cambios están guardados en este navegador y se subirán cuando haya conexión"> · sin conexión con la nube</span>
         )}
       </span>
     </div>

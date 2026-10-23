@@ -32,7 +32,7 @@ describe("páginas legales", () => {
   });
 
   it("no promete lo que el programa no hace", () => {
-    expect(privacidad).toContain("hoy se guardan en tu propio navegador");
+    expect(privacidad).toContain("se guardan en tu navegador y también en nuestros servidores");
     expect(privacidad).toContain("hoy no los pedimos");
     expect(terminos).toMatch(/DXF[^.]*en validación/);
     expect(terminos).toContain("El cobro todavía no está activo");

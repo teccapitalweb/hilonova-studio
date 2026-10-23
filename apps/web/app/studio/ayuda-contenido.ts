@@ -21,7 +21,7 @@ export const HELP_BY_VIEW: Record<View, HelpSection> = {
       "«+ En blanco» abre un lienzo vacío para dibujar tus propias piezas desde cero (en la pestaña «Patrón en blanco» de esta ayuda está el paso a paso).",
     ],
     tips: [
-      "Tus proyectos se guardan solos y viven en este navegador. Descarga un respaldo en Configuración para no perderlos si limpias el navegador o cambias de computadora.",
+      "Tus patrones se guardan solos en este navegador y en tu cuenta (en la nube): puedes abrirlos en otra computadora. Los materiales y «Mis piezas» viven solo en este navegador: descarga un respaldo en Configuración.",
     ],
   },
   editor: {
@@ -98,7 +98,7 @@ export const HELP_BY_VIEW: Record<View, HelpSection> = {
       "«Descargar respaldo completo» guarda en un archivo todos tus proyectos, materiales y piezas. «Restaurar respaldo» los vuelve a cargar sin borrar nada.",
       "También puedes exportar un solo proyecto a un archivo e importarlo en otro equipo.",
     ],
-    tips: ["Descarga un respaldo cada semana: tus proyectos viven en este navegador."],
+    tips: ["Descarga un respaldo cada semana: los materiales y «Mis piezas» viven solo en este navegador."],
   },
 };
 

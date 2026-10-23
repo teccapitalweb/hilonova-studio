@@ -14,7 +14,7 @@ Fecha: 23 de octubre de 2026. Todo local; nada está publicado.
 | «Olvidé mi contraseña» | Hecho en el código; falta probarlo con un proyecto real (el correo solo sale en uno real) |
 | Correo de verificación | Se envía al crear la cuenta; hoy no se exige para usar el programa |
 | Perfil (nombre y taller) en Firestore | Hecho en el código y con reglas de seguridad; falta probarlo con un proyecto real (no hay Java para el emulador de Firestore) |
-| Guardar los patrones en la nube | **No hecho** (paso 2) |
+| Guardar los patrones en la nube | **Hecho en el código** y probado con una nube de mentira (20 pruebas); falta probarlo con Firestore real y **volver a publicar las reglas** de `firebase/firestore.rules` (ahora incluyen `users/{uid}/patterns`) |
 | Cupón de alumnos, límite de 3 exportaciones, cobro | **No hecho** (pasos 4 y 5) |
 | Botón «Continuar con Apple» | Quitado: pide cuenta de desarrollador de Apple (unos $99 USD al año) |
 
@@ -52,3 +52,18 @@ Mientras `apps/web/app/lib/firebase-config.ts` esté vacío, el programa funcion
 ## Cómo se probó aquí
 
 Con el emulador local de Authentication (`firebase emulators:start --only auth`, configuración en `firebase/firebase.json`) y un segundo servidor de desarrollo con `NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR=http://127.0.0.1:9099` y `NEXT_DIST_DIR=.next-test`. Ese emulador no necesita Java; el de Firestore sí.
+
+## Guardado de patrones en la nube (cómo funciona)
+
+- Cada patrón es un documento en `users/{uid}/patterns/{id}` con `name`, `doc` (el patrón en JSON), `createdAt` y `updatedAt`. Un patrón pesa entre 2 y 9 KB; el límite de Firestore es 1 MB.
+- El navegador sigue siendo la copia de trabajo. Cada cambio se anota en una cola (`hilonova.cloudq.v1`) y se sube a los 20 segundos, al cerrar sesión y al salir de la página. Así no se gasta el límite diario de escrituras del plan gratis (20,000).
+- Al entrar con la cuenta se baja lo de la nube y se mezcla con lo del navegador: gana lo editado más recientemente; lo que solo existe aquí se sube. La mezcla completa se hace una vez por sesión del navegador (para cuidar las lecturas); los cambios hechos en otra computadora aparecen al abrir una sesión nueva del navegador.
+- Si en el navegador había patrones de otra cuenta, se apartan en `hilonova.library.orphan.v1` (copia de seguridad en ese navegador) y no se suben a la cuenta nueva.
+- Sin internet: todo sigue funcionando; los cambios quedan en la cola y el editor avisa «sin conexión con la nube».
+- No se sincronizan todavía: materiales, «Mis piezas» y preferencias (siguen solo en el navegador). Hay que descargar respaldo.
+
+### Prueba manual con el proyecto real
+1. Publica las reglas nuevas (Firestore → Reglas → pegar `firebase/firestore.rules` → Publicar).
+2. Entra con tu cuenta, crea un patrón y espera 20 segundos: en el editor debe decir «en la nube». En Firestore → `users` → tu documento → `patterns` debe aparecer el patrón.
+3. Abre el programa en otro navegador (o en incógnito), entra con la misma cuenta: el patrón debe aparecer en «Proyectos».
+4. Borra el patrón en uno; tras 20 segundos desaparece de la nube.

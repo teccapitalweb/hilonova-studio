@@ -144,7 +144,7 @@ export default function AccountPage() {
             <button
               className="btn-outline-danger"
               onClick={async () => {
-                if (confirm("¿Cerrar sesión? Tus patrones guardados en este navegador se mantienen.")) {
+                if (confirm("¿Cerrar sesión? Tus patrones quedan en tu cuenta y en este navegador.")) {
                   await signOut();
                   router.push("/");
                 }

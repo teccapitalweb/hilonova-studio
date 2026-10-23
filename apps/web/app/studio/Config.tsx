@@ -1,6 +1,6 @@
 // Vista "Configuración": preferencias del editor y datos (respaldo y restauración).
-// Mientras no haya cuenta en la nube, los proyectos viven en este navegador:
-// el respaldo en archivo es la forma de no perderlos ni de llevarlos a otro equipo.
+// Los patrones también se guardan en la nube con la cuenta; materiales, «Mis piezas» y preferencias viven solo
+// en este navegador: el respaldo en archivo es la forma de no perderlos ni de llevarlos a otro equipo.
 
 "use client";
 
@@ -137,8 +137,8 @@ export default function Config() {
       <section className="st-table-card st-form">
         <h2>Datos y respaldo</h2>
         <p className="st-hint">
-          Tus proyectos, materiales y piezas se guardan en este navegador. Descarga un respaldo con
-          frecuencia y úsalo para llevarlos a otro equipo.
+          Tus patrones se guardan en este navegador y en tu cuenta. Los materiales, «Mis piezas» y las preferencias
+          viven solo en este navegador: descarga un respaldo con frecuencia y úsalo para llevarlos a otro equipo.
         </p>
         <div className="st-page-actions" style={{ justifyContent: "flex-start", flexWrap: "wrap" }}>
           <button className="st-btn-primary" onClick={exportBackup}>Descargar respaldo completo</button>

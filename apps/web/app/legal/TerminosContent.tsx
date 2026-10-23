@@ -61,7 +61,7 @@ export default function TerminosContent() {
           La exportación a DXF para otros programas de patronaje todavía está en validación: no garantizamos que abra sin
           ajustes en todos ellos.
         </li>
-        <li>Hoy tus patrones se guardan en tu navegador; haz respaldos con la opción del programa.</li>
+        <li>Tus patrones se guardan en tu navegador y en tu cuenta; aun así, haz respaldos con la opción del programa.</li>
         <li>El servicio se ofrece tal como está, sin garantía de que nunca falle.</li>
       </ul>
 

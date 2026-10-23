@@ -7,6 +7,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { cloudBeforeSignOut, cloudSignedOut, syncLibrary } from "./cloud";
 import { firebaseConfigured, getDb, getFirebase, withTimeout } from "./firebase";
 
 export type PlanId = "completo";
@@ -89,6 +90,7 @@ export function signIn(email: string): Session {
 export async function signOut(): Promise<void> {
   writeSession(null);
   if (!firebaseConfigured()) return;
+  await cloudBeforeSignOut();
   try {
     const { auth } = await getFirebase();
     await (await import("firebase/auth")).signOut(auth);
@@ -180,6 +182,7 @@ async function applyUser(u: FbUser | null, profile?: Profile): Promise<Session |
   const token = ++applyToken;
   if (!u) {
     writeSession(null);
+    cloudSignedOut();
     return null;
   }
   let prof = profile ?? (await readProfile(u.uid));
@@ -191,6 +194,8 @@ async function applyUser(u: FbUser | null, profile?: Profile): Promise<Session |
   }
   const session = sessionFromAccount(toAccount(u), prof);
   writeSession(session);
+  // la mezcla con la nube corre aparte: no hace esperar la entrada
+  void syncLibrary(u.uid).catch((err) => console.warn("No se pudo sincronizar con la nube:", err));
   return session;
 }
 

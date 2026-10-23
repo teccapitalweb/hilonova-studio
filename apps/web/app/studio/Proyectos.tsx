@@ -62,7 +62,7 @@ export default function Proyectos() {
     }
   }
 
-  // recordatorio: los proyectos viven solo en este navegador, así que se pide un respaldo cada semana
+  // recordatorio: materiales y «Mis piezas» viven solo en este navegador, así que se pide un respaldo cada semana
   const [backupDays, setBackupDays] = useState<number | null | undefined>(undefined);
   useEffect(() => setBackupDays(daysSinceBackup()), [items.length]);
   const needsBackup = items.length > 0 && backupDays !== undefined && (backupDays === null || backupDays >= 7);
@@ -72,7 +72,7 @@ export default function Proyectos() {
       <header className="st-page-h">
         <div>
           <h1>Proyectos</h1>
-          <p>Tus patrones guardados en este navegador. Descarga un respaldo desde Configuración.</p>
+          <p>Tus patrones se guardan en este navegador y en tu cuenta. Descarga un respaldo desde Configuración como copia extra.</p>
         </div>
         <div className="st-page-actions">
           <button className="st-act" onClick={blank} title="Un lienzo vacío para dibujar tus propias piezas (la guía te explica cómo empezar)">+ En blanco</button>
@@ -87,7 +87,7 @@ export default function Proyectos() {
             {backupDays === null
               ? "Todavía no has descargado ninguno."
               : `Tu último respaldo fue hace ${backupDays} días.`}{" "}
-            Tus proyectos se guardan solo en este navegador: si lo limpias o cambias de computadora, se pierden.{" "}
+            Tus patrones también están en tu cuenta, pero los materiales y «Mis piezas» viven solo en este navegador.{" "}
             <button className="st-act" onClick={() => setView("config")}>Ir a Configuración</button>
           </span>
         </div>
