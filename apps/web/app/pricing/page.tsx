@@ -57,11 +57,18 @@ export default function PricingPage() {
                   <span className="per">{plan.pricePer}</span>
                 </div>
                 <div className="pnote">MXN · mensual · más IVA</div>
-                <ul className="pfeats">
-                  {plan.features.map((f) => (
-                    <li key={f}><Check /> {f}</li>
+                <ul className="pmods">
+                  {plan.modules.map((m) => (
+                    <li key={m.title}>
+                      <b>{m.title}</b>
+                      <span>{m.items}</span>
+                    </li>
                   ))}
                 </ul>
+                <div className="pextras"><Check /> {plan.extras}</div>
+                <div className="pstudent">
+                  Alumnos del curso: {STUDENT_OFFER.freeMonths} mes gratis con {STUDENT_OFFER.exports} exportaciones
+                </div>
                 {isCurrent ? (
                   <span className="pcta current">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -115,7 +122,7 @@ export default function PricingPage() {
             <div><h4>¿El precio lleva IVA?</h4><p>El precio es más IVA. La factura (CFDI) se define antes de activar el cobro.</p></div>
             <div><h4>¿Qué es el DXF estilo AAMA?</h4><p>Un formato pensado para abrirse en Gerber y Lectra. Todavía está en validación.</p></div>
             <div><h4>¿Soporte en español?</h4><p>Siempre: ayuda dentro de la app y soporte por correo.</p></div>
-            <div><h4>¿Puedo trabajar en equipo?</h4><p>El plan incluye 2 usuarios. Las cuentas de equipo con roles llegan después.</p></div>
+            <div><h4>¿Puedo trabajar en equipo?</h4><p>El plan es para una persona. Las cuentas de equipo con roles llegan después.</p></div>
           </div>
         </section>
 

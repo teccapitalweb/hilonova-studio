@@ -7,14 +7,14 @@
 
 import { useEffect, useState } from "react";
 
-export type PlanId = "estudio";
+export type PlanId = "completo";
 
-/** Usuarios que incluye el plan. */
-const SEATS: Record<PlanId, number> = { estudio: 2 };
+/** Usuarios que incluye el plan: uno, hasta que existan las cuentas de equipo. */
+const SEATS: Record<PlanId, number> = { completo: 1 };
 
-/** Las sesiones guardadas con planes anteriores (taller, maquila, industrial, aprendiz, equipo) pasan al plan único. */
+/** Las sesiones guardadas con planes anteriores (taller, maquila, industrial, aprendiz, equipo, estudio) pasan al plan único. */
 export function normalizePlan(_plan?: string): PlanId {
-  return "estudio";
+  return "completo";
 }
 
 export interface Session {
@@ -54,7 +54,7 @@ const uid = (): string =>
   "u_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 
 /** Crea una sesión mock a partir del nombre+email. Simula el "crear cuenta". */
-export function signUp(name: string, email: string, orgName?: string, plan: PlanId = "estudio"): Session {
+export function signUp(name: string, email: string, orgName?: string, plan: PlanId = "completo"): Session {
   const session: Session = {
     user: { id: uid(), name, email },
     org: {
@@ -89,7 +89,7 @@ export function signInWithProvider(provider: "google" | "apple"): Session {
   const email = provider === "google" ? "miguel.g@gmail.com" : "miguel.g@icloud.com";
   const existing = readSession();
   if (existing && existing.user.email === email) return existing;
-  return signUp(name, email, undefined, "estudio");
+  return signUp(name, email, undefined, "completo");
 }
 
 export function getSession(): Session | null {
@@ -125,41 +125,49 @@ export function useSession(): Session | null {
 
 // ─── Catálogo de planes (fuente de verdad para pricing/account) ─────────────
 
+export interface PlanModule {
+  /** módulo del programa (los cuatro que se pidieron) */
+  title: string;
+  /** lo que incluye, en una frase */
+  items: string;
+}
+
 export interface PlanMeta {
   id: PlanId;
   name: string;
-  /** precio mensual en MXN, más IVA: el mismo para todos (los alumnos del curso lo pagan con un código de descuento) */
+  /** precio mensual en MXN, más IVA: el mismo para todos (los alumnos del curso tienen un cupón de un mes) */
   priceMxn: number;
   pricePer: string;
   seats: number;
   blurb: string;
-  features: string[];
+  /** qué incluye, por módulo del programa */
+  modules: PlanModule[];
+  /** condiciones del plan, en una línea */
+  extras: string;
   popular?: boolean;
 }
 
 /**
- * Un solo plan con un solo precio. Solo promete lo que el software hace hoy (ver docs/PROPUESTA-PLANES.md).
- * El cobro, las cuentas reales y el código de descuento de los alumnos todavía no existen.
+ * Un solo plan con un solo precio. Solo promete lo que el software hace hoy (ver docs/PROPUESTA-PLANES.md) y
+ * está organizado por los cuatro módulos que se pidieron. El cobro, las cuentas reales y el cupón de los
+ * alumnos todavía no existen.
  */
 export const PLANS: readonly PlanMeta[] = [
   {
-    id: "estudio",
-    name: "Estudio",
+    id: "completo",
+    name: "Completo",
     priceMxn: 490,
     pricePer: "/ mes",
-    seats: SEATS.estudio,
+    seats: SEATS.completo,
     blurb: "Todo el programa, para el patronista, el taller chico y el alumno del curso.",
     popular: true,
-    features: [
-      "Hasta 2 usuarios",
-      "Proyectos ilimitados",
-      "17 prendas base con sus piezas",
-      "Graduación (S–XL, XS–XXL y 28–36) y trazo con consumo por talla",
-      "Ficha técnica en PDF y variantes de modelo",
-      "Exportar PDF, SVG y PDF a escala 1:1 para plotter",
-      "Exportar DXF estilo AAMA (en validación)",
-      "Ayuda dentro de la app y soporte por correo",
+    modules: [
+      { title: "Patronaje 2D", items: "12 herramientas de dibujo, biblioteca de piezas y 17 prendas base" },
+      { title: "Graduación", items: "Automática y manual. S–XL, XS–XXL y 28–36" },
+      { title: "Trazo", items: "Consumo de tela por talla y porcentaje de aprovechamiento" },
+      { title: "Producción", items: "Ficha técnica, variantes de modelo y exportar PDF, SVG y DXF estilo AAMA (en validación)" },
     ],
+    extras: "Proyectos ilimitados · ayuda dentro de la app · soporte por correo",
   },
 ] as const;
 

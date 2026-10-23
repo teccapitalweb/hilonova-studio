@@ -8,7 +8,7 @@ import AuthAside from "../AuthAside";
 import SsoButtons from "../SsoButtons";
 import "../../(saas)/saas.css";
 
-const PLAN_SET = new Set(["estudio"]);
+const PLAN_SET = new Set(["completo"]);
 
 // useSearchParams (?plan=...) requiere Suspense en export estático.
 export default function SignUpPage() {
@@ -23,7 +23,7 @@ function SignUpForm() {
   const router = useRouter();
   const params = useSearchParams();
   const planParam = params.get("plan");
-  const plan: PlanId = PLAN_SET.has(planParam ?? "") ? (planParam as PlanId) : "estudio";
+  const plan: PlanId = PLAN_SET.has(planParam ?? "") ? (planParam as PlanId) : "completo";
   const planMeta = findPlan(plan);
 
   const [name, setName] = useState("");

@@ -13,11 +13,20 @@ function fakeStorage(initial: Record<string, string> = {}) {
 }
 
 describe("plan único", () => {
-  it("hay un solo plan, a $490 al mes, con 2 usuarios", () => {
+  it("hay un solo plan, «Completo», a $490 al mes, para 1 usuario", () => {
     expect(PLANS).toHaveLength(1);
-    const p = findPlan("estudio");
+    const p = findPlan("completo");
+    expect(p.name).toBe("Completo");
     expect(p.priceMxn).toBe(490);
-    expect(p.seats).toBe(2);
+    expect(p.seats).toBe(1);
+  });
+
+  it("no ofrece cuentas de equipo ni varios usuarios hasta que existan", () => {
+    expect(JSON.stringify(PLANS).toLowerCase()).not.toMatch(/2 usuarios|hasta 2|usuarios/);
+  });
+
+  it("está organizado por los cuatro módulos que se pidieron", () => {
+    expect(findPlan("completo").modules.map((m) => m.title)).toEqual(["Patronaje 2D", "Graduación", "Trazo", "Producción"]);
   });
 
   it("no hay precios por partes: ni de lanzamiento, ni de aprendiz, ni meses gratis incluidos", () => {
@@ -37,13 +46,13 @@ describe("plan único", () => {
   });
 
   it("el DXF se ofrece como «en validación» hasta que se pruebe en Gerber", () => {
-    const features = findPlan("estudio").features.join(" ");
-    expect(features).toContain("DXF");
-    expect(features).toContain("en validación");
+    const produccion = findPlan("completo").modules.find((m) => m.title === "Producción")!.items;
+    expect(produccion).toContain("DXF");
+    expect(produccion).toContain("en validación");
   });
 
   it("las tallas que dice la oferta son las que existen (28 a 36)", () => {
-    expect(findPlan("estudio").features.join(" ")).toContain("28–36");
+    expect(findPlan("completo").modules.find((m) => m.title === "Graduación")!.items).toContain("28–36");
   });
 });
 
@@ -60,11 +69,11 @@ describe("sesiones guardadas con planes anteriores", () => {
       since: "2026-10-01T00:00:00.000Z",
     });
 
-  it.each(["maquila", "industrial", "taller", "aprendiz", "equipo", "algo-raro"])("el plan guardado «%s» pasa al plan único con 2 usuarios", (old) => {
+  it.each(["maquila", "industrial", "taller", "aprendiz", "equipo", "estudio", "algo-raro"])("el plan guardado «%s» pasa al plan único con 1 usuario", (old) => {
     (window.localStorage as unknown as { setItem(k: string, v: string): void }).setItem("hilonova.session.v1", session(old));
     const s = getSession()!;
-    expect(s.org.plan).toBe("estudio");
-    expect(s.org.seats).toBe(2);
-    expect(normalizePlan(old)).toBe("estudio");
+    expect(s.org.plan).toBe("completo");
+    expect(s.org.seats).toBe(1);
+    expect(normalizePlan(old)).toBe("completo");
   });
 });

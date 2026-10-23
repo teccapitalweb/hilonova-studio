@@ -809,6 +809,9 @@
   border: 1.5px solid var(--line-2); cursor: default;
 }
 .price-card .pcta.current svg { color: var(--accent); }
+/* en la tarjeta oscura el "Plan actual" debe leerse (antes salía texto oscuro sobre fondo oscuro) */
+.price-card.pop .pcta.current { color: #fff; border-color: rgba(255,255,255,.4); background: transparent; }
+.price-card.pop .pcta.current svg { color: var(--accent-2); }
 
 /* ─ compare table ─ */
 .price-compare { max-width: 1140px; margin: 56px auto 0; }
@@ -861,4 +864,17 @@
   max-width: 640px; margin: 14px auto 0; padding: 10px 14px; border-radius: 10px;
   background: rgba(240,102,44,.08); border: 1px dashed rgba(240,102,44,.45);
   color: var(--ink-2, #4a5068); font-size: 13px; line-height: 1.5;
+}
+
+/* tarjeta del plan organizada por los cuatro módulos del programa */
+.pmods { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 0; }
+.pmods li { padding: 10px 0; border-top: 1px solid rgba(255,255,255,.14); display: grid; gap: 2px; }
+.pmods li:first-child { border-top: 0; }
+.pmods b { font-size: 14px; }
+.pmods span { font-size: 13px; opacity: .8; line-height: 1.45; }
+.pextras { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; margin: 8px 0 14px; opacity: .85; }
+.pextras svg { flex: 0 0 auto; margin-top: 1px; color: var(--accent-2); }
+.pstudent {
+  margin-bottom: 14px; padding: 8px 12px; border-radius: 10px; font-size: 13px;
+  background: rgba(255,255,255,.1); color: #fff;
 }

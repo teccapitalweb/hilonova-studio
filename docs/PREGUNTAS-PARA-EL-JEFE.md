@@ -14,11 +14,12 @@ El software se vende aparte del curso. Se propone una **suscripción mensual** (
 
 ## 2. El plan y el precio
 
-Se propone **un solo plan con un solo precio**: **$490 al mes** más IVA, con todo el programa (hasta 2 usuarios, proyectos ilimitados, 17 prendas, graduación, trazo, ficha técnica y exportación). Sin precio de lanzamiento, sin plan de aprendiz y sin meses gratis incluidos. Los planes anteriores (Taller $490, Maquila $1,290, Industrial) se quitaron porque prometían cosas que no existen.
+Se propone **un solo plan con un solo precio**: **$490 al mes** más IVA, con todo el programa (1 usuario, proyectos ilimitados, 17 prendas, graduación, trazo, ficha técnica y exportación); el plan se llama «Completo». Sin precio de lanzamiento, sin plan de aprendiz y sin meses gratis incluidos. Los planes anteriores (Taller $490, Maquila $1,290, Industrial) se quitaron porque prometían cosas que no existen.
 
 - **¿Se aprueba el plan único a $490?** Sí / No / Otro precio: ________
 - **¿El precio lleva IVA incluido o se suma?** ________
 - **¿Se ofrece después un plan de equipo con varios usuarios y roles?** Sí / No
+- **¿Quién atenderá el soporte por correo que dice la tarjeta, y con qué tiempo de respuesta?** (Si nadie lo va a atender, se quita.) ________
 
 ## 3. Cupón para los alumnos del curso
 

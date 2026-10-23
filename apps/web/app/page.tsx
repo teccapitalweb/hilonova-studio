@@ -363,20 +363,19 @@ export default function HomePage() {
           <h2>Un plan por cada tamaño de taller.</h2>
           <p>Empieza en minutos, crece cuando lo necesites. Sin instalación, sin contratos atados.</p>
         </div>
-        <div className="pricing" style={{ gridTemplateColumns: "minmax(0, 420px)", justifyContent: "center" }}>
+        <div className="pricing" style={{ gridTemplateColumns: "minmax(0, 440px)", justifyContent: "center" }}>
           <div className="plan pop">
-            <h3>Estudio</h3>
+            <h3>Completo</h3>
             <div className="pd">Todo el programa, para el patronista, el taller chico y el alumno del curso.</div>
             <div className="price"><span className="amt mono">$490</span><span className="per">/ mes</span></div>
             <div className="note">MXN · más IVA</div>
             <button className="pcta fill">Crear cuenta</button>
             <ul className="feats">
-              <li><Check /> Hasta 2 usuarios</li>
-              <li><Check /> Proyectos ilimitados</li>
-              <li><Check /> 17 prendas base</li>
-              <li><Check /> Graduación, trazo y ficha técnica</li>
-              <li><Check /> PDF, SVG y plotter 1:1</li>
-              <li><Check /> DXF estilo AAMA (en validación)</li>
+              <li><Check /> <b>Patronaje 2D:</b> 12 herramientas, biblioteca de piezas y 17 prendas base</li>
+              <li><Check /> <b>Graduación:</b> automática y manual (S–XL, XS–XXL y 28–36)</li>
+              <li><Check /> <b>Trazo:</b> consumo por talla y % de aprovechamiento</li>
+              <li><Check /> <b>Producción:</b> ficha técnica, variantes y exportar PDF, SVG y DXF estilo AAMA (en validación)</li>
+              <li><Check /> Proyectos ilimitados, ayuda en la app y soporte por correo</li>
             </ul>
           </div>
         </div>

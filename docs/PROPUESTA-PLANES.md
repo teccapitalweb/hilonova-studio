@@ -30,16 +30,17 @@ Solo se debe poner en un plan lo que el programa ya hace o lo que se puede const
 
 Decisión del 23 de octubre: **un solo plan con un solo precio** (el original, $490 al mes), sin precios por partes (nada de precio de lanzamiento, plan de aprendiz ni meses gratis incluidos). Los alumnos del curso reciben un cupón de **un mes con 3 exportaciones** (ver abajo); todos los demás pagan el plan normal.
 
-| | **Estudio** |
+| | **Completo** |
 |---|---|
 | Precio | **$490 al mes**, más IVA |
-| Usuarios | Hasta 2 |
-| Proyectos guardados | Ilimitados |
-| 17 prendas base, editor, graduación y trazo con consumo | Sí |
-| Ficha técnica en PDF y variantes de modelo | Sí |
-| Exportar PDF, SVG y PDF 1:1 para plotter | Sí |
-| Exportar DXF estilo AAMA | Sí (en validación hasta probarlo en Gerber) |
-| Soporte | Ayuda dentro de la app y correo |
+| Patronaje 2D | 12 herramientas de dibujo, biblioteca de piezas y 17 prendas base |
+| Graduación | Automática y manual. S–XL, XS–XXL y 28–36 |
+| Trazo | Consumo de tela por talla y porcentaje de aprovechamiento |
+| Producción | Ficha técnica, variantes de modelo y exportar PDF, SVG y DXF estilo AAMA (en validación hasta probarlo en Gerber) |
+| Además | Proyectos ilimitados, ayuda dentro de la app y soporte por correo |
+| Usuarios | 1 (las cuentas de equipo llegan después) |
+
+La tarjeta está organizada por los cuatro módulos que se pidieron para que se pueda revisar punto por punto contra la lista de lo solicitado.
 
 **Por qué un solo precio:** es más fácil de explicar, de cobrar y de mantener; no hay límites que construir ni controlar por plan. Se quitaron los planes Taller/Maquila/Industrial anteriores, el plan Aprendiz y el precio de lanzamiento. Un plan de equipo con roles se puede ofrecer más adelante, cuando existan las cuentas de equipo.
 
