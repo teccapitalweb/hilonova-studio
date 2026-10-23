@@ -85,11 +85,16 @@ function run(piece: Piece, i: number, j: number): number {
   const way = (step: 1 | -1) => {
     const idx: number[] = [];
     for (let k = i; ; k = (k + step + n) % n) { idx.push(k); if (k === j) break; }
-    let len = plen(samplePath({ ...piece, closed: false, nodes: idx.map((k) => piece.nodes[k]!) }, 24));
+    // al recorrer en sentido contrario, la manija de salida pasa a ser la de entrada y al revés
+    const nodes = idx.map((k) => {
+      const nd = piece.nodes[k]!;
+      return step === 1 ? nd : { ...nd, handleIn: nd.handleOut, handleOut: nd.handleIn };
+    });
+    let len = plen(samplePath({ ...piece, closed: false, nodes }, 24));
     for (let q = 0; q + 1 < idx.length; q++) {
       const a = piece.nodes[idx[q]!]!, b = piece.nodes[idx[q + 1]!]!;
       if (mouths.some(([m1, m2]) => (m1.id === a.id && m2.id === b.id) || (m1.id === b.id && m2.id === a.id))) {
-        len -= plen(samplePath({ ...piece, closed: false, nodes: [a, b] }, 24));
+        len -= plen(samplePath({ ...piece, closed: false, nodes: step === 1 ? [a, b] : [{ ...a, handleIn: a.handleOut, handleOut: a.handleIn }, { ...b, handleIn: b.handleOut, handleOut: b.handleIn }] }, 24));
       }
     }
     return len;
@@ -137,7 +142,7 @@ const draft = (k: BlockKind) => draftBlock(k, defaultMeasurementsFor(k));
 function backWidth(d: PatternDoc, y: number): number {
   const b = samplePath(back(d), 24);
   const by = Math.min(...b.map((p) => p.y));
-  const yoke = named(d, /^Canes/);
+  const yoke = named(d, /^Canesú( espalda)?$/);
   if (!yoke) return widthAt(b, by + y);
   const ys = samplePath(yoke, 24);
   const y0 = Math.min(...ys.map((p) => p.y));
@@ -145,13 +150,30 @@ function backWidth(d: PatternDoc, y: number): number {
   return y < h ? widthAt(ys, y0 + y) : widthAt(b, by + (y - h));
 }
 
+/** Ancho del delantero a la altura y: si va en canesú + paneles (chamarra) o en paneles (falda en A), se suman por cantidad. */
+function frontWidth(d: PatternDoc, y: number): number {
+  const panels = d.pieces.filter((p) => /^Delantero/.test(p.name) && !/Forro|Vista/.test(p.name));
+  const w = (p: Piece, yy: number) => {
+    const s = samplePath(p, 24);
+    return p.quantity * widthAt(s, Math.min(...s.map((q) => q.y)) + yy);
+  };
+  const yoke = named(d, /^Canesú delantero/);
+  if (yoke) {
+    const ys = samplePath(yoke, 24);
+    const h = Math.max(...ys.map((q) => q.y)) - Math.min(...ys.map((q) => q.y));
+    if (y < h) return w(yoke, y);
+    return panels.reduce((a, p) => a + w(p, y - h), 0);
+  }
+  return panels.reduce((a, p) => a + w(p, y), 0);
+}
+
 /** Contorno del cuerpo a la altura y (cm desde el borde de arriba), sumando delantero y espalda. */
 function circ(d: PatternDoc, y: number): number {
-  const f = front(d);
-  const fs = samplePath(f, 24);
-  const fy = Math.min(...fs.map((p) => p.y));
-  return f.quantity * widthAt(fs, fy + y) + back(d).quantity * backWidth(d, y);
+  return frontWidth(d, y) + back(d).quantity * backWidth(d, y);
 }
+
+/** El panel del costado del delantero (falda en A, chamarra) o, si no hay paneles, el delantero. */
+const frontSide = (d: PatternDoc): Piece => named(d, /^Delantero costado/) ?? front(d);
 const maxCirc = (d: PatternDoc, y0: number, y1: number): number => {
   let m = 0;
   for (let y = y0; y <= y1; y += 1) {
@@ -220,6 +242,7 @@ describe("costuras que se cosen entre sí", () => {
   const SIDE_KINDS: BlockKind[] = [
     "pantalon-denim", "pantalon-vestir", "playera-basica", "falda-recta", "blusa-clasica", "chamarra-mezclilla",
     "short", "bermuda", "sudadera-capucha", "pants-jogger", "camisa-hombre", "camisa-manga-corta", "polo", "pantalon-cargo",
+    "falda-a",
   ];
 
   /** Costado: del fondo de la sisa (o la cadera) hasta el bajo, con las pinzas cerradas. */
@@ -244,18 +267,14 @@ describe("costuras que se cosen entre sí", () => {
   it.each(SIDE_KINDS)("%s: el costado del delantero mide lo mismo que el de la espalda (todas las tallas)", (kind) => {
     for (const size of draft(kind).sizes) {
       const d = gradeDoc(draft(kind), size);
-      expect(Math.abs(side(front(d)) - side(back(d))), `${kind} ${size}`).toBeLessThan(0.6);
+      expect(Math.abs(side(frontSide(d)) - side(back(d))), `${kind} ${size}`).toBeLessThan(0.6);
     }
   });
 
-  it("vestido y falda en A: costados iguales", () => {
+  it("vestido: costados iguales", () => {
     for (const size of draft("vestido-basico").sizes) {
       const d = gradeDoc(draft("vestido-basico"), size);
       expect(Math.abs(run(closeDarts(front(d)), 4, 9) - run(closeDarts(back(d)), 4, 7)), size).toBeLessThan(0.6);
-    }
-    for (const size of draft("falda-a").sizes) {
-      const d = gradeDoc(draft("falda-a"), size);
-      expect(Math.abs(run(closeDarts(front(d)), 3, 5) - run(closeDarts(back(d)), 3, 5)), size).toBeLessThan(0.6);
     }
   });
 
@@ -278,12 +297,31 @@ describe("costuras que se cosen entre sí", () => {
     }
   });
 
+  /** Escote de la chamarra: el delantero y la espalda lo tienen en sus canesús. */
+  function neckOfJacket(d: PatternDoc): number {
+    const yf = closeDarts(named(d, /^Canesú delantero/)!), yb = named(d, /^Canesú espalda/)!;
+    // delantero: del nodo más alto (hombro-cuello) a su vecino de menor x (el centro del escote)
+    const ns = yf.nodes;
+    let t = 0;
+    ns.forEach((n, k) => { if (n.at.y < ns[t]!.at.y) t = k; });
+    const nb = [(t + 1) % ns.length, (t - 1 + ns.length) % ns.length];
+    const cf = nb.reduce((a, k) => (ns[k]!.at.x < ns[a]!.at.x ? k : a));
+    const arcF = run(yf, t, cf);
+    // espalda: del hombro-cuello derecho al centro del escote (el nodo más cercano al centro, arriba)
+    const bn = yb.nodes;
+    const cx = (Math.min(...bn.map((n) => n.at.x)) + Math.max(...bn.map((n) => n.at.x))) / 2;
+    const top = bn.map((n, k) => ({ n, k })).filter((o) => o.n.at.y < 6);
+    const right = top.filter((o) => o.n.at.x > cx).reduce((a, o) => (o.n.at.y < a.n.at.y ? o : a));
+    const center = top.reduce((a, o) => (Math.abs(o.n.at.x - cx) < Math.abs(a.n.at.x - cx) ? o : a));
+    return 2 * (arcF + run(yb, right.k, center.k));
+  }
+
   it("blusa y chamarra: el cuello mide lo mismo que el escote", () => {
     for (const kind of ["blusa-clasica", "chamarra-mezclilla"] as BlockKind[]) {
       for (const size of draft(kind).sizes) {
         const d = gradeDoc(draft(kind), size);
-        // delantero: del centro (nodo 1) al hombro (nodo 2); espalda completa: del centro (0) al hombro (1)
-        const neck = 2 * (direct(front(d), 1, 2) + direct(back(d), 0, 1));
+        // blusa: delantero del centro (nodo 1) al hombro (nodo 2) y espalda completa del centro (0) al hombro (1)
+        const neck = kind === "chamarra-mezclilla" ? neckOfJacket(d) : 2 * (direct(front(d), 1, 2) + direct(back(d), 0, 1));
         const collar = samplePath(named(d, /^Cuello/)!, 24);
         const width = Math.max(...collar.map((p) => p.x)) - Math.min(...collar.map((p) => p.x));
         expect(Math.abs(width - neck), `${kind} ${size}: escote ${neck.toFixed(1)} cuello ${width.toFixed(1)}`).toBeLessThan(2);
@@ -492,5 +530,66 @@ describe("las pinzas no le quitan medida a la prenda ya cosida", () => {
     const waist = netWaist(draft(kind));
     expect(waist - m.cintura, `${kind}: cintura neta ${waist.toFixed(1)}`).toBeGreaterThanOrEqual(0);
     expect(waist - m.cintura, `${kind}: cintura neta ${waist.toFixed(1)}`).toBeLessThanOrEqual(6);
+  });
+});
+
+describe("las 5 prendas que faltaban para cerrar con las fotos", () => {
+  const count = (d: PatternDoc, name: string) => d.pieces.filter((p) => p.name === name).reduce((a, p) => a + p.quantity, 0);
+  const lenX = (p: Piece) => { const s = samplePath(p, 24); return Math.max(...s.map((q) => q.x)) - Math.min(...s.map((q) => q.x)); };
+
+  it("sudadera y jogger traen su cordón", () => {
+    for (const size of draft("sudadera-capucha").sizes) {
+      const d = gradeDoc(draft("sudadera-capucha"), size);
+      const neck = 2 * (direct(front(d), 0, 1) + direct(back(d), 0, 1));
+      expect(count(d, "Cordón de capucha"), size).toBe(1);
+      expect(lenX(named(d, /^Cordón de capucha/)!), size).toBeGreaterThan(neck * 1.5); // largo de sobra para anudar
+    }
+    expect(count(draft("pants-jogger"), "Cordón de pretina")).toBe(1);
+  });
+
+  it("camisa de hombre: cuello con botones (marca de ojal en las dos puntas); la de manga corta no", () => {
+    const labels = (kind: BlockKind) => (named(draft(kind), /^Cuello/)!.labels ?? []).map((l) => l.text);
+    expect(labels("camisa-hombre")).toEqual(["Ojal", "Ojal"]);
+    expect(labels("camisa-manga-corta")).toEqual([]);
+  });
+
+  it("falda en A: el delantero va en un panel central y dos del costado, y suma el ancho de la cintura", () => {
+    for (const size of draft("falda-a").sizes) {
+      const d = gradeDoc(draft("falda-a"), size);
+      expect(count(d, "Delantero centro"), size).toBe(1);
+      expect(count(d, "Delantero costado"), size).toBe(2);
+      // el delantero cosido mide lo que el delantero entero: 2 × la cuarta parte de (cintura + 2)
+      const w = frontWidth(d, 0.3);
+      expect(w).toBeGreaterThan(30);
+      expect(w).toBeLessThan(60);
+    }
+  });
+
+  it.each(["pantalon-denim", "short", "chamarra-mezclilla"] as BlockKind[])("%s: el corte del canesú es recto (los piquetes quedan a la misma altura)", (kind) => {
+    for (const size of draft(kind).sizes) {
+      const d = gradeDoc(draft(kind), size);
+      for (const yoke of d.pieces.filter((p) => /^Canesú/.test(p.name))) {
+        const maxY = Math.max(...yoke.nodes.map((n) => n.at.y));
+        const bottom = yoke.nodes.filter((n) => n.notch && Math.abs(n.at.y - maxY) < 0.01);
+        expect(bottom.length, `${kind} ${size} ${yoke.name}`).toBeGreaterThanOrEqual(2);
+      }
+    }
+  });
+
+  it("chamarra: el borde del canesú delantero mide lo mismo que los bordes de arriba de los dos paneles (la costura encaja)", () => {
+    const edge = (p: Piece, y: "top" | "bottom") => {
+      const ys = p.nodes.map((n) => n.at.y);
+      const target = y === "top" ? Math.min(...ys) : Math.max(...ys);
+      const idx = p.nodes.map((n, k) => ({ n, k })).filter((o) => o.n.notch && Math.abs(o.n.at.y - target) < 0.01);
+      const a = idx.reduce((m, o) => (o.n.at.x < m.n.at.x ? o : m));
+      const b = idx.reduce((m, o) => (o.n.at.x > m.n.at.x ? o : m));
+      return run(p, a.k, b.k);
+    };
+    for (const size of draft("chamarra-mezclilla").sizes) {
+      const d = gradeDoc(draft("chamarra-mezclilla"), size);
+      const sum = edge(named(d, /^Delantero centro/)!, "top") + edge(named(d, /^Delantero costado/)!, "top");
+      const yokeEdge = edge(named(d, /^Canesú delantero/)!, "bottom");
+      expect(Math.abs(yokeEdge - sum), `${size}: canesú ${yokeEdge.toFixed(2)} paneles ${sum.toFixed(2)}`).toBeLessThan(0.1);
+    }
   });
 });

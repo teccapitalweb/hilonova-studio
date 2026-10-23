@@ -122,7 +122,6 @@ describe("las mangas encajan en la sisa (cabeza = sisa + holgura)", () => {
   // [prenda, holgura prevista]
   const cases: Array<[BlockKind, number]> = [
     ["blusa-clasica", 2.5],
-    ["chamarra-mezclilla", 3],
     ["sudadera-capucha", 0],
     ["polo", 0.5],
   ];
@@ -158,8 +157,54 @@ describe("las mangas encajan en la sisa (cabeza = sisa + holgura)", () => {
   });
 });
 
+/** Índice del nodo de mayor x que cumple `pred`. */
+function maxXIndex(p: Piece, pred: (n: Piece["nodes"][number]) => boolean): number {
+  let k = -1;
+  p.nodes.forEach((n, i) => { if (pred(n) && (k < 0 || n.at.x > p.nodes[k]!.at.x)) k = i; });
+  return k;
+}
+
+describe("chamarra: canesú y paneles (la sisa y el hombro quedan repartidos entre piezas)", () => {
+  const parts = (kind: BlockKind, size: string) => {
+    const doc = gradeDoc(docOf(kind), size);
+    const by = (re: RegExp) => doc.pieces.find((p) => re.test(p.name))!;
+    return { yokeF: by(/^Canesú delantero/), sideF: by(/^Delantero costado/), yokeB: by(/^Canesú espalda/), lowB: by(/^Espalda$/), sleeve: by(/^Manga$/) };
+  };
+  const maxY = (p: Piece) => Math.max(...p.nodes.map((n) => n.at.y));
+  const minY = (p: Piece) => Math.min(...p.nodes.map((n) => n.at.y));
+
+  it("la manga cierra con la sisa (canesú + panel del costado + canesú y espalda de atrás)", () => {
+    for (const size of docOf("chamarra-mezclilla").sizes) {
+      const { yokeF, sideF, yokeB, lowB, sleeve } = parts("chamarra-mezclilla", size);
+      const tipF = maxXIndex(yokeF, () => true);
+      const cutF = maxXIndex(yokeF, (n) => n.notch && Math.abs(n.at.y - maxY(yokeF)) < 1e-6);
+      const topS = maxXIndex(sideF, (n) => n.notch && Math.abs(n.at.y - minY(sideF)) < 1e-6);
+      const underF = maxXIndex(sideF, (n) => n.notch);
+      const tipB = maxXIndex(yokeB, () => true);
+      const cutB = maxXIndex(yokeB, (n) => n.notch && Math.abs(n.at.y - maxY(yokeB)) < 1e-6);
+      const topB = maxXIndex(lowB, (n) => n.notch && Math.abs(n.at.y - minY(lowB)) < 1e-6);
+      const underB = maxXIndex(lowB, (n) => n.notch);
+      const armhole = run(yokeF, tipF, cutF).length + run(sideF, topS, underF).length + run(yokeB, tipB, cutB).length + run(lowB, topB, underB).length;
+      const diff = capLength(sleeve) - armhole;
+      expect(Math.abs(diff - 3), `talla ${size}: cabeza − sisa = ${diff.toFixed(2)} cm`).toBeLessThanOrEqual(0.9);
+    }
+  });
+
+  it("el hombro del delantero mide lo mismo que el de la espalda", () => {
+    for (const size of docOf("chamarra-mezclilla").sizes) {
+      const { yokeF, yokeB } = parts("chamarra-mezclilla", size);
+      const snpF = maxXIndex(yokeF, (n) => n.notch && Math.abs(n.at.y - minY(yokeF)) < 0.01);
+      const tipF = maxXIndex(yokeF, () => true);
+      const snpB = maxXIndex(yokeB, (n) => n.notch && Math.abs(n.at.y - minY(yokeB)) < 0.01);
+      const tipB = maxXIndex(yokeB, () => true);
+      const diff = run(yokeB, snpB, tipB).length - run(yokeF, snpF, tipF).length;
+      expect(Math.abs(diff), `talla ${size}: hombro espalda − delantero`).toBeLessThanOrEqual(0.6);
+    }
+  });
+});
+
 describe("el hombro del delantero mide lo mismo que el de la espalda", () => {
-  it.each(["blusa-clasica", "chamarra-mezclilla", "sudadera-capucha", "polo"] as const)("%s", (kind) => {
+  it.each(["blusa-clasica", "sudadera-capucha", "polo"] as const)("%s", (kind) => {
     const base = docOf(kind);
     for (const size of base.sizes) {
       const doc = gradeDoc(base, size);

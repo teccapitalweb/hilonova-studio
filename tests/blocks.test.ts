@@ -183,7 +183,6 @@ describe("pinzas en los patrones base", () => {
   const cases: Array<[BlockKind, string, number]> = [
     ["falda-recta", "Delantero falda", 1],
     ["falda-recta", "Espalda falda", 1],
-    ["falda-a", "Delantero", 2],
     ["falda-a", "Espalda", 1],
     ["vestido-basico", "Delantero", 2],
     ["blusa-clasica", "Delantero", 1],

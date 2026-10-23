@@ -5,6 +5,7 @@
 
 import {
   addDart,
+  addLabelToPiece,
   clonePiece,
   contourRun,
   evalBezier,
@@ -199,16 +200,25 @@ function draftPantalonCore(m: BodyMeasurements): PatternDoc {
 }
 
 /**
- * Parte una pieza cerrada con una línea horizontal a la altura `y` (cm): devuelve la parte de
- * arriba y la de abajo, con los dos piquetes del corte. Sirve para el canesú de la espalda.
+ * Parte una pieza cerrada con la recta que pasa por `a` y `b`: devuelve las dos partes (con piquetes en los
+ * dos puntos del corte). La primera es la del lado negativo de `lado` = (b − a) × (punto − a); sirve para
+ * canesús y paneles.
  */
-function splitAtY(piece: Piece, y: number): { top: Piece; bottom: Piece } {
+function splitByLine(piece: Piece, a: Vec2, b: Vec2): [Piece, Piece] {
+  const side = (pt: Vec2): number => (b.x - a.x) * (pt.y - a.y) - (b.y - a.y) * (pt.x - a.x);
   const n = piece.nodes.length;
   const cuts: Array<{ seg: number; t: number }> = [];
   for (let i = 0; i < n; i++) {
-    const a = piece.nodes[i]!, b = piece.nodes[(i + 1) % n]!;
-    const c = segmentBezier(a.at, b.at, a.handleOut, b.handleIn);
-    const f = (t: number) => evalBezier(c, t).y - y;
+    const na = piece.nodes[i]!, nb = piece.nodes[(i + 1) % n]!;
+    const hasH = (h?: Vec2) => !!h && (h.x !== 0 || h.y !== 0);
+    // lado recto: insertNodeOnSegment lo parte con una interpolación lineal, así que el corte es exacto
+    if (!hasH(na.handleOut) && !hasH(nb.handleIn)) {
+      const fa = side(na.at), fb = side(nb.at);
+      if (fa * fb < 0) cuts.push({ seg: i, t: fa / (fa - fb) });
+      continue;
+    }
+    const c = segmentBezier(na.at, nb.at, na.handleOut, nb.handleIn);
+    const f = (t: number) => side(evalBezier(c, t));
     if (f(0) * f(1) >= 0) continue;
     let lo = 0, hi = 1;
     for (let k = 0; k < 40; k++) {
@@ -217,19 +227,19 @@ function splitAtY(piece: Piece, y: number): { top: Piece; bottom: Piece } {
     }
     cuts.push({ seg: i, t: (lo + hi) / 2 });
   }
-  if (cuts.length !== 2) throw new Error(`splitAtY: la línea y=${y} cruza ${cuts.length} lados de ${piece.name}, se esperaban 2`);
-  let p = piece;
+  if (cuts.length !== 2) throw new Error(`splitByLine: la recta cruza ${cuts.length} lados de ${piece.name}, se esperaban 2`);
+  let q = piece;
   const ids: string[] = [];
-  for (const c of [...cuts].sort((a, b) => b.seg - a.seg)) {
-    const r = insertNodeOnSegment(p, c.seg, c.t);
-    p = r.piece;
+  for (const c of [...cuts].sort((x, y) => y.seg - x.seg)) {
+    const r = insertNodeOnSegment(q, c.seg, c.t);
+    q = r.piece;
     ids.push(r.nodeId);
   }
   const [idB, idA] = ids as [string, string]; // el corte de más adelante se insertó primero
-  const iA = p.nodes.findIndex((nd) => nd.id === idA);
-  const iB = p.nodes.findIndex((nd) => nd.id === idB);
-  const chain1 = p.nodes.slice(iA, iB + 1);
-  const chain2 = [...p.nodes.slice(iB), ...p.nodes.slice(0, iA + 1)];
+  const iA = q.nodes.findIndex((nd) => nd.id === idA);
+  const iB = q.nodes.findIndex((nd) => nd.id === idB);
+  const chain1 = q.nodes.slice(iA, iB + 1);
+  const chain2 = [...q.nodes.slice(iB), ...q.nodes.slice(0, iA + 1)];
   const cut = (chain: Node[]): Node[] =>
     chain.map((nd, i) => {
       if (i === 0 || i === chain.length - 1) {
@@ -240,10 +250,22 @@ function splitAtY(piece: Piece, y: number): { top: Piece; bottom: Piece } {
       return nd;
     });
   const c1 = cut(chain1), c2 = cut(chain2);
-  const mean = (c: Node[]) => c.slice(1, -1).reduce((a, nd) => a + nd.at.y, 0) / Math.max(1, c.length - 2);
-  const [topNodes, bottomNodes] = mean(c1) < mean(c2) ? [c1, c2] : [c2, c1];
+  const score = (c: Node[]) => c.reduce((acc, nd) => acc + side(nd.at), 0);
+  const [negNodes, posNodes] = score(c1) < score(c2) ? [c1, c2] : [c2, c1];
   const like = (nodes: Node[]): Piece => ({ ...piece, id: emptyPiece("x").id, nodes });
-  return { top: like(topNodes), bottom: like(bottomNodes) };
+  return [like(negNodes), like(posNodes)];
+}
+
+/** Parte una pieza con una línea horizontal a la altura `y`: la parte de arriba y la de abajo. */
+function splitAtY(piece: Piece, y: number): { top: Piece; bottom: Piece } {
+  const [top, bottom] = splitByLine(piece, { x: 0, y }, { x: 1, y });
+  return { top, bottom };
+}
+
+/** Parte una pieza con una línea vertical en x: la parte de la izquierda y la de la derecha. */
+function splitAtX(piece: Piece, x: number): { left: Piece; right: Piece } {
+  const [right, left] = splitByLine(piece, { x, y: 0 }, { x, y: 1 });
+  return { left, right };
 }
 
 /**
@@ -1001,7 +1023,19 @@ export function draftChamarraMezclilla(m: BodyMeasurements): PatternDoc {
   const sideWelt = rectPiece("Vivo de bolsillo lateral", { x: 0, y: 0 }, { x: 15, y: 4 });
   sideWelt.quantity = 4; sideWelt.fabric = F;
 
-  doc.pieces = layoutRows([[front, back, sleeve], [collar, cuff, fajaF, fajaB], [pocket, flap, sideBag, sideWelt]]);
+  // canesú (corte horizontal a 13 cm del cuello, en el delantero y en la espalda) y, debajo, el delantero
+  // en dos paneles: una costura vertical a ~45 % del ancho, como en la foto
+  const yokeY = 13;
+  const frontCut = splitAtY(front, yokeY);
+  const frontPanels = splitAtX(frontCut.bottom, t.qF * 0.45);
+  const backCut = splitAtY(back, yokeY);
+  const yokeF = { ...frontCut.top, name: "Canesú delantero", quantity: 2 };
+  const panelC = { ...frontPanels.left, name: "Delantero centro", quantity: 2 };
+  const panelS = { ...frontPanels.right, name: "Delantero costado", quantity: 2 };
+  const yokeB = { ...backCut.top, name: "Canesú espalda", quantity: 1 };
+  const backLow = { ...backCut.bottom, name: "Espalda", quantity: 1 };
+
+  doc.pieces = layoutRows([[yokeF, panelC, panelS, yokeB, backLow, sleeve], [collar, cuff, fajaF, fajaB], [pocket, flap, sideBag, sideWelt]]);
   return doc;
 }
 
@@ -1128,6 +1162,7 @@ export function draftPantsJogger(m: BodyMeasurements): PatternDoc {
     extras: ({ cintura, hemTotal }) => [
       withQty(rectPiece("Pretina elástica", { x: 0, y: 0 }, { x: cintura + 2, y: 8 }), 1, "french terry 280 gsm"),
       withQty(rectPiece("Puño de tobillo", { x: 0, y: 0 }, { x: hemTotal * 0.8, y: 9 }), 2, "rib 1x1"),
+      withQty(rectPiece("Cordón de pretina", { x: 0, y: 0 }, { x: cintura + 40, y: 1.2 }), 1, "cordón de algodón"),
       withQty(
         pieceFromPoints(
           "Bolsa de bolsillo lateral",
@@ -1154,7 +1189,7 @@ export function draftFaldaA(m: BodyMeasurements): PatternDoc {
   const hipY = 18;
   const qHem = qH + largoF * 0.2;        // vuelo de la A (bajo ≈ 1.8 × cintura)
 
-  const front = mk("Delantero", 1, F, fullFromHalf([
+  const front0 = mk("Delantero", 1, F, fullFromHalf([
     node({ x: 0, y: 0 }, { notch: true }),
     node({ x: qW, y: 0 }),
     node({ x: qH, y: hipY }, { notch: true, handleIn: { x: -0.5, y: -hipY * 0.35 } }),
@@ -1171,19 +1206,27 @@ export function draftFaldaA(m: BodyMeasurements): PatternDoc {
   const waistband = rectPiece("Pretina", { x: 0, y: 0 }, { x: m.cintura + 4, y: 6 });
   waistband.quantity = 1; waistband.fabric = F;
 
-  // pinzas de cintura: 2 en el delantero (una por lado del doblez) y 1 por mitad en la espalda
+  // el delantero va en tres paneles (como en la foto): dos costuras que salen de la cintura y se abren
+  // hacia el bajo, a la mitad de cada lado; el vuelo de la A reparte la diferencia con la cadera.
+  // La espalda lleva su pinza (el borde de la cintura crece lo que se come la pinza).
   const dartDiff = qH - qW;
-  const wF = clamp(dartDiff * 0.4, 1.2, 3);
   const wB = clamp(dartDiff * 0.55, 1.5, 3.5);
-  // el borde de la cintura crece lo que se come cada pinza
-  front.nodes = front.nodes.map((nd) => (nd.at.y === 0 && nd.at.x > 0 && Math.abs(nd.at.x - qW) < 1e-6 ? { ...nd, at: { x: qW + wF, y: 0 } } : nd.at.y === 0 && nd.at.x < 0 && Math.abs(nd.at.x + qW) < 1e-6 ? { ...nd, at: { x: -qW - wF, y: 0 } } : nd));
   back.nodes[1] = { ...back.nodes[1]!, at: { x: qW + 0.5 + wB, y: 0 } };
-  for (const sign of [1, -1]) {
-    front.nodes = dartAt(front, { x: sign * qW * 0.5, y: 0 }, wF, { x: sign * qW * 0.5, y: 9 }).nodes;
-  }
   back.nodes = dartAt(back, { x: (qW + 0.5) * 0.5, y: 0 }, wB, { x: (qW + 0.5) * 0.5, y: 12 }).nodes;
 
-  doc.pieces = layoutRows([[front, back], [waistband]]);
+  const xw = qW * 0.5, xh = qHem * 0.5; // la costura va de la mitad de la cintura a la mitad del bajo
+  const dx = (xh - xw) / largoF;
+  const lineA = { x: xw - dx * 10, y: -10 };
+  const lineB = { x: xh + dx * 10, y: largoF + 10 };
+  const meanX = (pc: Piece) => pc.nodes.reduce((acc, nd) => acc + nd.at.x, 0) / pc.nodes.length;
+  const [cutR1, cutR2] = splitByLine(front0, lineA, lineB);
+  const [rightSide, rest] = meanX(cutR1) > meanX(cutR2) ? [cutR1, cutR2] : [cutR2, cutR1];
+  const [cutL1, cutL2] = splitByLine(rest, { x: -lineA.x, y: lineA.y }, { x: -lineB.x, y: lineB.y });
+  const center = Math.abs(meanX(cutL1)) < Math.abs(meanX(cutL2)) ? cutL1 : cutL2;
+  const sidePanel = { ...rightSide, name: "Delantero costado", quantity: 2 };
+  const centerPanel = { ...center, name: "Delantero centro", quantity: 1 };
+
+  doc.pieces = layoutRows([[centerPanel, sidePanel, back], [waistband]]);
   return doc;
 }
 
@@ -1328,7 +1371,12 @@ export function draftSudadera(m: BodyMeasurements): PatternDoc {
   );
   pouch.fabric = F;
 
-  doc.pieces = layoutRows([[front, back, sleeve], [hood, cuff, band, pouch]]);
+  // cordón de la capucha: ~3 veces el contorno del cuello
+  const cord = rectPiece("Cordón de capucha", { x: 0, y: 0 }, { x: t.cuello * 3, y: 1.2 });
+  cord.quantity = 1;
+  cord.fabric = "cordón de algodón";
+
+  doc.pieces = layoutRows([[front, back, sleeve], [hood, cuff, band, pouch], [cord]]);
   return doc;
 }
 
@@ -1398,7 +1446,13 @@ function draftCamisa(m: BodyMeasurements, name: string, short: boolean): Pattern
     fitSleeve(bicep, short ? 24 : t.largoManga - 6.5, wrist, armLen + 2.5, under * 1.2),
   );
   const lc = t.cuello / 2 + 1.5;
-  const collar = mk("Cuello", 2, F, collarNodes(lc, 7));
+  let collar = mk("Cuello", 2, F, collarNodes(lc, 7));
+  // la camisa de manga larga lleva el cuello con botones en las puntas: una marca de ojal en cada punta
+  if (!short) {
+    for (const sign of [-1, 1]) {
+      collar = addLabelToPiece(collar, { x: sign * (lc - 2.2), y: 5.2 }, "Ojal", 0.9).piece;
+    }
+  }
   const stand = mk("Pie de cuello", 2, F, standNodes(lc));
   const placket = rectPiece("Tapeta", { x: 0, y: 0 }, { x: 4.5, y: hemY - dF });
   placket.quantity = 2; placket.fabric = F;
@@ -1664,8 +1718,8 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
     kind: "chamarra-mezclilla",
     name: "Chamarra de mezclilla",
     tag: "chamarra · mezclilla",
-    blurb: "Trucker con faja, bolsillos de pecho con solapa, bolsillos laterales, cuello y puños. 11 piezas.",
-    pieces: 11,
+    blurb: "Trucker con canesú, delantero en paneles, faja, bolsillos de pecho con solapa, bolsillos laterales, cuello y puños. 14 piezas.",
+    pieces: 14,
     fields: ["busto", "cintura", "hombro", "sisa", "largoTorso", "largoManga", "cuello"],
     iconPath: "M3 7l5-3 4 2 4-2 5 3-1 5-2-1v9H6v-9l-2 1z",
     defaults: { largoTorso: 44, largoManga: 62 },
@@ -1704,8 +1758,8 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
     kind: "sudadera-capucha",
     name: "Sudadera con capucha",
     tag: "sudadera · french terry",
-    blurb: "Hombro caído, capucha, bolsillo canguro y rib en puños y pretina. 7 piezas.",
-    pieces: 7,
+    blurb: "Hombro caído, capucha con cordón, bolsillo canguro y rib en puños y pretina. 8 piezas.",
+    pieces: 8,
     fields: ["busto", "cintura", "hombro", "sisa", "largoTorso", "largoManga", "cuello"],
     iconPath: "M8 3l4 2 4-2 4 4-2 4-2-1v10H8V10l-2 1-2-4z",
     defaults: { largoTorso: 44, largoManga: 62 },
@@ -1714,8 +1768,8 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
     kind: "falda-a",
     name: "Falda en A",
     tag: "falda · gabardina",
-    blurb: "Con vuelo y pinzas de cintura, delantero al doblez, cierre atrás y pretina.",
-    pieces: 3,
+    blurb: "Con vuelo, delantero en tres paneles, pinza trasera, cierre atrás y pretina. 4 piezas.",
+    pieces: 4,
     fields: ["cintura", "cadera", "largoFalda"],
     iconPath: "M8 3h8l1 4 3 14H4L7 7z",
     defaults: { largoFalda: 55 },
@@ -1724,8 +1778,8 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
     kind: "pants-jogger",
     name: "Pants jogger",
     tag: "pants · french terry",
-    blurb: "Pierna ahusada con puño de tobillo y pretina elástica.",
-    pieces: 5,
+    blurb: "Pierna ahusada con puño de tobillo, pretina elástica con cordón y bolsillos laterales. 6 piezas.",
+    pieces: 6,
     fields: ["cintura", "cadera", "tiro", "largo", "muslo", "bajo"],
     iconPath: "M8 3h8l1 7-1 10-3 1-1-8-1 8-3-1-1-10z",
     defaults: { largo: 100, muslo: 62, bajo: 17 },
@@ -1734,7 +1788,7 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
     kind: "camisa-hombre",
     name: "Camisa de hombre",
     tag: "camisa · oxford",
-    blurb: "Manga larga con canesú, tapeta, cuello con pie, puño y bolsillo. 9 piezas.",
+    blurb: "Manga larga con canesú, tapeta, cuello con botones en las puntas, puño y bolsillo. 9 piezas.",
     pieces: 9,
     fields: ["busto", "cintura", "hombro", "sisa", "largoTorso", "largoManga", "cuello"],
     iconPath: "M4 6l5-3 3 2 3-2 5 3-2 5-2-1v10H8V10l-2 1z M12 5v15",
@@ -2052,11 +2106,14 @@ export const PIECE_LIBRARY: readonly LibraryEntry[] = [
   fromBlock("sudadera-capucha", "Capucha", "Capucha", "Cuellos", "Sudadera con capucha"),
   fromBlock("sudadera-capucha", "Delantero", "Delantero de sudadera", "Delanteros", "Sudadera con capucha"),
   fromBlock("vestido-basico", "Delantero", "Delantero de vestido", "Delanteros", "Vestido básico"),
-  fromBlock("chamarra-mezclilla", "Delantero", "Delantero de chamarra", "Delanteros", "Chamarra de mezclilla"),
+  fromBlock("chamarra-mezclilla", "Delantero centro", "Delantero centro de chamarra", "Delanteros", "Chamarra de mezclilla"),
+  fromBlock("chamarra-mezclilla", "Delantero costado", "Delantero costado de chamarra", "Delanteros", "Chamarra de mezclilla"),
+  fromBlock("chamarra-mezclilla", "Canesú delantero", "Canesú delantero de chamarra", "Delanteros", "Chamarra de mezclilla"),
   fromBlock("short", "Delantero", "Delantero de short", "Delanteros", "Short"),
   fromBlock("vestido-basico", "Espalda", "Espalda de vestido", "Espaldas", "Vestido básico"),
   fromBlock("sudadera-capucha", "Espalda", "Espalda de sudadera", "Espaldas", "Sudadera con capucha"),
   fromBlock("chamarra-mezclilla", "Espalda", "Espalda de chamarra", "Espaldas", "Chamarra de mezclilla"),
+  fromBlock("chamarra-mezclilla", "Canesú espalda", "Canesú espalda de chamarra", "Espaldas", "Chamarra de mezclilla"),
   fromBlock("short", "Espalda", "Espalda de short", "Espaldas", "Short"),
   fromBlock("chamarra-mezclilla", "Manga", "Manga de chamarra", "Mangas", "Chamarra de mezclilla"),
   fromBlock("sudadera-capucha", "Manga", "Manga de sudadera", "Mangas", "Sudadera con capucha"),
