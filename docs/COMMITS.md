@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 53
+> Rama: `dev/mvp-9-nov` · Commits: 55
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,43 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## fix(blocks): cuello de la chamarra y capucha de la sudadera miden lo que su escote + auditoría de los 17 patrones
+
+- Commit: `c42c359`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: auditoría automática de los 17 patrones (tests/audit-patrones.test.ts, 70 pruebas) que revisa
+en todas las tallas: piezas que no se cruzan ni tienen valores raros, más tela en tallas mayores,
+contorno de pecho y de cadera contra la medida con una holgura razonable, costado del delantero
+igual al de la espalda (con las pinzas cerradas), entrepierna igual, cuello igual al escote
+(blusa y chamarra), borde de la capucha igual a la mitad del escote y puños iguales a la boca de la
+manga. La auditoría encontró dos defectos además del pantalón (23ee69a): la chamarra tenía el
+cuello 3 cm más corto que el escote (41 contra 44.2) y el borde de la capucha de la sudadera medía
+34 cm contra 24 que pide el escote. Ahora el cuello de la chamarra y la capucha se calculan con
+el largo real del escote y crecen con la talla.
+Por qué: el error del pantalón apareció por casualidad en la vista 3D; esto lo busca en todas las
+prendas de forma sistemática.
+Verificación: 503 pruebas pasan; el resto de patrones cumple las reglas sin cambios (cintura, cadera,
+busto y holguras dentro de lo normal, costados y entrepierna iguales); capucha revisada en la app.
+Un patronista aún debe revisar el estilo de cada prenda: la auditoría solo comprueba medidas.
+Archivos: packages/blocks/src/index.ts, tests/audit-patrones.test.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `acd4bfb`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## docs: preguntas para el jefe sobre planes y cobro
 
