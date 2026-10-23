@@ -1,19 +1,16 @@
 "use client";
 
-import LegalPage, { Todo } from "./LegalPage";
+import LegalPage from "./LegalPage";
 
 export default function PrivacidadContent() {
   return (
     <LegalPage title="Aviso de privacidad">
-      <p className="legal-date">
-        Última actualización: <Todo>fecha de publicación</Todo>
-      </p>
+      <p className="legal-date">Última actualización: 23 de octubre de 2026</p>
 
       <h2>1. Quién es el responsable de tus datos</h2>
       <p>
-        El responsable del tratamiento de tus datos personales es <Todo>razón social o nombre de la persona responsable</Todo>,
-        con domicilio en <Todo>domicilio completo</Todo>. Para cualquier asunto sobre tus datos puedes escribir
-        a <Todo>correo de contacto para datos personales</Todo>.
+        HiloNova es el responsable del tratamiento de los datos personales que nos das al usar HiloNova Studio. Para
+        cualquier asunto sobre tus datos puedes escribirnos por los medios de contacto que HiloNova publica en su sitio.
       </p>
 
       <h2>2. Qué datos recabamos</h2>
@@ -27,12 +24,12 @@ export default function PrivacidadContent() {
           <b>Si entras con Google:</b> el nombre y el correo que Google comparte con nosotros. No recibimos tu contraseña de Google.
         </li>
         <li>
-          <b>Tus patrones y medidas:</b> hoy se guardan en tu propio navegador. Cuando esté disponible el guardado en la nube,
-          se guardarán también en nuestros servidores asociados a tu cuenta.{" "}
-          <Todo>revisar este punto cuando se active el guardado en la nube</Todo>
+          <b>Tus patrones y medidas:</b> hoy se guardan en tu propio navegador. Cuando esté disponible el guardado en la
+          nube, se guardarán también en nuestros servidores asociados a tu cuenta y actualizaremos este aviso.
         </li>
         <li>
-          <b>Datos de pago:</b> <Todo>completar cuando exista el cobro: quién lo procesa y qué datos guarda cada parte</Todo>
+          <b>Datos de pago:</b> hoy no los pedimos. Cuando exista el cobro lo procesará un proveedor de pagos y
+          actualizaremos este aviso.
         </li>
       </ul>
       <p>No recabamos datos personales sensibles.</p>
@@ -43,39 +40,31 @@ export default function PrivacidadContent() {
         <li>Enviarte los correos del servicio: verificación de tu correo y cambio de contraseña.</li>
         <li>Darte soporte cuando lo pidas.</li>
         <li>Mantener la seguridad de las cuentas y evitar usos indebidos.</li>
-        <li>
-          <Todo>cobrar el plan y emitir comprobantes, cuando exista el cobro</Todo>
-        </li>
       </ul>
-      <p>
-        <Todo>decidir si se enviarán novedades o promociones por correo; si no, dejar esta línea fuera</Todo>
-      </p>
+      <p>No usamos tus datos para enviarte publicidad.</p>
 
       <h2>4. Con quién compartimos tus datos</h2>
       <p>
-        No vendemos tus datos. Usamos proveedores para operar el servicio: <b>Google (Firebase)</b> para las cuentas y el
-        almacenamiento. <Todo>agregar al proveedor de pagos cuando exista el cobro</Todo> Estos proveedores tratan los datos
-        solo para prestarnos el servicio. Fuera de ellos, solo compartiremos datos si una autoridad competente nos lo exige.
+        No vendemos tus datos. Usamos a <b>Google (Firebase)</b> para las cuentas y el almacenamiento. Este proveedor trata
+        los datos solo para prestarnos el servicio. Fuera de él, solo compartiremos datos si una autoridad competente nos
+        lo exige.
       </p>
 
       <h2>5. Tus derechos (acceso, rectificación, cancelación y oposición)</h2>
       <p>
         Puedes pedir en cualquier momento que te digamos qué datos tuyos tenemos, que los corrijamos, que los borremos o que
-        dejemos de usarlos. Escribe a <Todo>correo de contacto para datos personales</Todo> desde el correo de tu cuenta,
-        indicando qué solicitas. Te responderemos en los plazos que marca la ley.
+        dejemos de usarlos. Escríbenos desde el correo de tu cuenta indicando qué solicitas. Te responderemos en los plazos
+        que marca la ley.
       </p>
 
       <h2>6. Almacenamiento en tu navegador</h2>
       <p>
         El programa usa el almacenamiento de tu navegador para mantener tu sesión y guardar tus patrones. No usamos
-        publicidad ni herramientas de rastreo de terceros.{" "}
-        <Todo>revisar si se agrega alguna herramienta de estadísticas antes de publicar</Todo>
+        publicidad ni herramientas de rastreo de terceros.
       </p>
 
       <h2>7. Cambios a este aviso</h2>
-      <p>
-        Si cambiamos este aviso lo publicaremos en esta página con la nueva fecha. <Todo>definir si además se avisará por correo</Todo>
-      </p>
+      <p>Si cambiamos este aviso lo publicaremos en esta página con la nueva fecha.</p>
     </LegalPage>
   );
 }

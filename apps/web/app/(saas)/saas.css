@@ -901,7 +901,7 @@
   background: rgba(255,255,255,.1); color: #fff;
 }
 
-/* ─── Páginas legales (borrador) ─── */
+/* ─── Páginas legales ─── */
 .legal {
   flex: 1; width: 100%; max-width: 760px; margin: 0 auto;
   padding: 36px 24px 96px; color: var(--ink);
@@ -916,13 +916,5 @@
 .legal li { margin: 4px 0; }
 .legal li b, .legal p b { color: var(--ink); }
 .legal-date { font-size: 14px !important; }
-.legal-draft {
-  padding: 12px 16px; border-radius: 10px; font-size: 14px; line-height: 1.5;
-  background: #FFF4EE; border: 1px solid #FFCDB6; color: #8A2E07;
-}
-.legal-todo {
-  background: #FFE9A8; color: #5A4300; padding: 1px 5px; border-radius: 4px;
-  font-weight: 600; font-size: .94em;
-}
 .legal-back { margin-top: 36px; }
 .legal-back a { color: var(--accent); font-weight: 600; text-decoration: none; }
