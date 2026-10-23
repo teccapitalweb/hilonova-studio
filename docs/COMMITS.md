@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 86
+> Rama: `dev/mvp-9-nov` · Commits: 88
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,46 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## fix: PDF del mosaico sin hojas de más y ficha técnica igual a la vista previa
+
+- Commit: `9d0ca5b`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: (1) Mosaico A4: las piezas se imprimen donde están en el editor (antes se volvían a repartir en una fila
+larga), solo salen las hojas que llevan dibujo, y cada hoja solo dibuja los tramos que le tocan. La primera hoja
+es de instrucciones: imprimir al 100 %, cuadro de prueba de 10 × 10 cm y mapa de hojas. El pie de cada hoja dice
+"hoja n de N · columna, fila". Se agrega planTiles() para poder probarlo. (2) Ficha técnica: el PDF imprime cliente,
+temporada, patronista, descripción y notas; sin referencia imprime «—» (antes inventaba un número al azar); si se
+borran todos los materiales ya no aparecen cierre, botón y remaches de un jean; las vistas planas llevan todas las
+piezas, cuatro por hoja (antes solo las primeras cuatro); cada hoja trae "n / total". Se quitó "hilonova.mx" del
+pie porque no está confirmado. La vista previa del programa usa los mismos valores de ejemplo y el mismo reparto
+de piezas que el PDF. (3) Vista previa: las hojas no se encogen ni se salen, y las piezas quedan dentro de su
+hoja.
+Por qué: el jean salía en 150 hojas (48 MB), muchas en blanco, sin forma de comprobar la escala; y la ficha técnica
+entregada al taller no tenía los datos que el usuario había llenado.
+Verificación: jean 150 → 31 hojas con dibujo (0.4 MB); las 17 prendas bajan a entre 15 y 41 hojas; se generaron los
+PDFs reales y se revisaron página por página (instrucciones con cuadro y mapa, portada con datos, tres hojas de
+vistas planas con las 10 piezas, insumos con notas); la vista previa se midió en el navegador: 6 hojas de 640×905
+sin elementos fuera de la hoja. 26 pruebas nuevas (tests/pdf.test.ts); 603 pruebas pasan y los tipos compilan.
+Archivos: packages/export/src/{pdf,techpack}.ts, apps/web/app/studio/{ExportModal.tsx,TechPack.tsx,studio.css},
+tests/pdf.test.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `0fac78a`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## feat: script para colgar el programa dentro del sitio de CAD y quitar testimonios inventados
 
