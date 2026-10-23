@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 82
+> Rama: `dev/mvp-9-nov` · Commits: 84
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,40 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## docs: mapa de las tres piezas (sitio de formación, página de CAD y el programa) y cómo conectarlas
+
+- Commit: `b4d3465`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: docs/MAPA-DE-PAGINAS.md explica qué es cada carpeta (hilonova-web = sitio de formación con dominio propio
+hilonovamx.com; HiloNova-CAD = página de venta antigua cuyo app.html llama a archivos que no existen; hilonova-studio
+= el programa), que hoy no se enlazan entre sí, la tabla de lo que la página de CAD promete y no coincide con el
+programa (pago único, demo con candados, nube, Safari y tablet, margen por tramo, costeo con minutos, Stripe), la
+propuesta de conexión (una puerta de entrada: el sitio de formación enlaza a la página del software y al programa; el
+alumno entra con su cupón), lo que hay que hacer en cada carpeta, las decisiones que faltan (nombre del producto,
+página oficial, dominio, modelo de venta) y el orden de trabajo.
+Por qué: el usuario pidió entender las otras dos páginas y conectar todo.
+Verificación: leídos los README, títulos, enlaces, textos y archivos de las tres carpetas; se comprobó que
+HiloNova-CAD no trae los archivos assets/css/app.css ni assets/js/app/main.js que su app.html pide, y que el sitio de
+formación no menciona el software.
+Archivos: docs/MAPA-DE-PAGINAS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `23cfe37`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## feat(web): plan "Completo" organizado por los cuatro módulos y sin cuentas dobles
 
