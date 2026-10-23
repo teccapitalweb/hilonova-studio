@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 80
+> Rama: `dev/mvp-9-nov` · Commits: 82
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,43 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## feat(web): plan "Completo" organizado por los cuatro módulos y sin cuentas dobles
+
+- Commit: `5d6da5b`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: la tarjeta del plan único se reorganiza por los cuatro módulos que se pidieron (Patronaje 2D, Graduación, Trazo
+y Producción), cada uno con lo que incluye, más una línea de condiciones (proyectos ilimitados, ayuda dentro de la
+app y soporte por correo) y el recuadro de la oferta para alumnos (1 mes gratis con 3 exportaciones). El plan pasa
+de llamarse "Estudio" (sonaba a plan de estudiantes) a "Completo", y se quita "hasta 2 usuarios": el plan es para 1
+usuario hasta que existan las cuentas de equipo. La pantalla de planes, la página principal, la propuesta de
+planes y las preguntas para el jefe (que ahora incluyen quién atenderá el soporte por correo) quedan con lo
+mismo. Se corrige además el "Plan actual" de la tarjeta oscura, que salía con texto oscuro sobre fondo oscuro y no
+se leía.
+Por qué: el usuario eligió la propuesta A (por módulos) para poder revisar la tarjeta contra la lista de lo
+solicitado, y pidió quitar las dos cuentas porque hoy no hay cuentas reales.
+Verificación: 577 pruebas (plan "Completo", 1 usuario, sin textos de varios usuarios, organizado por los cuatro
+módulos, DXF "en validación", tallas 28–36, migración de sesiones guardadas); tipos y build correctos; revisada la
+pantalla de planes en la app.
+Archivos: apps/web/app/{lib/auth.ts,pricing/page.tsx,page.tsx,account/page.tsx,auth/signup/page.tsx,(saas)/saas.css},
+tests/planes.test.ts, docs/PROPUESTA-PLANES.md, docs/PREGUNTAS-PARA-EL-JEFE.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `d1add5a`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## feat(web): cupón de alumnos = un mes con el programa completo y 3 exportaciones
 
