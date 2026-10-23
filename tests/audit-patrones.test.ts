@@ -95,12 +95,24 @@ const back = (d: PatternDoc) => named(d, /^Espalda/, /Forro|Vista/)!;
 const KINDS = BLOCK_CATALOG.map((b) => b.kind as BlockKind);
 const draft = (k: BlockKind) => draftBlock(k, defaultMeasurementsFor(k));
 
+/** Ancho de la espalda a la altura y; si hay canesú, de arriba hacia abajo va primero el canesú y luego la espalda. */
+function backWidth(d: PatternDoc, y: number): number {
+  const b = samplePath(back(d), 24);
+  const by = Math.min(...b.map((p) => p.y));
+  const yoke = named(d, /^Canes/);
+  if (!yoke) return widthAt(b, by + y);
+  const ys = samplePath(yoke, 24);
+  const y0 = Math.min(...ys.map((p) => p.y));
+  const h = Math.max(...ys.map((p) => p.y)) - y0;
+  return y < h ? widthAt(ys, y0 + y) : widthAt(b, by + (y - h));
+}
+
 /** Contorno del cuerpo a la altura y (cm desde el borde de arriba), sumando delantero y espalda. */
 function circ(d: PatternDoc, y: number): number {
-  const f = front(d), b = back(d);
-  const fs = samplePath(f, 24), bs = samplePath(b, 24);
-  const fy = Math.min(...fs.map((p) => p.y)), by = Math.min(...bs.map((p) => p.y));
-  return f.quantity * widthAt(fs, fy + y) + b.quantity * widthAt(bs, by + y);
+  const f = front(d);
+  const fs = samplePath(f, 24);
+  const fy = Math.min(...fs.map((p) => p.y));
+  return f.quantity * widthAt(fs, fy + y) + back(d).quantity * backWidth(d, y);
 }
 const maxCirc = (d: PatternDoc, y0: number, y1: number): number => {
   let m = 0;
@@ -295,6 +307,70 @@ describe("playera básica (la foto de referencia es manga corta con cuello de ri
       const rib = samplePath(named(d, /^Cuello de rib/)!, 24);
       const len = Math.max(...rib.map((p) => p.x)) - Math.min(...rib.map((p) => p.x));
       expect(Math.abs(len - neck * 0.85), `${size}: escote ${neck.toFixed(1)} rib ${len.toFixed(1)}`).toBeLessThan(1);
+    }
+  });
+});
+
+describe("pantalones y shorts: las piezas que muestran las fotos de referencia", () => {
+  const count = (d: PatternDoc, name: string) => d.pieces.filter((p) => p.name === name).reduce((a, p) => a + p.quantity, 0);
+  const height = (p: Piece) => { const s = samplePath(p, 24); return Math.max(...s.map((q) => q.y)) - Math.min(...s.map((q) => q.y)); };
+
+  it.each(["pantalon-denim", "short"] as BlockKind[])("%s: cinco bolsillos con canesú, pretina, trabillas y bragueta", (kind) => {
+    const d = draft(kind);
+    for (const [name, qty] of [
+      ["Delantero", 2], ["Espalda", 2], ["Canesú", 2], ["Pretina", 1], ["Trabilla", 6],
+      ["Bolsa de bolsillo delantero", 2], ["Vista de bolsillo delantero", 2], ["Bolsillo trasero", 2],
+      ["Bolsillo moneda", 1], ["Vista de bragueta", 1],
+    ] as Array<[string, number]>) {
+      expect(count(d, name), `${kind}: ${name}`).toBe(qty);
+    }
+  });
+
+  it.each(["pantalon-denim", "short"] as BlockKind[])("%s: el canesú mide 5-11 cm y encaja con la espalda en todas las tallas", (kind) => {
+    for (const size of draft(kind).sizes) {
+      const d = gradeDoc(draft(kind), size);
+      const yoke = named(d, /^Canes/)!, lower = back(d);
+      expect(height(yoke), `${kind} ${size}`).toBeGreaterThan(5);
+      expect(height(yoke), `${kind} ${size}`).toBeLessThan(11);
+      // la costura del canesú: el borde de abajo del canesú mide lo mismo que el de arriba de la espalda
+      const ys = samplePath(yoke, 24), ls = samplePath(lower, 24);
+      const yb = Math.max(...ys.map((p) => p.y)), lt = Math.min(...ls.map((p) => p.y));
+      expect(Math.abs(widthAt(ys, yb - 0.05) - widthAt(ls, lt + 0.05)), `${kind} ${size}`).toBeLessThan(0.3);
+      // canesú + espalda baja = la espalda entera (un poco más larga que el delantero por el tiro trasero)
+      expect(height(yoke) + height(lower) - height(front(d)), `${kind} ${size}`).toBeLessThan(4);
+    }
+  });
+
+  it.each(["pantalon-vestir", "bermuda"] as BlockKind[])("%s: el delantero marca el pliegue con dos piquetes en la cintura", (kind) => {
+    for (const size of draft(kind).sizes) {
+      const f = front(gradeDoc(draft(kind), size));
+      const top = Math.min(...f.nodes.map((n) => n.at.y));
+      const waistNotches = f.nodes.filter((n) => n.notch && n.at.y < top + 2);
+      expect(waistNotches.length, `${kind} ${size}`).toBe(2);
+    }
+  });
+
+  it("pantalón de vestir: pretina, trabillas, bolsas de bolsillo, vivos y bragueta", () => {
+    const d = draft("pantalon-vestir");
+    for (const [name, qty] of [
+      ["Pretina", 1], ["Trabilla", 6], ["Bolsa de bolsillo lateral", 2], ["Bolsa de bolsillo trasero", 2],
+      ["Vivo de bolsillo trasero", 4], ["Vista de bragueta", 1],
+    ] as Array<[string, number]>) {
+      expect(count(d, name), name).toBe(qty);
+    }
+  });
+
+  it("bermuda: trae trabillas y bragueta", () => {
+    const d = draft("bermuda");
+    expect(count(d, "Trabilla")).toBe(6);
+    expect(count(d, "Vista de bragueta")).toBe(1);
+  });
+
+  it("la pretina mide la cintura más 4 cm de montado (talla base)", () => {
+    for (const kind of ["pantalon-denim", "pantalon-vestir", "short", "bermuda"] as BlockKind[]) {
+      const p = samplePath(named(draft(kind), /^Pretina/)!, 24);
+      const w = Math.max(...p.map((q) => q.x)) - Math.min(...p.map((q) => q.x));
+      expect(Math.abs(w - ((defaultMeasurementsFor(kind).cintura ?? 80) + 4)), kind).toBeLessThan(0.1);
     }
   });
 });

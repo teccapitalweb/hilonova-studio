@@ -7,7 +7,10 @@ import {
   addDart,
   clonePiece,
   contourRun,
+  evalBezier,
+  insertNodeOnSegment,
   nearestSegment,
+  segmentBezier,
   sizeSteps,
   emptyDoc,
   emptyPiece,
@@ -77,7 +80,7 @@ export const DEFAULT_MEASUREMENTS: BodyMeasurements = {
  * Sistema de coordenadas: X derecha hacia fuera (lado), Y abajo (del cuerpo).
  * Origen = esquina superior interior (centro frente / centro espalda).
  */
-export function draftPantalonDenim(m: BodyMeasurements): PatternDoc {
+function draftPantalonCore(m: BodyMeasurements): PatternDoc {
   const doc = emptyDoc("Jean Slim · desde medidas");
 
   // factores de ensanche (ease) propios del patronaje industrial
@@ -192,6 +195,112 @@ export function draftPantalonDenim(m: BodyMeasurements): PatternDoc {
   back.nodes[5] = { ...back.nodes[5]!, notch: true };
 
   doc.pieces = [front, back];
+  return doc;
+}
+
+/**
+ * Parte una pieza cerrada con una línea horizontal a la altura `y` (cm): devuelve la parte de
+ * arriba y la de abajo, con los dos piquetes del corte. Sirve para el canesú de la espalda.
+ */
+function splitAtY(piece: Piece, y: number): { top: Piece; bottom: Piece } {
+  const n = piece.nodes.length;
+  const cuts: Array<{ seg: number; t: number }> = [];
+  for (let i = 0; i < n; i++) {
+    const a = piece.nodes[i]!, b = piece.nodes[(i + 1) % n]!;
+    const c = segmentBezier(a.at, b.at, a.handleOut, b.handleIn);
+    const f = (t: number) => evalBezier(c, t).y - y;
+    if (f(0) * f(1) >= 0) continue;
+    let lo = 0, hi = 1;
+    for (let k = 0; k < 40; k++) {
+      const mid = (lo + hi) / 2;
+      if (f(lo) * f(mid) <= 0) hi = mid; else lo = mid;
+    }
+    cuts.push({ seg: i, t: (lo + hi) / 2 });
+  }
+  if (cuts.length !== 2) throw new Error(`splitAtY: la línea y=${y} cruza ${cuts.length} lados de ${piece.name}, se esperaban 2`);
+  let p = piece;
+  const ids: string[] = [];
+  for (const c of [...cuts].sort((a, b) => b.seg - a.seg)) {
+    const r = insertNodeOnSegment(p, c.seg, c.t);
+    p = r.piece;
+    ids.push(r.nodeId);
+  }
+  const [idB, idA] = ids as [string, string]; // el corte de más adelante se insertó primero
+  const iA = p.nodes.findIndex((nd) => nd.id === idA);
+  const iB = p.nodes.findIndex((nd) => nd.id === idB);
+  const chain1 = p.nodes.slice(iA, iB + 1);
+  const chain2 = [...p.nodes.slice(iB), ...p.nodes.slice(0, iA + 1)];
+  const cut = (chain: Node[]): Node[] =>
+    chain.map((nd, i) => {
+      if (i === 0 || i === chain.length - 1) {
+        // los extremos son el corte: nodo nuevo, recto hacia el corte, con piquete
+        const { handleIn, handleOut } = nd;
+        return node(nd.at, { notch: true, ...(i === 0 ? { handleOut } : { handleIn }) });
+      }
+      return nd;
+    });
+  const c1 = cut(chain1), c2 = cut(chain2);
+  const mean = (c: Node[]) => c.slice(1, -1).reduce((a, nd) => a + nd.at.y, 0) / Math.max(1, c.length - 2);
+  const [topNodes, bottomNodes] = mean(c1) < mean(c2) ? [c1, c2] : [c2, c1];
+  const like = (nodes: Node[]): Piece => ({ ...piece, id: emptyPiece("x").id, nodes });
+  return { top: like(topNodes), bottom: like(bottomNodes) };
+}
+
+/** Marca con dos piquetes en el borde de la cintura de `front` el pliegue que se dobla (x = cm desde el centro). */
+function markPleat(front: Piece, x: number, width: number): Piece {
+  let out = front;
+  for (const px of [x, x + width]) {
+    const hit = nearestSegment(out, { x: px, y: 0 });
+    if (!hit) continue;
+    const r = insertNodeOnSegment(out, hit.segIndex, hit.t);
+    out = { ...r.piece, nodes: r.piece.nodes.map((nd) => (nd.id === r.nodeId ? { ...nd, notch: true } : nd)) };
+  }
+  return out;
+}
+
+const polyPiece = (name: string, pts: Vec2[]): Piece => pieceFromPoints(name, pts, { closed: true, smooth: false });
+const withQuantity = (p: Piece, quantity: number, fabric?: string): Piece => ({
+  ...p,
+  quantity,
+  ...(fabric ? { fabric } : {}),
+});
+
+/** Piezas de un pantalón de cinco bolsillos (jean): pretina, trabillas, bolsillos y bragueta. */
+function jeanExtras(cintura: number, F: string): Piece[] {
+  const POCKET = "forro de bolsillo";
+  return [
+    withQuantity(rectPiece("Pretina", { x: 0, y: 0 }, { x: cintura + 4, y: 8 }), 1, F),
+    withQuantity(rectPiece("Trabilla", { x: 0, y: 0 }, { x: 9, y: 2.5 }), 6, F),
+    withQuantity(polyPiece("Bolsa de bolsillo delantero", [{ x: 0, y: 0 }, { x: 16, y: 0 }, { x: 16, y: 20 }, { x: 9, y: 26 }, { x: 0, y: 22 }]), 2, POCKET),
+    withQuantity(polyPiece("Vista de bolsillo delantero", [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 16 }, { x: 4, y: 19 }, { x: 0, y: 16 }]), 2, F),
+    withQuantity(polyPiece("Bolsillo trasero", [{ x: 0, y: 0 }, { x: 14, y: 0 }, { x: 14, y: 12 }, { x: 7, y: 16 }, { x: 0, y: 12 }]), 2, F),
+    withQuantity(rectPiece("Bolsillo moneda", { x: 0, y: 0 }, { x: 6.5, y: 7.5 }), 1, F),
+    withQuantity(polyPiece("Vista de bragueta", [{ x: 0, y: 0 }, { x: 4.5, y: 0 }, { x: 4.5, y: 16 }, { x: 2.5, y: 18 }, { x: 0, y: 16 }]), 1, F),
+  ];
+}
+
+/** Pantalón de vestir: pretina, trabillas, bolsas de bolsillo (lateral y trasero), vivos y bragueta. */
+function dressTrouserExtras(cintura: number, F: string): Piece[] {
+  const POCKET = "forro de bolsillo";
+  return [
+    withQuantity(rectPiece("Pretina", { x: 0, y: 0 }, { x: cintura + 4, y: 8 }), 1, F),
+    withQuantity(rectPiece("Trabilla", { x: 0, y: 0 }, { x: 9, y: 2.5 }), 6, F),
+    withQuantity(polyPiece("Bolsa de bolsillo lateral", [{ x: 0, y: 0 }, { x: 15, y: 0 }, { x: 15, y: 24 }, { x: 8, y: 28 }, { x: 0, y: 24 }]), 2, POCKET),
+    withQuantity(rectPiece("Bolsa de bolsillo trasero", { x: 0, y: 0 }, { x: 14, y: 18 }), 2, POCKET),
+    withQuantity(rectPiece("Vivo de bolsillo trasero", { x: 0, y: 0 }, { x: 15, y: 4 }), 4, F),
+    withQuantity(polyPiece("Vista de bragueta", [{ x: 0, y: 0 }, { x: 4.5, y: 0 }, { x: 4.5, y: 16 }, { x: 2.5, y: 18 }, { x: 0, y: 16 }]), 1, F),
+  ];
+}
+
+/** Pantalón de mezclilla slim de cinco bolsillos: canesú trasero, pretina, trabillas, bolsillos y bragueta. */
+export function draftPantalonDenim(m: BodyMeasurements): PatternDoc {
+  const doc = draftPantalonCore(m);
+  const back = doc.pieces.find((p) => p.name === "Espalda")!;
+  const { top, bottom } = splitAtY(back, 6.5);
+  const yoke = { ...top, name: "Canesú", quantity: 2, fabric: back.fabric };
+  const lower = { ...bottom, name: "Espalda", quantity: 2, fabric: back.fabric };
+  const front = doc.pieces.find((p) => p.name === "Delantero")!;
+  doc.pieces = layoutRows([[front, lower, yoke], jeanExtras(m.cintura, "mezclilla 12 oz")]);
   return doc;
 }
 
@@ -414,9 +523,23 @@ export function draftPantalonVestir(m: BodyMeasurements): PatternDoc {
   // Reutilizamos el denim pero con el bajo casi igual al muslo (= pierna recta).
   // `bajo` es la mitad del contorno del bajo: 0.9 × el muslo, entre dos.
   const bajoRecto = ((m.muslo ?? m.cadera * 0.56) * 0.45);
-  const doc = draftPantalonDenim({ ...m, bajo: bajoRecto });
+  const doc = draftPantalonCore({ ...m, bajo: bajoRecto });
   doc.name = "Pantalón vestir · desde medidas";
-  for (const p of doc.pieces) p.fabric = "gabardina 240 gsm";
+  const F = "gabardina 240 gsm";
+  for (const p of doc.pieces) p.fabric = F;
+  // pliegue al frente: el borde de la cintura del delantero es 3 cm más ancho (lo que se dobla) y
+  // dos piquetes marcan el pliegue sobre la raya del pantalón
+  const qW = (m.cintura + 1) / 4;
+  const front0 = doc.pieces.find((p) => p.name === "Delantero")!;
+  front0.nodes[1] = { ...front0.nodes[1]!, at: { x: front0.nodes[1]!.at.x + 3, y: front0.nodes[1]!.at.y } };
+  const front = markPleat(front0, qW * 0.5, 3);
+  const back0 = doc.pieces.find((p) => p.name === "Espalda")!;
+  // pinza trasera de cintura, como en el bermuda y el cargo
+  const bx = back0.nodes[0]!.at.x + (back0.nodes[1]!.at.x - back0.nodes[0]!.at.x) * 0.45;
+  const by = back0.nodes[0]!.at.y + (back0.nodes[1]!.at.y - back0.nodes[0]!.at.y) * 0.45;
+  const dartW = clamp(((m.cadera + 2) / 4 - qW) * 0.5, 1.5, 3.5);
+  const back = dartAt(back0, { x: bx, y: by }, dartW, { x: bx, y: by + 12 });
+  doc.pieces = layoutRows([[front, back], dressTrouserExtras(m.cintura, F)]);
   return doc;
 }
 
@@ -898,41 +1021,47 @@ function draftTrouser(m: BodyMeasurements, o: TrouserOpts): PatternDoc {
   return doc;
 }
 
-/** Short de mezclilla: pierna recta, largo corto. */
+/** Short de mezclilla de cinco bolsillos: canesú trasero, pretina, trabillas, bolsillos y bragueta. */
 export function draftShort(m: BodyMeasurements): PatternDoc {
-  return draftTrouser(m, {
+  const doc = draftTrouser(m, {
     name: "Short · desde medidas",
     fabric: "mezclilla 10 oz",
     hipEase: 4,
     thighEase: 4,
-    extras: ({ cintura }) => [
-      withQty(rectPiece("Pretina", { x: 0, y: 0 }, { x: cintura + 4, y: 8 }), 1, "mezclilla 10 oz"),
-      withQty(
-        pieceFromPoints(
-          "Bolsillo trasero",
-          [{ x: 0, y: 0 }, { x: 14, y: 0 }, { x: 14, y: 12 }, { x: 7, y: 16 }, { x: 0, y: 12 }],
-          { closed: true, smooth: false },
-        ),
-        2,
-        "mezclilla 10 oz",
-      ),
-    ],
+    extras: ({ cintura }) => jeanExtras(cintura, "mezclilla 10 oz"),
   });
+  const back = doc.pieces.find((p) => p.name === "Espalda")!;
+  const { top, bottom } = splitAtY(back, 6.5);
+  const yoke = { ...top, name: "Canesú", quantity: 2 };
+  const lower = { ...bottom, name: "Espalda", quantity: 2 };
+  const rest = doc.pieces.filter((p) => p.name !== "Espalda");
+  doc.pieces = layoutRows([[rest.find((p) => p.name === "Delantero")!, lower, yoke], rest.filter((p) => p.name !== "Delantero")]);
+  return doc;
 }
 
 /** Bermuda: pierna recta a la rodilla, en gabardina. */
 export function draftBermuda(m: BodyMeasurements): PatternDoc {
-  return draftTrouser(m, {
+  const F = "gabardina 240 gsm";
+  const doc = draftTrouser(m, {
     name: "Bermuda · desde medidas",
-    fabric: "gabardina 240 gsm",
+    fabric: F,
     hipEase: 5,
     thighEase: 5,
     backDart: true,
     extras: ({ cintura }) => [
-      withQty(rectPiece("Pretina", { x: 0, y: 0 }, { x: cintura + 4, y: 8 }), 1, "gabardina 240 gsm"),
+      withQty(rectPiece("Pretina", { x: 0, y: 0 }, { x: cintura + 4, y: 8 }), 1, F),
+      withQty(rectPiece("Trabilla", { x: 0, y: 0 }, { x: 9, y: 2.5 }), 6, F),
       withQty(rectPiece("Bolsillo", { x: 0, y: 0 }, { x: 16, y: 18 }), 4, "forro de bolsillo"),
+      withQty(polyPiece("Vista de bragueta", [{ x: 0, y: 0 }, { x: 4.5, y: 0 }, { x: 4.5, y: 16 }, { x: 2.5, y: 18 }, { x: 0, y: 16 }]), 1, F),
     ],
   });
+  // pliegue al frente (igual que el pantalón de vestir): 3 cm más de cintura y dos piquetes
+  const qW = (m.cintura + 1) / 4;
+  const front0 = doc.pieces.find((p) => p.name === "Delantero")!;
+  front0.nodes[1] = { ...front0.nodes[1]!, at: { x: front0.nodes[1]!.at.x + 3, y: front0.nodes[1]!.at.y } };
+  const pleated = markPleat(front0, qW * 0.5, 3);
+  doc.pieces = doc.pieces.map((p) => (p.name === "Delantero" ? pleated : p));
+  return doc;
 }
 
 /** Pants jogger: pierna ahusada con puño de tobillo y pretina de elástico. */
@@ -1393,8 +1522,8 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
     kind: "pantalon-denim",
     name: "Pantalón denim slim",
     tag: "pantalón · mezclilla",
-    blurb: "Jean slim clásico desde cintura, cadera, tiro y largo.",
-    pieces: 2,
+    blurb: "Jean slim de cinco bolsillos: canesú, pretina, trabillas, bolsillos y bragueta. 10 piezas.",
+    pieces: 10,
     fields: ["cintura", "cadera", "tiro", "largo", "muslo", "bajo"],
     iconPath: "M8 3h8l1 7v11h-4l-.5-8h-1L11 21H7V10z",
   },
@@ -1402,8 +1531,8 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
     kind: "pantalon-vestir",
     name: "Pantalón de vestir",
     tag: "pantalón · gabardina",
-    blurb: "Pierna recta, bajo parejo. Para uniforme o línea formal.",
-    pieces: 2,
+    blurb: "Pierna recta con pliegue al frente, pinza trasera, pretina, trabillas, bolsillos y bragueta. 8 piezas.",
+    pieces: 8,
     fields: ["cintura", "cadera", "tiro", "largo", "muslo"],
     iconPath: "M8 3h8v7l-1 11h-3l-.5-10h-1L10 21H7l-1-11z",
   },
@@ -1448,8 +1577,8 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
     kind: "short",
     name: "Short",
     tag: "short · mezclilla",
-    blurb: "Pierna recta y corta, con pretina y bolsillos traseros.",
-    pieces: 4,
+    blurb: "Short de cinco bolsillos: canesú, pretina, trabillas, bolsillos y bragueta. 10 piezas.",
+    pieces: 10,
     fields: ["cintura", "cadera", "tiro", "largo", "muslo", "bajo"],
     iconPath: "M7 3h10l1 8-1 9h-4l-1-8-1 8H7l-1-9z",
     defaults: { largo: 45, muslo: 58, bajo: 31 },
@@ -1458,8 +1587,8 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
     kind: "bermuda",
     name: "Bermuda",
     tag: "bermuda · gabardina",
-    blurb: "Pierna recta a la rodilla, con pinza trasera, pretina y bolsillos.",
-    pieces: 4,
+    blurb: "Pierna recta a la rodilla, con pliegue al frente, pinza trasera, pretina, trabillas, bolsillos y bragueta. 6 piezas.",
+    pieces: 6,
     fields: ["cintura", "cadera", "tiro", "largo", "muslo", "bajo"],
     iconPath: "M7 3h10l1 10-1 8h-4l-1-9-1 9H7l-1-8z",
     defaults: { largo: 58, muslo: 58, bajo: 29 },
