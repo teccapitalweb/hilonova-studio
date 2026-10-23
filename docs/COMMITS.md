@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 68
+> Rama: `dev/mvp-9-nov` · Commits: 70
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,47 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## feat(studio): ayuda dentro de la app, guía del lienzo vacío y arreglo del patrón en blanco
+
+- Commit: `030a4b7`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: botón «Ayuda» en la barra de arriba (con un punto naranja hasta la primera vez que se abre) que
+abre una ventana con cuatro pestañas: «Esta pantalla» (la ayuda de la pantalla en que está el alumno,
+para las 9 pantallas), «Primeros pasos», «Patrón en blanco» (paso a paso) y «Herramientas y atajos»
+(las 12 herramientas con su letra y los atajos del teclado). Un proyecto en blanco sin piezas muestra sobre
+el lienzo una guía con tres formas de empezar (dibujar con polilínea, curva o rectángulo; abrir la
+biblioteca de piezas; elegir una prenda base) y un enlace a la guía completa; desaparece al dibujar la
+primera pieza. Arreglo de un defecto: en un patrón en blanco el programa asumía un pantalón, así que cambiar
+una medida en «Medidas» redibujaba el pantalón y borraba lo dibujado; ahora el botón dice «En blanco · sin
+medidas» y cambiar medidas no hace nada en un patrón en blanco. El documento de demostración del editor
+ahora trae su tipo de prenda (si no, se habría tomado por uno en blanco). La biblioteca de piezas pasó a
+guardarse en el almacén (libOpen) para poder abrirla desde la guía.
+Por qué: el alumno que elegía «En blanco» veía un lienzo vacío sin pistas, y un clic en Medidas le podía borrar
+el trabajo; no había ninguna ayuda dentro del programa.
+Verificación: 560 pruebas (10 nuevas: la ayuda cubre las 9 pantallas, los atajos documentados son los mismos del
+editor, no promete vista 3D, y un patrón en blanco no se borra al cambiar medidas pero uno de prenda base sí
+se redibuja); tipos y build de producción correctos; probado en la app: guía del lienzo vacío, dibujar una pieza
+desde la guía, ventana de ayuda, cerrar con Esc.
+Archivos: apps/web/app/studio/{Ayuda.tsx,ayuda-contenido.ts,Shell.tsx,Canvas.tsx,store.ts,Proyectos.tsx,studio.css},
+packages/blocks/src/index.ts, tests/ayuda.test.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `3a4a038`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## feat(web): las 17 prendas con su foto en la galería de bloques
 
