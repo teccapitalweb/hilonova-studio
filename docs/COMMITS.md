@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 74
+> Rama: `dev/mvp-9-nov` · Commits: 76
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,44 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## feat(web): planes Aprendiz, Taller y Equipo con solo lo que el software cumple
+
+- Commit: `527f899`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: la pantalla de planes, la sección de precios de la landing, la cuenta y el registro pasan de los planes
+Taller / Maquila / Industrial a Aprendiz ($149 al mes; los primeros 3 meses incluidos con el curso), Taller
+($390 de lanzamiento, después $490) y Equipo ($990 de lanzamiento, después $1,290), más IVA. Se quitó el plan
+Industrial (SSO y API no existen) y lo que no es cierto: "graduación completa 28-44" (solo hay 28-36), "DXF-AAMA
+nativo" (ahora "DXF estilo AAMA, en validación"), "8 usuarios con roles" (las cuentas de equipo con roles
+"llegan después"), "soporte por WhatsApp" y "El más usado" (ahora "Recomendado"). La tabla comparativa y las
+preguntas frecuentes se reescribieron; la pantalla de planes trae un aviso de que el cobro todavía no está activo
+y los límites aún no se aplican. Las sesiones guardadas con los planes anteriores pasan al plan que los
+reemplaza (maquila e industrial a equipo) y los usuarios del plan salen de una sola tabla.
+Por qué: la propuesta de docs/PROPUESTA-PLANES.md, aprobada por el usuario para mostrársela al jefe con planes
+que sí se puedan cumplir.
+Verificación: 571 pruebas (11 nuevas: los tres planes, precio de lanzamiento menor al normal, usuarios 1/2/8, no
+aparecen 28-44, SSO, API, WhatsApp, nativo ni Industrial, el DXF dice "en validación", migración de las sesiones
+viejas); tipos y build correctos; revisadas la pantalla de planes y la landing en la app.
+Archivos: apps/web/app/{lib/auth.ts,pricing/page.tsx,page.tsx,account/page.tsx,auth/signup/page.tsx,(saas)/saas.css},
+tests/planes.test.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `f410208`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## docs: propuesta de planes y costos
 
