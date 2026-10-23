@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 61
+> Rama: `dev/mvp-9-nov` · Commits: 64
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,54 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## feat(web): fotos de las prendas en la galería de bloques
+
+- Commit: `fdb3157`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: en "Elige un bloque para empezar" las 12 prendas cuyo patrón ya coincide con su foto de
+referencia (pantalón denim, pantalón de vestir, playera básica, falda recta, blusa clásica, short,
+bermuda, vestido básico, camisa manga corta, polo, chaleco y pantalón cargo) muestran su foto en la
+tarjeta en lugar del ícono. Las fotos son recortes de las imágenes de referencia, cuadrados de
+320 px en webp (2 a 6 KB cada uno, 17 KB el short). Chamarra, sudadera, falda en A, jogger y camisa de
+hombre siguen con ícono hasta cerrar sus detalles pendientes (paneles, cordones y cuello con botones).
+Por qué: se pidió que las prendas que ya están bien se vean con su imagen real.
+Verificación: revisado en la app (escritorio): las fotos cargan (200) y las prendas pendientes
+conservan el ícono; la lista de prendas con foto está en apps/web/app/app/new/page.tsx (PHOTOS).
+Archivos: apps/web/app/app/new/page.tsx, apps/web/app/app/new/new.css, apps/web/public/img/prendas/*.webp
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## fix(blocks): ruedo curvo en la blusa clásica
+
+- Commit: `d993f5c`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: la blusa clásica ahora tiene el ruedo curvo (los costados 6 cm más arriba que el centro, igual
+que las camisas), como en la foto de referencia. En la prueba de rotación de un grupo de piezas se
+cambió la medida: comparaba el centro de la caja de cada pieza, que cambia al girar una forma
+asimétrica; ahora usa el promedio de los nodos, que se conserva al girar.
+Por qué: la foto de la blusa muestra el ruedo curvo y el patrón lo traía recto.
+Verificación: 538 pruebas (la de ruedo curvo incluye ahora la blusa), tipos sin errores.
+Archivos: packages/blocks/src/index.ts, tests/audit-patrones.test.ts, tests/editor.test.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `df85273`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## feat(blocks): faldas, blusa, vestido, camisas, jogger, cargo y chamarra más cerca de las fotos; líneas internas en el DXF
 
