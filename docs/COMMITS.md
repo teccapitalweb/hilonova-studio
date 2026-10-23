@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 90
+> Rama: `dev/mvp-9-nov` · Commits: 92
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,44 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## feat: borradores de términos de uso y aviso de privacidad, enlazados desde el registro
+
+- Commit: `af4e715`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: se crean las páginas /terminos y /privacidad como borrador, escritas según lo que el programa hace hoy: datos
+que se recaban (nombre, correo, taller; contraseña solo en Firebase; Google si se usa), dónde se guardan los
+patrones (hoy en el navegador), finalidades, proveedores (Google/Firebase), derechos de acceso, rectificación,
+cancelación y oposición, almacenamiento del navegador, plan y precio (tomados de las constantes del programa),
+cupón de alumnos, cancelación, uso adecuado y avisos (moldes de apoyo, DXF en validación, respaldos). Todos los datos
+de la empresa quedan resaltados como «POR COMPLETAR» (razón social, domicilio, correo de contacto, cancelación y
+reembolsos, fecha, tribunales) y cada página trae un aviso de borrador pendiente de revisión legal. En el registro,
+«términos» y «privacidad» ahora abren esas páginas en pestaña nueva (antes apuntaban a «#»).
+Por qué: el registro pedía aceptar documentos que no existían y en México hace falta un aviso de privacidad visible
+antes de recabar datos personales. No se inventaron datos de la empresa ni se redactó un texto como si fuera final.
+Verificación: ambas páginas revisadas en el navegador (se ven los datos pendientes resaltados, 9 en términos; el
+precio y el cupón salen de las constantes); los enlaces del registro apuntan a /terminos/ y /privacidad/. 6 pruebas
+nuevas (tests/legal.test.ts) que impiden escribir correos, razones sociales o precios a mano; 625 pruebas pasan y los
+tipos compilan. El texto NO está revisado por un abogado.
+Archivos: apps/web/app/legal/{LegalPage,PrivacidadContent,TerminosContent}.tsx, apps/web/app/{terminos,privacidad}/page.tsx,
+apps/web/app/auth/signup/page.tsx, apps/web/app/(saas)/saas.css, tests/legal.test.ts, docs/FIREBASE-PASOS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `05e3ff5`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## feat: cuentas reales con Firebase (correo y contraseña, Google) con modo de prueba de respaldo
 
