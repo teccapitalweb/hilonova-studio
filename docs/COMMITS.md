@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 76
+> Rama: `dev/mvp-9-nov` · Commits: 78
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,44 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## feat(web): plan único a $490 y código de descuento para alumnos (sin meses gratis ni plan de aprendiz)
+
+- Commit: `e85abdb`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: se reemplazan los tres planes por uno solo, "Estudio", a $490 al mes más IVA (el precio original más bajo),
+con todo el programa y hasta 2 usuarios. Se quitan el plan Aprendiz, el precio de lanzamiento, los "3 meses
+incluidos con el curso" y el cobro anual. Los alumnos del curso pagan el mismo plan con un código de descuento
+de un solo uso que vale 24 horas desde que lo reciben; la pantalla de planes y la landing lo explican (el monto
+se confirma antes de activar el cobro) pero no lo validan, porque aún no hay cobro. La pantalla de planes pasa de
+tres tarjetas y tabla comparativa a una tarjeta, la explicación del código y preguntas frecuentes. Las sesiones
+guardadas con planes anteriores pasan al plan único. Los documentos de la propuesta de planes y de las preguntas
+para el jefe se actualizan: plan único, comisiones de Stripe sobre $490, código de descuento (monto, a cuántos
+pagos aplica, desde cuándo cuentan las 24 horas, cómo le llega al alumno).
+Por qué: el usuario pidió manejar un solo costo (el original) y no tener precios por partes; el descuento para
+alumnos va por código y no por un plan distinto.
+Verificación: 571 pruebas (el plan es uno solo, $490, 2 usuarios; no aparecen precios por partes ni meses gratis;
+no prometen 28-44, SSO, API, WhatsApp, nativo ni roles; el DXF dice "en validación"; las sesiones viejas migran);
+tipos y build correctos; revisadas en la app la pantalla de planes y la cuenta.
+Archivos: apps/web/app/{lib/auth.ts,pricing/page.tsx,page.tsx,account/page.tsx,auth/signup/page.tsx},
+tests/planes.test.ts, docs/PROPUESTA-PLANES.md, docs/PREGUNTAS-PARA-EL-JEFE.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `e2a95e8`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## feat(web): planes Aprendiz, Taller y Equipo con solo lo que el software cumple
 
