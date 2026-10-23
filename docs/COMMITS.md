@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 96
+> Rama: `dev/mvp-9-nov` · Commits: 98
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,37 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## feat: conectar el programa al proyecto de Firebase «hilonova-studio»
+
+- Commit: `5fbba86`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: se pone la configuración pública del proyecto de Firebase creado por el negocio (hilonova-studio, plan Spark) en
+lib/firebase-config.ts. Con eso el programa sale del modo de prueba: el registro pide contraseña, aparece «Continuar con
+Google» y las cuentas son reales. La guía docs/FIREBASE-PASOS.md deja constancia del proyecto y de lo que falta probar.
+Por qué: el negocio ya creó el proyecto, activó correo/contraseña y Google y creó Firestore.
+Verificación: la llave de API fue aceptada por Google (una consulta de entrada con un correo falso respondió «credenciales
+inválidas», no «llave inválida»); el registro del programa muestra la contraseña y el botón de Google, sin el de Apple y sin
+el aviso de modo de prueba; el SDK de Firebase se carga sin errores de consola; 631 pruebas pasan y los tipos compilan. NO se
+creó ninguna cuenta en el proyecto real: el primer registro lo hace una persona del negocio.
+Archivos: apps/web/app/lib/firebase-config.ts, docs/FIREBASE-PASOS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `821f12c`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## fix: corregir textos del plan y no anunciar el acceso de alumnos con cifras
 
