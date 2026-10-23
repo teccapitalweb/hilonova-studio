@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 51
+> Rama: `dev/mvp-9-nov` · Commits: 53
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,35 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## docs: preguntas para el jefe sobre planes y cobro
+
+- Commit: `5aa858f`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: docs/PREGUNTAS-PARA-EL-JEFE.md con las decisiones que faltan para construir el cobro:
+cómo se vende el software, los planes y precios, el precio para alumnos del curso, forma de
+pago (Stripe), factura, fechas y publicación.
+Por qué: el cobro y las cuentas dependen de decisiones de negocio, no técnicas.
+Verificación: texto revisado contra lo que hay en la app (pantalla de planes y cuenta, que hoy
+son una simulación sin cobro).
+Archivos: docs/PREGUNTAS-PARA-EL-JEFE.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `8da737a`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md con el paquete de prueba de Gerber.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## docs: paquete de prueba de los DXF en Gerber
 
