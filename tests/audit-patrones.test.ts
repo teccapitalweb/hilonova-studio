@@ -48,9 +48,13 @@ function widthAt(s: P[], y: number): number {
   return xs.length ? Math.max(...xs) - Math.min(...xs) : NaN;
 }
 
-/** Una pinza es una "V" abierta en el contorno: al coser se cierra, así que se le quita la punta. */
+/** Las bocas de las pinzas de una pieza ya cosida: al coser, el borde entre los dos puntos de la boca desaparece. */
+const mouthsOf = new WeakMap<Piece, Array<[Piece["nodes"][number], Piece["nodes"][number]]>>();
+
+/** Una pinza es una "V" abierta en el contorno: al coser se cierra, así que se le quita la punta (y la boca no cuenta como borde). */
 function closeDarts(piece: Piece): Piece {
   let nodes = piece.nodes;
+  const mouths: Array<[Piece["nodes"][number], Piece["nodes"][number]]> = [];
   for (let guard = 0; guard < 12; guard++) {
     const n = nodes.length;
     let apex = -1;
@@ -66,18 +70,29 @@ function closeDarts(piece: Piece): Piece {
       }
     }
     if (apex < 0) break;
+    mouths.push([nodes[(apex - 1 + nodes.length) % nodes.length]!, nodes[(apex + 1) % nodes.length]!]);
     nodes = nodes.filter((_, i) => i !== apex);
   }
-  return { ...piece, nodes };
+  const out = { ...piece, nodes };
+  mouthsOf.set(out, mouths);
+  return out;
 }
 
-/** Largo del tramo más corto del contorno entre dos nodos. */
+/** Largo del tramo más corto del contorno entre dos nodos; si pasa por la boca de una pinza ya cosida, esa boca no cuenta. */
 function run(piece: Piece, i: number, j: number): number {
   const n = piece.nodes.length;
+  const mouths = mouthsOf.get(piece) ?? [];
   const way = (step: 1 | -1) => {
     const idx: number[] = [];
     for (let k = i; ; k = (k + step + n) % n) { idx.push(k); if (k === j) break; }
-    return plen(samplePath({ ...piece, closed: false, nodes: idx.map((k) => piece.nodes[k]!) }, 24));
+    let len = plen(samplePath({ ...piece, closed: false, nodes: idx.map((k) => piece.nodes[k]!) }, 24));
+    for (let q = 0; q + 1 < idx.length; q++) {
+      const a = piece.nodes[idx[q]!]!, b = piece.nodes[idx[q + 1]!]!;
+      if (mouths.some(([m1, m2]) => (m1.id === a.id && m2.id === b.id) || (m1.id === b.id && m2.id === a.id))) {
+        len -= plen(samplePath({ ...piece, closed: false, nodes: [a, b] }, 24));
+      }
+    }
+    return len;
   };
   return Math.min(way(1), way(-1));
 }
@@ -88,6 +103,29 @@ const direct = (piece: Piece, i: number, j: number): number =>
 
 const named = (doc: PatternDoc, re: RegExp, not?: RegExp): Piece | undefined =>
   doc.pieces.find((p) => re.test(p.name) && !(not && not.test(p.name)));
+
+/** Ancho que de verdad hay a la altura y: suma de los tramos dentro de la pieza (los huecos de las pinzas no cuentan). */
+function netWidthAt(s: P[], y: number): number {
+  const xs: number[] = [];
+  for (let i = 0, j = s.length - 1; i < s.length; j = i++) {
+    const a = s[i]!, b = s[j]!;
+    if (a.y > y !== b.y > y) xs.push(a.x + ((y - a.y) * (b.x - a.x)) / (b.y - a.y));
+  }
+  xs.sort((p, q) => p - q);
+  let t = 0;
+  for (let k = 0; k + 1 < xs.length; k += 2) t += xs[k + 1]! - xs[k]!;
+  return t;
+}
+
+/** Cintura ya cosida de una falda: suma de las piezas con las pinzas cerradas. */
+function netWaist(d: PatternDoc): number {
+  let w = 0;
+  for (const p of d.pieces.filter((q) => /^(Delantero|Espalda)/.test(q.name))) {
+    const s = samplePath(p, 24);
+    w += p.quantity * netWidthAt(s, Math.min(...s.map((q) => q.y)) + 0.05);
+  }
+  return w;
+}
 
 const front = (d: PatternDoc) => named(d, /^Delantero/, /Forro|Vista/)!;
 const back = (d: PatternDoc) => named(d, /^Espalda/, /Forro|Vista/)!;
@@ -396,7 +434,7 @@ describe("el resto de prendas según las fotos de referencia", () => {
     for (const size of draft("falda-a").sizes) {
       const d = gradeDoc(draft("falda-a"), size);
       const h = Math.max(...samplePath(front(d), 24).map((p) => p.y)) - Math.min(...samplePath(front(d), 24).map((p) => p.y));
-      const ratio = circ(d, h - 1) / circ(d, 1);
+      const ratio = circ(d, h - 1) / netWaist(d);
       expect(ratio, size).toBeGreaterThan(1.6);
       expect(ratio, size).toBeLessThan(2.1);
     }
@@ -431,7 +469,9 @@ describe("el resto de prendas según las fotos de referencia", () => {
         const center = ns.find((n) => Math.abs(n.at.y - maxY) < 1e-6)!;
         const maxX = Math.max(...ns.map((n) => n.at.x));
         const side = ns.filter((n) => n.at.x > maxX - 1).reduce((a, n) => (n.at.y > a.at.y ? n : a));
-        expect(center.at.y - side.at.y, `${kind} ${size} ${p.name}`).toBeGreaterThan(5);
+        // el delantero de la blusa baja de más en el costado lo que se come la pinza de busto (1-5 cm según la talla): cosida queda a ~6
+        const min = kind === "blusa-clasica" && p === front(d) ? 0.5 : 5;
+        expect(center.at.y - side.at.y, `${kind} ${size} ${p.name}`).toBeGreaterThan(min);
         expect(center.at.y - side.at.y, `${kind} ${size} ${p.name}`).toBeLessThan(7);
       }
     }
@@ -443,5 +483,14 @@ describe("el resto de prendas según las fotos de referencia", () => {
     expect(count(draft("pantalon-cargo"), "Vista de bragueta")).toBe(1);
     expect(count(draft("chamarra-mezclilla"), "Bolsa de bolsillo lateral")).toBe(2);
     expect(count(draft("chamarra-mezclilla"), "Vivo de bolsillo lateral")).toBe(4);
+  });
+});
+
+describe("las pinzas no le quitan medida a la prenda ya cosida", () => {
+  it.each(["falda-recta", "falda-a"] as BlockKind[])("%s: la cintura cosida es la medida de cintura más una holgura de 0 a 6 cm", (kind) => {
+    const m = defaultMeasurementsFor(kind);
+    const waist = netWaist(draft(kind));
+    expect(waist - m.cintura, `${kind}: cintura neta ${waist.toFixed(1)}`).toBeGreaterThanOrEqual(0);
+    expect(waist - m.cintura, `${kind}: cintura neta ${waist.toFixed(1)}`).toBeLessThanOrEqual(6);
   });
 });

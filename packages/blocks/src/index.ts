@@ -523,10 +523,14 @@ export function draftFaldaRecta(m: BodyMeasurements): PatternDoc {
   front.nodes[2] = { ...front.nodes[2]!, notch: true };
   back.nodes[2] = { ...back.nodes[2]!, notch: true };
 
-  // pinzas de cintura: 1 en el delantero y 1 en la espalda por mitad; absorben la diferencia con la cadera
+  // pinzas de cintura: 1 en el delantero y 1 en la espalda por mitad; absorben la diferencia con la cadera.
+  // La pinza se come su ancho del borde de la cintura, así que el borde se hace más ancho en esa medida:
+  // ya cosida, la cintura queda en la medida.
   const dartDiff = qCadera - qCintura;
   const wF = clamp(dartDiff * 0.4, 1.2, 3);
   const wB = clamp(dartDiff * 0.55, 1.5, 3.5);
+  front.nodes[1] = { ...front.nodes[1]!, at: { x: qCintura + wF, y: 0 } };
+  back.nodes[1] = { ...back.nodes[1]!, at: { x: bOff + qCintura + wB, y: 0 } };
   front.nodes = dartAt(front, { x: qCintura * 0.5, y: 0 }, wF, { x: qCintura * 0.5, y: 9 }).nodes;
   back.nodes = dartAt(back, { x: bOff + qCintura * 0.5, y: 0 }, wB, { x: bOff + qCintura * 0.5, y: 12 }).nodes;
 
@@ -570,6 +574,7 @@ export function draftPantalonVestir(m: BodyMeasurements): PatternDoc {
   const bx = back0.nodes[0]!.at.x + (back0.nodes[1]!.at.x - back0.nodes[0]!.at.x) * 0.45;
   const by = back0.nodes[0]!.at.y + (back0.nodes[1]!.at.y - back0.nodes[0]!.at.y) * 0.45;
   const dartW = clamp(((m.cadera + 2) / 4 - qW) * 0.5, 1.5, 3.5);
+  back0.nodes[1] = { ...back0.nodes[1]!, at: { x: back0.nodes[1]!.at.x + dartW, y: back0.nodes[1]!.at.y } };
   const back = dartAt(back0, { x: bx, y: by }, dartW, { x: bx, y: by + 12 });
   doc.pieces = layoutRows([[front, back], dressTrouserExtras(m.cintura, F)]);
   return doc;
@@ -662,8 +667,8 @@ export function draftBlusaClasica(m: BodyMeasurements): PatternDoc {
       { handleIn: { x: 0, y: -3 }, handleOut: { x: 0, y: 3 } },
     ),
     node({ x: qF, y: sisa }, { notch: true, handleIn: { x: -2.5, y: -1.5 } }),
-    node({ x: qWF, y: largoT }),
-    node({ x: qHF, y: hemY - 6 }, { handleOut: { x: -qHF * 0.4, y: 5.5 } }),
+    node({ x: qWF, y: largoT + bustDartWidth(busto) }),
+    node({ x: qHF, y: hemY - 6 + bustDartWidth(busto) }, { handleOut: { x: -qHF * 0.4, y: 5.5 } }),
     node({ x: -ext, y: hemY }, { handleIn: { x: qHF * 0.35, y: 0 } }),
   ];
 
@@ -1060,7 +1065,9 @@ function draftTrouser(m: BodyMeasurements, o: TrouserOpts): PatternDoc {
     // el borde de cintura de la espalda va de (-3, -2.5) a (qW - 1.5, -0.5): la pinza cae al 45 % del borde
     const bx = -3 + (qW - 1.5 + 3) * 0.45;
     const by = -2.5 + 2 * 0.45;
-    back.nodes = dartAt(back, { x: bx, y: by }, clamp((qH - qW) * 0.5, 1.5, 3.5), { x: bx, y: by + 12 }).nodes;
+    const dw = clamp((qH - qW) * 0.5, 1.5, 3.5);
+    back.nodes[1] = { ...back.nodes[1]!, at: { x: back.nodes[1]!.at.x + dw, y: back.nodes[1]!.at.y } };
+    back.nodes = dartAt(back, { x: bx, y: by }, dw, { x: bx, y: by + 12 }).nodes;
   }
 
   const extras = o.extras ? o.extras({ qW, hemTotal, cintura: m.cintura }) : [];
@@ -1168,6 +1175,9 @@ export function draftFaldaA(m: BodyMeasurements): PatternDoc {
   const dartDiff = qH - qW;
   const wF = clamp(dartDiff * 0.4, 1.2, 3);
   const wB = clamp(dartDiff * 0.55, 1.5, 3.5);
+  // el borde de la cintura crece lo que se come cada pinza
+  front.nodes = front.nodes.map((nd) => (nd.at.y === 0 && nd.at.x > 0 && Math.abs(nd.at.x - qW) < 1e-6 ? { ...nd, at: { x: qW + wF, y: 0 } } : nd.at.y === 0 && nd.at.x < 0 && Math.abs(nd.at.x + qW) < 1e-6 ? { ...nd, at: { x: -qW - wF, y: 0 } } : nd));
+  back.nodes[1] = { ...back.nodes[1]!, at: { x: qW + 0.5 + wB, y: 0 } };
   for (const sign of [1, -1]) {
     front.nodes = dartAt(front, { x: sign * qW * 0.5, y: 0 }, wF, { x: sign * qW * 0.5, y: 9 }).nodes;
   }
@@ -1195,14 +1205,17 @@ export function draftVestidoBasico(m: BodyMeasurements): PatternDoc {
   const qWF = (m.cintura + 4) / 4 - 0.5;
   const qHF = (m.cadera + 6) / 4 - 0.5;
   const qHemF = qHF + 5;
+  // la pinza de busto del costado se come su ancho del largo del costado: el delantero es esa medida
+  // más largo del costado hacia abajo, y ya cosido queda igual que la espalda
+  const bw = bustDartWidth(t.busto);
 
   const front = mk("Delantero", 1, F, fullFromHalf([
     node({ x: 0, y: dF }, { notch: true, handleOut: { x: nF * 0.55, y: 0 } }),
     node({ x: nF, y: 0 }, { notch: true, handleIn: { x: 0, y: dF * 0.55 } }),
     ...armholeNodes(sx, 3.5, t.qF, t.sisa, 2.2),
-    node({ x: qWF, y: waistY }, { notch: true }),
-    node({ x: qHF, y: hipY }),
-    node({ x: qHemF, y: hemY }),
+    node({ x: qWF, y: waistY + bw }, { notch: true }),
+    node({ x: qHF, y: hipY + bw }),
+    node({ x: qHemF, y: hemY + bw }),
     node({ x: 0, y: hemY + 0.8 }, { notch: true }),
   ]));
   const back = mk("Espalda", 2, F, [
