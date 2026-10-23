@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import PlanGate from "../components/PlanGate";
 import SaasNav from "../(saas)/SaasNav";
 import { useSession, findPlan } from "../lib/auth";
 import { useLibrary, deleteItem, saveItem } from "../lib/library";
@@ -10,6 +11,14 @@ import { samplePath, deserialize, type Piece, type PatternDoc } from "@hilonova/
 import "../(saas)/saas.css";
 
 export default function AppDashboard() {
+  return (
+    <PlanGate>
+      <Dashboard />
+    </PlanGate>
+  );
+}
+
+function Dashboard() {
   const session = useSession();
   const router = useRouter();
   const items = useLibrary();

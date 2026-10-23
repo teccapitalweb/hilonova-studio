@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import SaasNav from "../(saas)/SaasNav";
 import { signOut, useSession, findPlan } from "../lib/auth";
+import { STATUS_LABEL } from "../lib/billing-core";
+import { billingErrorMessage, openBillingPortal, startCheckout, usePlanStatus } from "../lib/billing";
 import { useLibrary } from "../lib/library";
 import "../(saas)/saas.css";
 
@@ -14,6 +16,21 @@ export default function AccountPage() {
   const session = useSession();
   const router = useRouter();
   const items = useLibrary();
+  const planStatus = usePlanStatus();
+  const [billingBusy, setBillingBusy] = useState(false);
+  const [billingError, setBillingError] = useState<string | null>(null);
+
+  async function billingAction(fn: () => Promise<void>) {
+    setBillingBusy(true);
+    setBillingError(null);
+    try {
+      await fn();
+    } catch (err) {
+      setBillingBusy(false);
+      setBillingError(billingErrorMessage(err));
+      console.warn("cobro falló:", err);
+    }
+  }
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -128,13 +145,47 @@ export default function AccountPage() {
           {/* facturación */}
           <section className="acc-card">
             <h2>Facturación</h2>
-            <p>Método de pago y recibos.</p>
-            <div className="acc-row"><span>Método</span><span className="v">—</span></div>
-            <div className="acc-row"><span>Próximo cargo</span><span className="v">—</span></div>
-            <div className="acc-row"><span>Historial</span><span className="v">Sin movimientos</span></div>
-            <p className="acc-foot-note">
-              Añadiremos pagos cuando conectemos Stripe (Fase futura).
-            </p>
+            {planStatus.state === "disabled" ? (
+              <>
+                <p>Método de pago y recibos.</p>
+                <div className="acc-row"><span>Método</span><span className="v">—</span></div>
+                <div className="acc-row"><span>Próximo cargo</span><span className="v">—</span></div>
+                <p className="acc-foot-note">El cobro todavía no está activo.</p>
+              </>
+            ) : (
+              <>
+                <p>Tu suscripción y tus recibos.</p>
+                <div className="acc-row">
+                  <span>Estado</span>
+                  <span className="v">
+                    {planStatus.state === "loading" || planStatus.state === "unknown"
+                      ? "Comprobando…"
+                      : planStatus.via === "cortesia"
+                        ? "Acceso activo"
+                        : planStatus.subscription
+                          ? (STATUS_LABEL[planStatus.subscription.status] ?? planStatus.subscription.status)
+                          : "Sin plan"}
+                  </span>
+                </div>
+                {planStatus.subscription?.currentPeriodEnd && planStatus.via === "suscripcion" && (
+                  <div className="acc-row">
+                    <span>{planStatus.subscription.cancelAtPeriodEnd ? "Termina el" : "Próximo cargo"}</span>
+                    <span className="v">{new Date(planStatus.subscription.currentPeriodEnd).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}</span>
+                  </div>
+                )}
+                {billingError && <div className="auth-error" role="alert"><span>{billingError}</span></div>}
+                {planStatus.subscription ? (
+                  <button className="btn-primary-pill" style={{ marginTop: 12 }} disabled={billingBusy} onClick={() => billingAction(openBillingPortal)}>
+                    {billingBusy ? "Abriendo…" : "Administrar suscripción"}
+                  </button>
+                ) : planStatus.state === "inactive" ? (
+                  <button className="btn-primary-pill" style={{ marginTop: 12 }} disabled={billingBusy} onClick={() => billingAction(startCheckout)}>
+                    {billingBusy ? "Abriendo…" : "Activar plan"}
+                  </button>
+                ) : null}
+                <p className="acc-foot-note">Desde «Administrar suscripción» puedes cambiar tu tarjeta, ver recibos y cancelar.</p>
+              </>
+            )}
           </section>
 
           {/* peligro */}

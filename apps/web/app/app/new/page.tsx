@@ -7,6 +7,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import PlanGate from "../../components/PlanGate";
 import SaasNav from "../../(saas)/SaasNav";
 import { useSession } from "../../lib/auth";
 import { saveItem } from "../../lib/library";
@@ -42,6 +43,14 @@ const PHOTOS: Record<BlockKind, string> = {
 };
 
 export default function NewPatternPage() {
+  return (
+    <PlanGate>
+      <NewPattern />
+    </PlanGate>
+  );
+}
+
+function NewPattern() {
   const router = useRouter();
   const session = useSession();
   const [busy, setBusy] = useState<BlockKind | null>(null);

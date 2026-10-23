@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// Cada persona solo puede leer y escribir su propio perfil y sus propios patrones. Lo demás está cerrado.
+// Cada persona solo puede leer y escribir su propio perfil y sus propios patrones, y leer su estado de plan. Lo demás está cerrado.
 // Se pega en la consola de Firebase → Firestore Database → Reglas → Publicar.
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -25,6 +25,20 @@ service cloud.firestore {
                             && request.resource.data.createdAt is string
                             && request.resource.data.updatedAt is string;
       allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+    // Cobro: cada persona solo LEE lo suyo. Quien escribe aquí son las funciones de cobro (con permisos de
+    // administrador, que no pasan por estas reglas) y, a mano, el negocio desde la consola de Firebase.
+    match /customers/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+      match /subscription/{id} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        allow write: if false;
+      }
+    }
+    match /access/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
     }
     match /{document=**} {
       allow read, write: if false;
