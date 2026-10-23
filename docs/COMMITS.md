@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 57
+> Rama: `dev/mvp-9-nov` · Commits: 61
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,86 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## feat(blocks): faldas, blusa, vestido, camisas, jogger, cargo y chamarra más cerca de las fotos; líneas internas en el DXF
+
+- Commit: `c1ca4ae`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: falda recta con pretina y abertura trasera (3 cm de vista por mitad, 20 cm de alto, con piquete);
+falda en A con más vuelo (el bajo pasa de 1.5 a ~1.8 veces la cintura, como en la foto); blusa y
+vestido con pinzas de talle en forma de pez (líneas internas, no cortan la pieza); camisas con ruedo
+curvo (los costados 6 cm más arriba que el centro); jogger con bolsas de bolsillo lateral, cargo con
+bolsas de bolsillo delantero y bragueta, chamarra con bolsillos laterales y sus vivos. El DXF ahora
+escribe las líneas internas (pinzas de talle, abertura del polo) en la capa 6 (InternalLine) y junto a su
+pieza, sin rótulo; antes iban en la capa de contorno (1_Boundary), donde Gerber podría tomarlas por
+una pieza rota.
+Por qué: la comparación con las fotos de referencia mostró estas diferencias de pieza y de forma.
+Verificación: 537 pruebas (9 nuevas, entre ellas que las líneas internas caen dentro de su pieza en
+el DXF base y graduado), tipos sin errores, build de producción correcto y revisión de blusa, vestido y
+falda recta en la app. No se tocó: cuello con botones de la camisa de hombre, cordón del jogger y de la
+sudadera, paneles cosidos de la falda en A y de la chamarra; el canesú del jean es recto y el pliegue
+del pantalón de vestir y la bermuda es solo cintura más ancha con piquetes (debe validarlo un patronista).
+Archivos: packages/blocks/src/index.ts, packages/export/src/dxf.ts, tests/audit-patrones.test.ts,
+tests/dxf.test.ts, tests/editor.test.ts
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## feat(blocks): piezas de los pantalones y shorts según las fotos de referencia
+
+- Commit: `755c456`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: el pantalón de mezclilla y el short pasan de 2-4 piezas a 10 (cinco bolsillos): la espalda
+se parte en canesú + espalda baja (corte horizontal a 6.5 cm, con piquetes), y se agregan pretina,
+6 trabillas, bolsa y vista de bolsillo delantero, bolsillo trasero, bolsillo moneda y vista de
+bragueta. El pantalón de vestir (8 piezas) y la bermuda (6) ahora marcan el pliegue del frente
+(la cintura del delantero crece 3 cm y dos piquetes marcan el doblez); el de vestir además trae pinza
+trasera, pretina, trabillas, bolsas de bolsillo lateral y trasero, vivos y bragueta; la bermuda suma
+trabillas y bragueta. El pantalón de vestir deja de derivarse del de mezclilla con piezas sobrantes.
+Por qué: las fotos del cliente muestran jeans de cinco bolsillos y pantalones de vestir con pliegues,
+pretina y trabillas; el patrón solo traía delantero y espalda y no alcanzaba para producirlos.
+Verificación: 528 pruebas (9 nuevas: piezas y cantidades de cada prenda, canesú de 5-11 cm que encaja
+con la espalda en todas las tallas, dos piquetes de pliegue, pretina = cintura + 4); la prueba de
+contorno ahora cuenta el canesú; revisado en la app (2D) denim y vestir. Simplificaciones que debe
+validar un patronista: el canesú es recto (el de un jean real suele ir en V), el pliegue es solo
+la cintura más ancha con piquetes, y las bolsas de bolsillo son medidas estándar.
+Archivos: packages/blocks/src/index.ts, tests/audit-patrones.test.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## fix(blocks): playera básica con manga corta y cuello de rib
+
+- Commit: `b211d45`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: la playera básica traía la manga con el largo del brazo completo (60 cm, manga larga) y
+un trapecio sin ajustar a la sisa, y no tenía pieza de cuello. Ahora la manga es corta (37 % del
+largo del brazo, 22 cm con el brazo de 60, limitado entre 18 y 26) y su cabeza se calcula contra
+la sisa del delantero y la espalda (sisa + 0.5 cm), igual que las demás prendas; se agrega la
+pieza "Cuello de rib" (tira que mide 85 % del escote) y el catálogo pasa de 3 a 4 piezas.
+Por qué: la foto de referencia del cliente es una playera de manga corta con cuello de rib; el
+patrón decía "manga corta" en el catálogo pero dibujaba manga larga.
+Verificación: 519 pruebas (2 nuevas: manga corta que cierra con la sisa en las 5 tallas, y rib al
+85 % del escote); revisada en la app.
+Archivos: packages/blocks/src/index.ts, tests/audit-patrones.test.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `d958ac2`
+- Fecha: 2026-10-22
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## feat(studio): guardado automático, aviso si no se puede guardar y recordatorio de respaldo
 
