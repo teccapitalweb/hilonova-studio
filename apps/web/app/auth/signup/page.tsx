@@ -70,11 +70,6 @@ function SignUpForm() {
           "Nido de tallas automático",
           "Export PDF, SVG, DXF y ficha técnica",
         ]}
-        quote={{
-          text: "Lo que entra como medida sale como patrón listo para producir.",
-          name: "Rodrigo Pérez",
-          role: "Supervisor · Maquila León",
-        }}
       />
       <main className="auth-form">
         <div className="auth-form-inner">

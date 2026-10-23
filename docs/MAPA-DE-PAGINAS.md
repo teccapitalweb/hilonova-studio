@@ -85,3 +85,20 @@ Esto requiere acceso al dominio (DNS) y es una decisión de quien lo administre.
 3. Preparar en `hilonova-web` el botón y la sección "Software" (queda lista pero **sin publicar** hasta que haya a dónde enlazar).
 4. Con las respuestas del jefe: cuentas, cobro con Stripe y cupón de alumnos.
 5. Probar el DXF en Gerber y la validación del maestro; después, publicar.
+
+## 7. Lo que ya se conectó (23 de octubre, solo en local)
+
+Se decidió trabajar con **HiloNova CAD** (la página de venta) y **HiloNova Studio** (el programa). Quedaron conectados así:
+
+- **Carpeta `HiloNova-CAD`, rama local `dev/conectar-con-studio`** (no subida):
+  - `index.html` es una página nueva que funciona sola, con el plan único y el cupón de alumnos, y con capturas reales del programa.
+  - `app.html` redirige al programa.
+  - `programa/` es el programa compilado (sitio estático); se llega desde los botones "Entrar", "Crear cuenta" y "Ver el plan y el cupón".
+- **Carpeta `hilonova-studio`:** el script `scripts/publicar-en-cad.mjs` compila el programa con la ruta `/programa` y lo copia a `HiloNova-CAD/programa`. Se quitaron los testimonios inventados de las pantallas de entrar y crear cuenta.
+- **No se tocó `hilonova-web`** (el sitio de formación); ahí falta agregar el botón "Software".
+
+**Cómo verlo en local:** con el servidor de la carpeta de CAD abierto (`python -m http.server 8099 --directory C:\dev\hilonova\HiloNova-CAD`), abrir `http://localhost:8099/`. Abrir los archivos con doble clic no funciona (los enlaces y las rutas necesitan un servidor).
+
+**Para publicarlo hay que decidir la dirección:** con un dominio propio (por ejemplo `software.hilonovamx.com`) basta la ruta `/programa` y se publica la carpeta `HiloNova-CAD` tal cual. Si se publica en una carpeta (por ejemplo `usuario.github.io/HiloNova-CAD/`), se vuelve a generar con `node scripts/publicar-en-cad.mjs "" /HiloNova-CAD/programa`.
+
+**Pendiente antes de publicar:** la portada propia del programa (la de `hilonova-studio`) sigue con frases que no son ciertas, pero ya no se publica dentro de CAD (su lugar lo toma la página de CAD). Los botones "Continuar con Google" y "Continuar con Apple" de entrar y crear cuenta no son reales: crean una cuenta de mentira con un nombre inventado. Hay que quitarlos o conectarlos de verdad cuando existan las cuentas.

@@ -29,7 +29,8 @@ export interface AuthAsideProps {
    *  pero mantenemos la prop por compatibilidad con las páginas de auth. */
   photoPath?: string;
   features?: string[];      // puntos con check
-  quote: AsideQuote;
+  /** Opcional: solo con testimonios reales y autorizados (hoy no hay ninguno). */
+  quote?: AsideQuote;
 }
 
 export default function AuthAside({
@@ -70,7 +71,7 @@ export default function AuthAside({
     };
   }, []);
 
-  const initials = quote.name
+  const initials = (quote?.name ?? "")
     .split(" ").map((p) => p[0] ?? "").join("").slice(0, 2).toUpperCase();
 
   return (
@@ -127,16 +128,18 @@ export default function AuthAside({
         )}
       </div>
 
-      <blockquote className="auth-quote">
-        <p>"{quote.text}"</p>
-        <div className="who">
-          <span className="who-av">{initials}</span>
-          <div>
-            <b>{quote.name}</b>
-            <small>{quote.role}</small>
+      {quote && (
+        <blockquote className="auth-quote">
+          <p>"{quote.text}"</p>
+          <div className="who">
+            <span className="who-av">{initials}</span>
+            <div>
+              <b>{quote.name}</b>
+              <small>{quote.role}</small>
+            </div>
           </div>
-        </div>
-      </blockquote>
+        </blockquote>
+      )}
     </aside>
   );
 }

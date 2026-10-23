@@ -48,11 +48,6 @@ export default function SignInPage() {
         title="Bienvenido de vuelta."
         subtitle="Tus patrones, tu equipo y tu flujo de producción — justo donde los dejaste."
         photoPath="/img/contexto.jpg"
-        quote={{
-          text: "Dejamos de re-digitalizar patrones. Lo que diseñamos es lo que cortan.",
-          name: "Lucía Mendoza",
-          role: "Patronista · Confecciones Puebla",
-        }}
       />
       <main className="auth-form">
         <div className="auth-form-inner">
