@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 84
+> Rama: `dev/mvp-9-nov` · Commits: 86
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,39 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## feat: script para colgar el programa dentro del sitio de CAD y quitar testimonios inventados
+
+- Commit: `a9a405d`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: scripts/publicar-en-cad.mjs compila el programa como sitio estático con una ruta base (por omisión /programa),
+lo copia a ../HiloNova-CAD/programa, quita el video, las fotos de la portada y el logo-kit que ahí no se usan
+(conserva las fotos de las prendas de la galería) y deja un index.html que redirige a la pantalla de entrar. Se
+quitan los testimonios inventados ("Lucía Mendoza" y "Rodrigo Pérez") de las pantallas de entrar y de crear cuenta:
+la propiedad quote de AuthAside pasa a ser opcional y no se usa. Se agrega al mapa de páginas lo que ya quedó
+conectado, cómo verlo en local, cómo cambiar la ruta para publicar y lo pendiente (botones de Google y Apple
+falsos, portada con frases no ciertas).
+Por qué: conectar la página de HiloNova CAD con el programa real y no publicar testimonios que nadie dio.
+Verificación: tipos sin errores; el script generó programa/ en HiloNova-CAD y se probó en local el recorrido completo.
+Archivos: scripts/publicar-en-cad.mjs, apps/web/app/auth/{AuthAside.tsx,signin/page.tsx,signup/page.tsx},
+docs/MAPA-DE-PAGINAS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `a5fd961`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## docs: mapa de las tres piezas (sitio de formación, página de CAD y el programa) y cómo conectarlas
 
