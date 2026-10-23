@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 78
+> Rama: `dev/mvp-9-nov` · Commits: 80
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,43 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## feat(web): cupón de alumnos = un mes con el programa completo y 3 exportaciones
+
+- Commit: `f956850`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: la oferta para los alumnos del curso deja de ser un % de descuento y pasa a ser un cupón de un solo uso,
+que se canjea dentro de las 24 horas desde que se recibe, con 1 mes con el programa completo y un tope de 3
+exportaciones en total (cuenta como exportación cada archivo que sale: DXF, PDF, SVG, ficha técnica o trazo; el
+respaldo de los proyectos no cuenta). Todos los demás pagan el plan de $490 al mes desde el primer día, sin mes
+gratis. Los números viven en un solo archivo (lib/oferta.ts) que leen la pantalla de planes, la página principal y
+las pruebas. Se actualizan la propuesta de planes (cupón, costos sin descuento, qué construir) y las preguntas para
+el jefe (qué pasa el día 31, si se pide tarjeta, desde cuándo cuentan las 24 horas, cómo le llega el cupón).
+Por qué: el usuario aclaró que el cupón es solo para alumnos, que durante el mes tienen acceso a todo y que el
+límite es de 3 exportaciones, para que quieran pagar el segundo mes.
+Verificación: 574 pruebas (3 nuevas: la oferta es 1 mes, 3 exportaciones, 24 horas y un solo uso; el plan sigue siendo
+uno solo a $490; el respaldo no cuenta como exportación); tipos y build correctos; revisadas la pantalla de planes
+y la página principal en la app. Aún no se aplica: contar exportaciones por persona requiere cuentas reales y
+servidor.
+Archivos: apps/web/app/{lib/oferta.ts,pricing/page.tsx,page.tsx}, tests/oferta.test.ts,
+docs/PROPUESTA-PLANES.md, docs/PREGUNTAS-PARA-EL-JEFE.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `5398b40`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## feat(web): plan único a $490 y código de descuento para alumnos (sin meses gratis ni plan de aprendiz)
 
