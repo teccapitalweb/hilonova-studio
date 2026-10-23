@@ -8,7 +8,7 @@ import { signOut, useSession, findPlan } from "../lib/auth";
 import { useLibrary } from "../lib/library";
 import "../(saas)/saas.css";
 
-const PATTERN_LIMIT: Record<string, number> = { taller: 50, maquila: 200, industrial: 9999 };
+const PATTERN_LIMIT: Record<string, number> = { aprendiz: 10, taller: 9999, equipo: 9999 };
 
 export default function AccountPage() {
   const session = useSession();
@@ -32,7 +32,7 @@ export default function AccountPage() {
   }
 
   const plan = findPlan(session.org.plan);
-  const limit = PATTERN_LIMIT[plan.id] ?? 50;
+  const limit = PATTERN_LIMIT[plan.id] ?? 9999;
   const usagePct = Math.min(100, (items.length / limit) * 100);
 
   const initials = session.user.name
@@ -71,8 +71,8 @@ export default function AccountPage() {
               <div>
                 <span className="acc-plan-chip">{plan.name}</span>
                 <h2 style={{ marginTop: 10 }}>
-                  {plan.priceMxn !== null ? `$${plan.priceMxn.toLocaleString("es-MX")} MXN` : "A medida"}
-                  {plan.priceMxn !== null && <small> {plan.pricePer}</small>}
+                  {`$${plan.priceMxn.toLocaleString("es-MX")} MXN`}
+                  <small> {plan.pricePer}</small>
                 </h2>
                 <p>{plan.blurb}</p>
               </div>

@@ -7,7 +7,17 @@
 
 import { useEffect, useState } from "react";
 
-export type PlanId = "taller" | "maquila" | "industrial";
+export type PlanId = "aprendiz" | "taller" | "equipo";
+
+/** Usuarios que incluye cada plan. */
+const SEATS: Record<PlanId, number> = { aprendiz: 1, taller: 2, equipo: 8 };
+
+/** Las sesiones guardadas con los planes anteriores (maquila, industrial) pasan al plan que los reemplaza. */
+export function normalizePlan(plan: string | undefined): PlanId {
+  if (plan === "aprendiz" || plan === "taller" || plan === "equipo") return plan;
+  if (plan === "maquila" || plan === "industrial") return "equipo";
+  return "taller";
+}
 
 export interface Session {
   user: { id: string; name: string; email: string };
@@ -21,7 +31,10 @@ function readSession(): Session | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as Session) : null;
+    if (!raw) return null;
+    const s = JSON.parse(raw) as Session;
+    const plan = normalizePlan(s.org?.plan);
+    return { ...s, org: { ...s.org, plan, seats: SEATS[plan] } };
   } catch {
     return null;
   }
@@ -50,7 +63,7 @@ export function signUp(name: string, email: string, orgName?: string, plan: Plan
       id: "org_" + Math.random().toString(36).slice(2, 10),
       name: orgName ?? (`${name.split(" ")[0] ?? "Taller"} de ${name.split(" ").slice(-1)[0] ?? ""}`.trim() || "Mi taller"),
       plan,
-      seats: plan === "taller" ? 2 : plan === "maquila" ? 8 : 20,
+      seats: SEATS[plan],
     },
     since: new Date().toISOString(),
   };
@@ -88,7 +101,7 @@ export function getSession(): Session | null {
 export function updatePlan(plan: PlanId): Session | null {
   const s = readSession();
   if (!s) return null;
-  const seats = plan === "taller" ? 2 : plan === "maquila" ? 8 : 20;
+  const seats = SEATS[plan];
   const next: Session = { ...s, org: { ...s.org, plan, seats } };
   writeSession(next);
   return next;
@@ -117,58 +130,72 @@ export function useSession(): Session | null {
 export interface PlanMeta {
   id: PlanId;
   name: string;
-  priceMxn: number | null;
+  /** precio mensual vigente, en MXN, más IVA */
+  priceMxn: number;
+  /** precio normal al terminar el lanzamiento (si lo hay) */
+  regularPriceMxn?: number;
   pricePer: string;
+  /** aclaración corta bajo el precio */
+  priceNote?: string;
   seats: number;
   blurb: string;
   features: string[];
   popular?: boolean;
 }
 
+/**
+ * Los planes solo prometen lo que el software hace hoy (ver docs/PROPUESTA-PLANES.md). El cobro, las cuentas
+ * reales y los límites por plan todavía no existen: esta lista es lo que se mostraría al activarlos.
+ */
 export const PLANS: readonly PlanMeta[] = [
+  {
+    id: "aprendiz",
+    name: "Aprendiz",
+    priceMxn: 149,
+    pricePer: "/ mes",
+    priceNote: "Los primeros 3 meses van incluidos con el curso",
+    seats: SEATS.aprendiz,
+    blurb: "Para los alumnos del curso: aprende y practica con todo el editor.",
+    features: [
+      "1 usuario",
+      "Hasta 10 proyectos guardados",
+      "17 prendas base con sus piezas",
+      "Graduación y trazo con consumo por talla",
+      "Ficha técnica en PDF",
+      "Exportar PDF y SVG",
+      "Ayuda dentro de la app",
+    ],
+  },
   {
     id: "taller",
     name: "Taller",
-    priceMxn: 490,
+    priceMxn: 390,
+    regularPriceMxn: 490,
     pricePer: "/ mes",
-    seats: 2,
+    seats: SEATS.taller,
     blurb: "Para el patronista independiente y talleres chicos.",
-    features: [
-      "2 usuarios",
-      "Patrones ilimitados",
-      "Bloques de mezclilla",
-      "Export PDF mosaico y plotter",
-    ],
-  },
-  {
-    id: "maquila",
-    name: "Maquila",
-    priceMxn: 1290,
-    pricePer: "/ mes",
-    seats: 8,
-    blurb: "Para talleres de confección en producción constante.",
     popular: true,
     features: [
-      "8 usuarios con roles",
-      "Export DXF-AAMA nativo",
-      "Graduación completa 28–44",
-      "Trazo, consumo y Tech Pack",
-      "Soporte por WhatsApp",
+      "2 usuarios",
+      "Proyectos ilimitados",
+      "Todo lo de Aprendiz",
+      "Exportar DXF estilo AAMA (en validación)",
+      "PDF a escala 1:1 para plotter",
+      "Soporte por correo",
     ],
   },
   {
-    id: "industrial",
-    name: "Industrial",
-    priceMxn: null,
-    pricePer: "A medida",
-    seats: 20,
-    blurb: "Para maquilas grandes y marcas con varias líneas.",
+    id: "equipo",
+    name: "Equipo",
+    priceMxn: 990,
+    regularPriceMxn: 1290,
+    pricePer: "/ mes",
+    seats: SEATS.equipo,
+    blurb: "Para talleres y maquilas con varias personas.",
     features: [
-      "Usuarios ilimitados",
-      "Todo lo de Maquila",
-      "Inicio de sesión corporativo (SSO)",
-      "Soporte prioritario y onboarding",
-      "Acceso a la API",
+      "Hasta 8 usuarios (las cuentas de equipo con roles llegan después)",
+      "Todo lo de Taller",
+      "Soporte por correo con respuesta en 1 día hábil",
     ],
   },
 ] as const;

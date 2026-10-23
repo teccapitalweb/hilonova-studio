@@ -8,7 +8,7 @@ import AuthAside from "../AuthAside";
 import SsoButtons from "../SsoButtons";
 import "../../(saas)/saas.css";
 
-const PLAN_SET = new Set(["taller", "maquila", "industrial"]);
+const PLAN_SET = new Set(["aprendiz", "taller", "equipo"]);
 
 // useSearchParams (?plan=...) requiere Suspense en export estático.
 export default function SignUpPage() {
@@ -63,12 +63,12 @@ function SignUpForm() {
       <AuthAside
         eyebrow="Del patrón al corte, sin fricción"
         title="Lleva tu patronaje al estándar de la industria."
-        subtitle="Diseña, gradúa y exporta DXF-AAMA listo para tu Gerber o Lectra. Todo desde el navegador."
+        subtitle="Diseña, gradúa y traza tus patrones. Todo desde el navegador."
         photoPath="/img/testimonio.jpg"
         features={[
           "Bloques paramétricos reales",
           "Nido de tallas automático",
-          "Export DXF, PDF y Tech Pack",
+          "Export PDF, SVG, DXF y ficha técnica",
         ]}
         quote={{
           text: "Lo que entra como medida sale como patrón listo para producir.",

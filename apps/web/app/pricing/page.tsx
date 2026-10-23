@@ -33,8 +33,7 @@ export default function PricingPage() {
     }
   }
 
-  function displayPrice(mxn: number | null): { amt: string; per: string } {
-    if (mxn === null) return { amt: "A medida", per: "" };
+  function displayPrice(mxn: number): { amt: string; per: string } {
     if (cycle === "yearly") {
       // 2 meses gratis = 10 meses al año; cobro anual
       const yearly = mxn * 10;
@@ -55,6 +54,10 @@ export default function PricingPage() {
           </span>
           <h1>Un plan por cada tamaño de taller.</h1>
           <p>Empieza en minutos, crece cuando lo necesites. Sin instalación, sin contratos atados.</p>
+          <p className="price-notice">
+            Propuesta en revisión: el cobro todavía no está activo. Elegir un plan solo cambia la etiqueta de tu
+            cuenta de prueba y los límites de cada plan aún no se aplican. Los precios son más IVA.
+          </p>
           <div className="cycle-toggle" role="tablist" aria-label="Ciclo de facturación">
             <button
               role="tab"
@@ -81,17 +84,20 @@ export default function PricingPage() {
             const p = displayPrice(plan.priceMxn);
             return (
               <article key={plan.id} className={`price-card${plan.popular ? " pop" : ""}`}>
-                {plan.popular && <span className="pbadge">El más usado</span>}
+                {plan.popular && <span className="pbadge">Recomendado</span>}
                 <div className="pn">{plan.name}</div>
                 <p className="pd">{plan.blurb}</p>
                 <div className="ppri">
-                  <span className={`amt mono ${plan.priceMxn === null ? "sm" : ""}`}>{p.amt}</span>
+                  <span className="amt mono">{p.amt}</span>
                   <span className="per">{p.per}</span>
                 </div>
                 <div className="pnote">
-                  {plan.priceMxn !== null
-                    ? (cycle === "yearly" ? "Equivale a 2 meses gratis" : "MXN · mensual")
-                    : "Hablemos de tu operación"}
+                  {cycle === "yearly"
+                    ? "MXN · equivale a 2 meses gratis"
+                    : plan.priceNote ??
+                      (plan.regularPriceMxn
+                        ? `Precio de lanzamiento · después $${plan.regularPriceMxn.toLocaleString("es-MX")}`
+                        : "MXN · mensual")}
                 </div>
                 <ul className="pfeats">
                   {plan.features.map((f) => (
@@ -121,23 +127,27 @@ export default function PricingPage() {
               <thead>
                 <tr>
                   <th>Función</th>
-                  <th>Taller</th>
-                  <th className="hl">Maquila</th>
-                  <th>Industrial</th>
+                  <th>Aprendiz</th>
+                  <th className="hl">Taller</th>
+                  <th>Equipo</th>
                 </tr>
               </thead>
               <tbody>
                 {COMPARE.map((row) => (
                   <tr key={row.label}>
                     <td>{row.label}</td>
-                    <td>{renderCell(row.taller)}</td>
-                    <td className="hl">{renderCell(row.maquila)}</td>
-                    <td>{renderCell(row.industrial)}</td>
+                    <td>{renderCell(row.aprendiz)}</td>
+                    <td className="hl">{renderCell(row.taller)}</td>
+                    <td>{renderCell(row.equipo)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          <p className="price-foot" style={{ textAlign: "left", marginTop: 10 }}>
+            El DXF estilo AAMA está pensado para abrirse en Gerber y Lectra, pero todavía está en validación.
+            Las cuentas de equipo con roles llegan después.
+          </p>
         </section>
 
         {/* FAQ corto */}
@@ -146,8 +156,8 @@ export default function PricingPage() {
           <div className="faq-grid">
             <div><h4>¿Puedo cambiar de plan después?</h4><p>Sí, en cualquier momento desde Cuenta → Cambiar plan.</p></div>
             <div><h4>¿Hay prueba gratis?</h4><p>Puedes crear tu cuenta y hacer un patrón de principio a fin sin pagar nada.</p></div>
-            <div><h4>¿Factura con IVA?</h4><p>Sí, para planes anuales emitimos CFDI con IVA desglosado.</p></div>
-            <div><h4>¿Soporte en español?</h4><p>Siempre. Por WhatsApp en Maquila e Industrial.</p></div>
+            <div><h4>¿Los precios llevan IVA?</h4><p>Los precios son más IVA. La factura (CFDI) se define antes de activar el cobro.</p></div>
+            <div><h4>¿Soporte en español?</h4><p>Siempre. Ayuda dentro de la app en todos los planes y correo en Taller y Equipo.</p></div>
           </div>
         </section>
 
@@ -166,16 +176,17 @@ function renderCell(v: boolean | string): React.ReactNode {
   return <span className="mono">{v}</span>;
 }
 
-const COMPARE: Array<{ label: string; taller: boolean | string; maquila: boolean | string; industrial: boolean | string }> = [
-  { label: "Usuarios", taller: "2", maquila: "8", industrial: "ilimitados" },
-  { label: "Patrones", taller: "50", maquila: "200", industrial: "ilimitados" },
-  { label: "Bloques paramétricos", taller: true, maquila: true, industrial: true },
-  { label: "Nido de tallas", taller: true, maquila: true, industrial: true },
-  { label: "Export PDF mosaico", taller: true, maquila: true, industrial: true },
-  { label: "Export DXF-AAMA", taller: false, maquila: true, industrial: true },
-  { label: "Tech Pack PDF", taller: false, maquila: true, industrial: true },
-  { label: "Trazo y consumo", taller: false, maquila: true, industrial: true },
-  { label: "SSO corporativo", taller: false, maquila: false, industrial: true },
-  { label: "API", taller: false, maquila: false, industrial: true },
-  { label: "Soporte", taller: "comunidad", maquila: "WhatsApp", industrial: "prioritario" },
+type Cell = boolean | string;
+const COMPARE: Array<{ label: string; aprendiz: Cell; taller: Cell; equipo: Cell }> = [
+  { label: "Usuarios", aprendiz: "1", taller: "2", equipo: "8" },
+  { label: "Proyectos guardados", aprendiz: "10", taller: "ilimitados", equipo: "ilimitados" },
+  { label: "17 prendas base", aprendiz: true, taller: true, equipo: true },
+  { label: "Graduación (S–XL, XS–XXL, 28–36)", aprendiz: true, taller: true, equipo: true },
+  { label: "Trazo y consumo por talla", aprendiz: true, taller: true, equipo: true },
+  { label: "Ficha técnica PDF", aprendiz: true, taller: true, equipo: true },
+  { label: "Exportar PDF y SVG", aprendiz: true, taller: true, equipo: true },
+  { label: "Exportar DXF estilo AAMA", aprendiz: false, taller: true, equipo: true },
+  { label: "PDF 1:1 para plotter", aprendiz: false, taller: true, equipo: true },
+  { label: "Cuentas de equipo con roles", aprendiz: false, taller: false, equipo: "después" },
+  { label: "Soporte", aprendiz: "ayuda en la app", taller: "correo", equipo: "correo 1 día hábil" },
 ];

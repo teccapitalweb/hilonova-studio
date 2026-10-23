@@ -855,3 +855,10 @@
 .price-foot { text-align: center; color: var(--ink-3); font-size: 13.5px; margin-top: 48px; }
 .price-foot a { color: var(--accent); font-weight: 700; text-decoration: none; }
 .dim { color: var(--ink-3); font-family: var(--font-m); }
+
+/* aviso de la pantalla de planes: el cobro aún no está activo */
+.price-notice {
+  max-width: 640px; margin: 14px auto 0; padding: 10px 14px; border-radius: 10px;
+  background: rgba(240,102,44,.08); border: 1px dashed rgba(240,102,44,.45);
+  color: var(--ink-2, #4a5068); font-size: 13px; line-height: 1.5;
+}
