@@ -32,6 +32,7 @@ export function getFirebase(): Promise<Handles> {
       : FIREBASE_CONFIG;
     const app = getApps()[0] ?? initializeApp(options);
     const auth = getAuth(app);
+    auth.languageCode = "es"; // correos de verificación y de cambio de contraseña en español
     if (AUTH_EMULATOR) connectAuthEmulator(auth, AUTH_EMULATOR, { disableWarnings: true });
     return { app, auth };
   })();
