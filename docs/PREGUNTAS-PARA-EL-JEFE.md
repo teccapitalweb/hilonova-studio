@@ -19,7 +19,7 @@ Se propone **un solo plan con un solo precio**: **$490 al mes** más IVA, con to
 - **¿Se aprueba el plan único a $490?** Sí / No / Otro precio: ________
 - **¿El precio lleva IVA incluido o se suma?** ________
 - **¿Se ofrece después un plan de equipo con varios usuarios y roles?** Sí / No
-- **¿Quién atenderá el soporte por correo que dice la tarjeta, y con qué tiempo de respuesta?** (Si nadie lo va a atender, se quita.) ________
+- **¿Quién atenderá el soporte por WhatsApp que dice la tarjeta (236 120 7101), y con qué horario y tiempo de respuesta?** (Si nadie lo va a atender, se quita.) ________
 
 ## 3. Cupón para los alumnos del curso
 

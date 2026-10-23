@@ -1,6 +1,6 @@
-// Oferta para los alumnos del curso. Es la única fuente de estos números: la pantalla de planes, la página
-// principal y las pruebas los leen de aquí. Todavía no se aplica (no hay cobro ni cuentas): se aplicará con un
-// cupón de Stripe cuando existan.
+// Oferta para los alumnos del curso. Es la única fuente de estos números. Por decisión del negocio
+// no se anuncian en las páginas públicas (solo se dan a conocer al entregar el cupón). Todavía no se aplica (no hay
+// cobro ni cuentas): se aplicará con un cupón de Stripe cuando existan.
 
 export const STUDENT_OFFER = {
   /** meses gratis con el programa completo */

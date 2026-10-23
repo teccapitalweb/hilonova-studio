@@ -293,7 +293,7 @@ export interface PlanModule {
 export interface PlanMeta {
   id: PlanId;
   name: string;
-  /** precio mensual en MXN, más IVA: el mismo para todos (los alumnos del curso tienen un cupón de un mes) */
+  /** precio mensual en MXN, más IVA: el mismo para todos */
   priceMxn: number;
   pricePer: string;
   seats: number;
@@ -317,15 +317,15 @@ export const PLANS: readonly PlanMeta[] = [
     priceMxn: 490,
     pricePer: "/ mes",
     seats: SEATS.completo,
-    blurb: "Todo el programa, para el patronista, el taller chico y el alumno del curso.",
+    blurb: "Todo el programa, para el patronista y el taller chico.",
     popular: true,
     modules: [
-      { title: "Patronaje 2D", items: "12 herramientas de dibujo, biblioteca de piezas y 17 prendas base" },
+      { title: "Patronaje 2D", items: "12 herramientas, biblioteca de piezas y 17 prendas base" },
       { title: "Graduación", items: "Automática y manual. S–XL, XS–XXL y 28–36" },
       { title: "Trazo", items: "Consumo de tela por talla y porcentaje de aprovechamiento" },
       { title: "Producción", items: "Ficha técnica, variantes de modelo y exportar PDF, SVG y DXF estilo AAMA (en validación)" },
     ],
-    extras: "Proyectos ilimitados · ayuda dentro de la app · soporte por correo",
+    extras: "Proyectos ilimitados · ayuda dentro de la app · soporte por WhatsApp",
   },
 ] as const;
 

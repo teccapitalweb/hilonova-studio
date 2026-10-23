@@ -1,7 +1,6 @@
 import Link from "next/link";
 import ScrollReveal from "./components/ScrollReveal";
 import { NavCta, HeroCta } from "./LandingAuthCta";
-import { STUDENT_OFFER } from "./lib/oferta";
 
 /** path reutilizable del delantero de pantalón */
 const PANT =
@@ -366,7 +365,7 @@ export default function HomePage() {
         <div className="pricing" style={{ gridTemplateColumns: "minmax(0, 440px)", justifyContent: "center" }}>
           <div className="plan pop">
             <h3>Completo</h3>
-            <div className="pd">Todo el programa, para el patronista, el taller chico y el alumno del curso.</div>
+            <div className="pd">Todo el programa, para el patronista y el taller chico.</div>
             <div className="price"><span className="amt mono">$490</span><span className="per">/ mes</span></div>
             <div className="note">MXN · más IVA</div>
             <button className="pcta fill">Crear cuenta</button>
@@ -375,16 +374,12 @@ export default function HomePage() {
               <li><Check /> <b>Graduación:</b> automática y manual (S–XL, XS–XXL y 28–36)</li>
               <li><Check /> <b>Trazo:</b> consumo por talla y % de aprovechamiento</li>
               <li><Check /> <b>Producción:</b> ficha técnica, variantes y exportar PDF, SVG y DXF estilo AAMA (en validación)</li>
-              <li><Check /> Proyectos ilimitados, ayuda en la app y soporte por correo</li>
+              <li><Check /> Proyectos ilimitados, ayuda en la app y soporte por WhatsApp</li>
             </ul>
           </div>
         </div>
         <p style={{ textAlign: "center", fontSize: 13, opacity: 0.75, marginTop: 14 }}>
-          ¿Tomaste el curso? Recibes un cupón de un solo uso, para canjear en {STUDENT_OFFER.redeemHours} horas: te da{" "}
-          {STUDENT_OFFER.freeMonths} mes con el programa completo y {STUDENT_OFFER.exports} exportaciones. Los demás pagan el
-          plan desde el primer día.
-          <br />
-          Propuesta en revisión: el cobro todavía no está activo.
+          El cobro todavía no está activo.
         </p>
       </section>
 

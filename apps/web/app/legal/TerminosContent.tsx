@@ -2,7 +2,6 @@
 
 import LegalPage from "./LegalPage";
 import { findPlan } from "../lib/auth";
-import { STUDENT_OFFER } from "../lib/oferta";
 
 export default function TerminosContent() {
   const plan = findPlan("completo");
@@ -29,9 +28,8 @@ export default function TerminosContent() {
         usuario. El cobro todavía no está activo; cuando lo esté, lo avisaremos antes de cobrar.
       </p>
       <p>
-        <b>Alumnos de los cursos de HiloNova:</b> reciben un cupón de un solo uso que se canjea dentro de las{" "}
-        {STUDENT_OFFER.redeemHours} horas siguientes a recibirlo y da {STUDENT_OFFER.freeMonths} mes de acceso completo, con
-        un máximo de {STUDENT_OFFER.exports} exportaciones en total.
+        Quienes toman los cursos de HiloNova pueden recibir un acceso especial al programa, con las condiciones que se les
+        indiquen al entregarlo.
       </p>
 
       <h2>4. Cancelación y reembolsos</h2>

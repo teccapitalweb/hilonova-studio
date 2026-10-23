@@ -918,3 +918,8 @@
 .legal-date { font-size: 14px !important; }
 .legal-back { margin-top: 36px; }
 .legal-back a { color: var(--accent); font-weight: 600; text-decoration: none; }
+
+.price-alumnos {
+  max-width: 760px; margin: 28px auto 0; text-align: center;
+  color: var(--ink-3, var(--ink-2)); font-size: 13.5px; line-height: 1.5;
+}

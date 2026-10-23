@@ -33,11 +33,11 @@ Decisión del 23 de octubre: **un solo plan con un solo precio** (el original, $
 | | **Completo** |
 |---|---|
 | Precio | **$490 al mes**, más IVA |
-| Patronaje 2D | 12 herramientas de dibujo, biblioteca de piezas y 17 prendas base |
+| Patronaje 2D | 12 herramientas, biblioteca de piezas y 17 prendas base |
 | Graduación | Automática y manual. S–XL, XS–XXL y 28–36 |
 | Trazo | Consumo de tela por talla y porcentaje de aprovechamiento |
 | Producción | Ficha técnica, variantes de modelo y exportar PDF, SVG y DXF estilo AAMA (en validación hasta probarlo en Gerber) |
-| Además | Proyectos ilimitados, ayuda dentro de la app y soporte por correo |
+| Además | Proyectos ilimitados, ayuda dentro de la app y soporte por WhatsApp |
 | Usuarios | 1 (las cuentas de equipo llegan después) |
 
 La tarjeta está organizada por los cuatro módulos que se pidieron para que se pueda revisar punto por punto contra la lista de lo solicitado.

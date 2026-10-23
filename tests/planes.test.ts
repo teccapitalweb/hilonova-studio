@@ -40,7 +40,8 @@ describe("plan único", () => {
 
   it("no promete lo que el programa no tiene", () => {
     const text = JSON.stringify(PLANS);
-    for (const banned of ["28–44", "28-44", "SSO", "API", "WhatsApp", "nativo", "roles"]) {
+    // el soporte por WhatsApp sí se ofrece (es el canal que existe); lo que no hay es soporte por correo
+    for (const banned of ["28–44", "28-44", "SSO", "API", "correo", "nativo", "roles"]) {
       expect(text, banned).not.toContain(banned);
     }
   });

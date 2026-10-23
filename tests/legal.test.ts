@@ -43,10 +43,13 @@ describe("páginas legales", () => {
     expect(terminos).toContain("23 de octubre de 2026");
   });
 
-  it("el precio y el cupón salen de las constantes del programa, no de números escritos a mano", () => {
+  it("el precio sale de las constantes del programa, no de números escritos a mano", () => {
     expect(terminos).toContain("findPlan");
-    expect(terminos).toContain("STUDENT_OFFER");
     expect(terminos).not.toMatch(/\$\s*490/);
+  });
+
+  it("el acceso de los alumnos no se anuncia con cifras ni «descuento»", () => {
+    expect(terminos).not.toMatch(/STUDENT_OFFER|descuento|gratis|exportaciones en total|24 horas/i);
   });
 
   it("el registro enlaza a las páginas reales, no a «#»", () => {
