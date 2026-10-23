@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 94
+> Rama: `dev/mvp-9-nov` · Commits: 96
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,44 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## fix: corregir textos del plan y no anunciar el acceso de alumnos con cifras
+
+- Commit: `3532b43`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: (1) «soporte por correo» pasa a «soporte por WhatsApp» (no hay ningún correo de soporte; el WhatsApp sí existe,
+es el del folleto del curso) en la tarjeta del plan, la portada del programa y las preguntas de precios; la pregunta
+para el jefe sobre quién atenderá el soporte se actualiza. (2) «12 herramientas de dibujo» pasa a «12 herramientas»
+(dos de las 12 son seleccionar y mover la vista). (3) El acceso de los alumnos deja de anunciarse con cifras: se
+quitan de la portada, de la página de precios (recuadro «mes gratis» y sección con 1 mes, 3 exportaciones y 24 horas)
+y de los términos; en su lugar queda una frase discreta («al terminar tu curso recibirás las indicaciones de tu
+acceso»). Las cifras siguen en lib/oferta.ts para cuando se construya el cupón. La portada ya no dice «el alumno del
+curso» en la descripción del plan. La prueba de planes deja de prohibir la palabra WhatsApp (ahora es el canal de
+soporte) y pasa a prohibir «correo».
+Por qué: el negocio pidió que el descuento de alumnos no fuera tan evidente en las páginas públicas, y la revisión de
+la información de la página de CAD contra el programa encontró estas dos frases que no coincidían con la realidad.
+Verificación: 631 pruebas pasan (nuevas: ninguna página pública muestra cifras, cupón, descuento ni «mes gratis», y
+el soporte es WhatsApp); tipos sin errores; programa recompilado en HiloNova-CAD/programa sin rastro de «cupón»,
+«mes gratis», «24 horas» ni «soporte por correo».
+Archivos: apps/web/app/{page.tsx,pricing/page.tsx,legal/TerminosContent.tsx,lib/auth.ts,lib/oferta.ts,(saas)/saas.css},
+tests/{oferta,legal,planes}.test.ts, docs/{PREGUNTAS-PARA-EL-JEFE,PROPUESTA-PLANES}.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `fe760ee`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## fix: términos y privacidad completos, sin campos pendientes ni letrero de borrador
 
