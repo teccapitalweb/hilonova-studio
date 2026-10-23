@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 98
+> Rama: `dev/mvp-9-nov` · Commits: 100
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,35 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## fix: correos de cuenta de Firebase en español
+
+- Commit: `7769f5b`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: se fija el idioma de Firebase Auth en español (auth.languageCode = "es") para que el correo de verificación y el de
+cambio de contraseña lleguen en español.
+Por qué: la primera prueba real del registro mostró que el correo de verificación llegaba en inglés («Verify your email
+for HiloNova»).
+Verificación: tipos sin errores y 631 pruebas pasan. El idioma del correo solo se puede comprobar con un registro real:
+queda pendiente que una persona del negocio cree otra cuenta de prueba o pida de nuevo el correo.
+Archivos: apps/web/app/lib/firebase.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `77c693f`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## feat: conectar el programa al proyecto de Firebase «hilonova-studio»
 
