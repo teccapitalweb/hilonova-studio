@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 72
+> Rama: `dev/mvp-9-nov` · Commits: 74
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,38 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## docs: propuesta de planes y costos
+
+- Commit: `3f87a49`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: docs/PROPUESTA-PLANES.md con lo que el software puede prometer hoy y lo que no (la pantalla de planes
+actual promete graduación 28-44, DXF nativo, 8 usuarios con roles, SSO, API y WhatsApp que no existen), tres
+planes propuestos (Aprendiz, Taller y Equipo) con precios de lanzamiento, comisiones de Stripe, costos estimados
+de operarlo, punto de equilibrio, el orden de lo que hay que construir y las decisiones que debe tomar el jefe.
+Por qué: el usuario pidió una propuesta de planes que el software sí pueda cumplir, con costos, para revisarla
+más tarde con el equipo.
+Verificación: las cuentas de comisión se recalcularon (3.6 % + $3 MXN + IVA sobre la comisión); las comisiones de
+Stripe y los precios de la competencia vienen de fuentes secundarias y están marcados para confirmar en las
+páginas oficiales; los costos de servidor son estimados.
+Archivos: docs/PROPUESTA-PLANES.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `c816231`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## docs: análisis de cumplimiento y preguntas para el maestro costurero
 
