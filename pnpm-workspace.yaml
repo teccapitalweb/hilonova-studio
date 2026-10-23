@@ -6,6 +6,8 @@ packages:
 allowBuilds:
   # ambos tienen postinstall scripts opcionales (polyfills de core-js, binario
   # nativo de sharp). No los necesitamos en dev — se habilitan si hacen falta.
+  '@firebase/util': false
   core-js: false
   esbuild: false
+  protobufjs: false
   sharp: false

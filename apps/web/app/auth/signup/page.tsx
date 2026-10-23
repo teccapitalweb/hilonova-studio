@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { signUp, type PlanId, findPlan } from "../../lib/auth";
+import { signUpAccount, type PlanId, findPlan } from "../../lib/auth";
+import { authErrorMessage } from "../../lib/auth-errors";
+import { firebaseConfigured } from "../../lib/firebase";
 import AuthAside from "../AuthAside";
 import SsoButtons from "../SsoButtons";
 import "../../(saas)/saas.css";
@@ -28,6 +30,7 @@ function SignUpForm() {
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [org, setOrg] = useState("");
   const [accept, setAccept] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -41,20 +44,21 @@ function SignUpForm() {
     return () => clearTimeout(t);
   }, [router]);
 
-  function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     if (!name.trim()) { setError("Escribe tu nombre para continuar."); return; }
     if (!email.trim() || !email.includes("@")) { setError("Necesitamos un correo válido."); return; }
+    if (firebaseConfigured() && password.length < 8) { setError("La contraseña debe tener al menos 8 caracteres."); return; }
     if (!accept) { setError("Debes aceptar los términos para crear la cuenta."); return; }
     setBusy(true);
     try {
-      signUp(name.trim(), email.trim(), org.trim() || undefined, plan);
+      await signUpAccount({ name, email, password, orgName: org });
       router.push("/app");
     } catch (err) {
       setBusy(false);
-      setError("No se pudo crear la cuenta. Intenta de nuevo o recarga la página.");
-      console.error("signUp failed:", err);
+      setError(authErrorMessage(err) || "No se pudo crear la cuenta. Intenta de nuevo.");
+      console.warn("signUp failed:", err);
     }
   }
 
@@ -80,7 +84,7 @@ function SignUpForm() {
             {" "}<Link href="/pricing" style={{ color: "var(--ink-2)" }}>Cambiar</Link>
           </p>
 
-          <SsoButtons />
+          <SsoButtons onError={setError} />
 
           {error && (
             <div className="auth-error" role="alert">
@@ -111,6 +115,17 @@ function SignUpForm() {
                 <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="tu@taller.mx" />
               </div>
             </div>
+            {firebaseConfigured() && (
+              <div className="field">
+                <label htmlFor="password">Contraseña</label>
+                <div className="input-wrap">
+                  <svg className="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M6 11V8a6 6 0 1 1 12 0v3M5 11h14v9H5v-9Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                  <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} autoComplete="new-password" placeholder="Mínimo 8 caracteres" />
+                </div>
+              </div>
+            )}
             <div className="field">
               <label htmlFor="org">Nombre de tu taller (opcional)</label>
               <div className="input-wrap">

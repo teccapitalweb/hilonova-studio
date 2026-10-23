@@ -14,6 +14,8 @@ const nextConfig = {
   trailingSlash: true,
   // GH Pages no tiene optimizador de imágenes.
   images: { unoptimized: true },
+  // Carpeta de compilación alterna (para tener un segundo servidor de pruebas sin pisar el de desarrollo).
+  ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
   basePath,
   assetPrefix: basePath || undefined,
   // Expuesto al cliente para prefijar <img>/<video> en src/app/page.tsx.

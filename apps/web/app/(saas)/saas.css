@@ -327,6 +327,28 @@
   line-height: 1.4;
 }
 .auth-error svg { flex: 0 0 auto; margin-top: 1px; }
+.auth-note, .auth-info {
+  padding: 12px 14px;
+  margin: 12px 0 4px;
+  border-radius: 10px;
+  background: #F2F5FA;
+  border: 1px solid #D5DCE8;
+  color: var(--ink-2);
+  font-size: .88rem;
+  line-height: 1.45;
+}
+.auth-info { background: #EEF8F1; border-color: #BFE3CB; color: #1E6B3A; }
+.forgot {
+  margin-top: 8px;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: .85rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
 .auth-form h1 {
   font-family: var(--font-d); color: var(--ink); font-weight: 800;
   font-size: clamp(26px,3vw,36px); letter-spacing: -0.025em; margin: 0;

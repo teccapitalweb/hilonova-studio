@@ -55,8 +55,8 @@ export default function SaasNav({ active }: { active?: "app" | "account" | "pric
                   <Link href="/pricing" onClick={() => setOpen(false)}>Plan ({session.org.plan})</Link>
                   <div className="mi-sep" />
                   <button
-                    onClick={() => {
-                      signOut();
+                    onClick={async () => {
+                      await signOut();
                       setOpen(false);
                       // volver al landing
                       window.location.href = "/";

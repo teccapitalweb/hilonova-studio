@@ -4,6 +4,7 @@ node_modules/
 
 # builds
 .next/
+.next-test/
 out/
 dist/
 build/

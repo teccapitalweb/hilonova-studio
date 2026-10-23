@@ -143,9 +143,9 @@ export default function AccountPage() {
             <p>Acciones que no se deshacen.</p>
             <button
               className="btn-outline-danger"
-              onClick={() => {
+              onClick={async () => {
                 if (confirm("¿Cerrar sesión? Tus patrones guardados en este navegador se mantienen.")) {
-                  signOut();
+                  await signOut();
                   router.push("/");
                 }
               }}

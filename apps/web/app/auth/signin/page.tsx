@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { signIn } from "../../lib/auth";
+import { sendPasswordReset, signInAccount } from "../../lib/auth";
+import { authErrorMessage } from "../../lib/auth-errors";
+import { firebaseConfigured } from "../../lib/firebase";
 import AuthAside from "../AuthAside";
 import SsoButtons from "../SsoButtons";
 import "../../(saas)/saas.css";
@@ -11,6 +13,8 @@ import "../../(saas)/saas.css";
 export default function SignInPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,23 +26,49 @@ export default function SignInPage() {
     return () => clearTimeout(t);
   }, [router]);
 
-  function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setInfo(null);
     const trimmed = email.trim();
     if (!trimmed || !trimmed.includes("@")) {
       setError("Necesitamos un correo válido para entrar.");
       return;
     }
+    if (firebaseConfigured() && !password) {
+      setError("Escribe tu contraseña.");
+      return;
+    }
     setBusy(true);
     try {
-      signIn(trimmed);
+      await signInAccount(trimmed, password);
       router.push("/app");
     } catch (err) {
       setBusy(false);
-      setError("No pudimos iniciar sesión. Recarga la página e intenta de nuevo.");
-      console.error("signIn failed:", err);
+      setError(authErrorMessage(err) || "No pudimos iniciar sesión. Inténtalo de nuevo.");
+      console.warn("signIn failed:", err);
     }
+  }
+
+  async function onForgot() {
+    setError(null);
+    setInfo(null);
+    const trimmed = email.trim();
+    if (!trimmed || !trimmed.includes("@")) {
+      setError("Escribe tu correo arriba y vuelve a pulsar «Olvidé mi contraseña».");
+      return;
+    }
+    try {
+      await sendPasswordReset(trimmed);
+    } catch (err) {
+      // Por privacidad no se dice si el correo existe; solo se avisa de fallas de conexión u otras.
+      const code = (err as { code?: string }).code;
+      if (code !== "auth/user-not-found") {
+        setError(authErrorMessage(err) || "No pudimos enviar el correo. Inténtalo de nuevo.");
+        return;
+      }
+    }
+    setInfo("Si ese correo tiene una cuenta, te enviamos un enlace para elegir una contraseña nueva. Revisa también la carpeta de spam.");
   }
 
   return (
@@ -54,7 +84,7 @@ export default function SignInPage() {
           <h1>Hola de nuevo.</h1>
           <p className="subtitle">Entra con tu cuenta para seguir con tus patrones.</p>
 
-          <SsoButtons />
+          <SsoButtons onError={setError} />
 
           {error && (
             <div className="auth-error" role="alert">
@@ -65,6 +95,8 @@ export default function SignInPage() {
               <span>{error}</span>
             </div>
           )}
+
+          {info && <div className="auth-info" role="status">{info}</div>}
 
           <form onSubmit={onSubmit}>
             <div className="field">
@@ -84,6 +116,18 @@ export default function SignInPage() {
                 />
               </div>
             </div>
+            {firebaseConfigured() && (
+              <div className="field">
+                <label htmlFor="password">Contraseña</label>
+                <div className="input-wrap">
+                  <svg className="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M6 11V8a6 6 0 1 1 12 0v3M5 11h14v9H5v-9Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                  <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" placeholder="Tu contraseña" />
+                </div>
+                <button type="button" className="forgot" onClick={onForgot}>Olvidé mi contraseña</button>
+              </div>
+            )}
             <button className="cta" type="submit" disabled={busy}>
               {busy ? "Entrando…" : "Iniciar sesión"}
               {!busy && (
@@ -93,7 +137,7 @@ export default function SignInPage() {
               )}
             </button>
             <p className="alt">
-              ¿Primera vez aquí? <Link href="/auth/signup">Crea tu cuenta gratis</Link>
+              ¿Primera vez aquí? <Link href="/auth/signup">Crea tu cuenta</Link>
             </p>
           </form>
         </div>
