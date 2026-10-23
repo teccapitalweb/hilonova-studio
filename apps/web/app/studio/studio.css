@@ -338,6 +338,8 @@
   border-radius: 4px;
   box-shadow: 0 20px 60px -24px rgba(0,0,0,.5);
   aspect-ratio: 210 / 297;         /* A4 ratio */
+  overflow: hidden;
+  flex: none;                      /* no se encoge en la columna de vista previa */
   display: flex;
   flex-direction: column;
 }
@@ -474,9 +476,11 @@
 .tp-flats {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
   gap: 16px;
   flex: 1;
+  min-height: 0;
+  margin-bottom: 14px;
 }
 .tp-flat {
   background: #fff;
@@ -492,7 +496,8 @@
 .tp-flat-svg {
   width: 100%;
   flex: 1;
-  max-height: 100%;
+  min-height: 0;
+  height: 0;
 }
 .tp-flat-label {
   font-size: 10.5px;

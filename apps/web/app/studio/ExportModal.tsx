@@ -33,14 +33,14 @@ const FORMATS: FormatMeta[] = [
     label: "PDF mosaico A4",
     ext: "pdf",
     mime: "application/pdf",
-    blurb: "Imprime en casa y pega las hojas. Incluye marcas de corte y numeración.",
+    blurb: "Imprime en casa y pega las hojas. Trae una hoja de instrucciones con un cuadro de 10 cm para comprobar la escala, y solo las hojas que llevan dibujo.",
   },
   {
     id: "techpack",
     label: "Tech Pack PDF",
     ext: "pdf",
     mime: "application/pdf",
-    blurb: "Ficha técnica para producción: portada, tabla de medidas por talla, vistas planas y BOM.",
+    blurb: "Ficha técnica para producción: portada con tus datos, tabla de medidas por talla, vistas planas de todas las piezas, insumos y notas.",
   },
   {
     id: "svg",
@@ -179,12 +179,17 @@ async function buildBlob(fmt: Format, doc: PatternDoc, mime: string, measurement
       });
       const tp = doc.techPack ?? {};
       renderTechPack(pdfLike, doc, {
-        ref: tp.ref || "HLN-" + Math.floor(Math.random() * 900 + 100),
+        ref: tp.ref,
         revision: tp.revision || "01",
+        client: tp.client,
+        season: tp.season,
+        designer: tp.designer,
+        description: tp.description,
+        notes: tp.notes,
         date: new Date().toISOString().slice(0, 10),
         measurements: measurementRows,
-        bom: tp.bom && tp.bom.length ? tp.bom : undefined,
-        specs: tp.specs && tp.specs.length ? tp.specs : undefined,
+        bom: tp.bom,
+        specs: tp.specs,
       });
     }
     return pdf.output("blob");

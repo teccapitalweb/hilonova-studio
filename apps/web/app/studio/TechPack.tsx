@@ -8,18 +8,7 @@ import { useEditor } from "./store";
 import type { TechPackMeta } from "@hilonova/geometry";
 import { measurementsForBlockSize, findBlock } from "@hilonova/blocks";
 import { samplePath } from "@hilonova/geometry";
-
-const DEFAULT_BOM: Array<{ name: string; detail: string }> = [
-  { name: "Tela principal", detail: "ver tabla de consumo por talla" },
-  { name: "Hilo de costura", detail: "poliéster 40/2 · tono según tela" },
-  { name: "Etiqueta tejida", detail: "Hilonova · costura trasera" },
-];
-
-const DEFAULT_SPECS: Array<{ label: string; value: string }> = [
-  { label: "Margen de costura", value: "1 cm" },
-  { label: "Puntadas por cm", value: "4–5 pps" },
-  { label: "Hilo de tela", value: "respetar sentido indicado por grainline" },
-];
+import { DEFAULT_BOM, defaultSpecs, flatPages, techPackPageCount } from "@hilonova/export";
 
 export default function TechPack() {
   const doc = useEditor((s) => s.history.present);
@@ -29,7 +18,9 @@ export default function TechPack() {
 
   const tp: TechPackMeta = doc.techPack ?? {};
   const bom = tp.bom ?? DEFAULT_BOM;
-  const specs = tp.specs ?? DEFAULT_SPECS;
+  const specs = tp.specs ?? defaultSpecs(doc);
+  const flats = flatPages(doc);
+  const total = techPackPageCount(doc);
   const meta = findBlock(blockKind);
 
   // tabla de medidas por talla (para el preview)
@@ -154,7 +145,7 @@ export default function TechPack() {
               <MetaRow label="Piezas" value={String(doc.pieces.length)} />
             </dl>
           </div>
-          <div className="tp-page-foot">1 / 4 · Generado con Hilonova Studio</div>
+          <div className="tp-page-foot">1 / {total} · Generado con Hilonova Studio</div>
         </article>
 
         {/* página 2: tabla de medidas */}
@@ -181,24 +172,27 @@ export default function TechPack() {
               ))}
             </tbody>
           </table>
-          <div className="tp-page-foot">2 / 4 · Medidas graduadas con reglas del bloque</div>
+          <div className="tp-page-foot">2 / {total} · Generado con Hilonova Studio</div>
         </article>
 
-        {/* página 3: vistas planas */}
-        <article className="tp-page">
-          <PageHeader section="Vistas planas" docName={doc.name} />
-          <div className="tp-flats">
-            {doc.pieces.slice(0, 4).map((p) => (
-              <div className="tp-flat" key={p.id}>
-                <PieceSvg piece={p} />
-                <div className="tp-flat-label">
-                  <b>{p.name}</b> · ×{p.quantity}
+        {/* vistas planas: 4 piezas por hoja, todas las piezas */}
+        {flats.map((pieces, pi) => (
+          <article className="tp-page" key={pi}>
+            <PageHeader section={"Vistas planas" + (flats.length > 1 ? ` (${pi + 1}/${flats.length})` : "")} docName={doc.name} />
+            <div className="tp-flats">
+              {pieces.length === 0 && <p className="tp-empty">Sin piezas.</p>}
+              {pieces.map((p) => (
+                <div className="tp-flat" key={p.id}>
+                  <PieceSvg piece={p} />
+                  <div className="tp-flat-label">
+                    <b>{p.name}</b> · ×{p.quantity}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-          <div className="tp-page-foot">3 / 4 · Vistas planas</div>
-        </article>
+              ))}
+            </div>
+            <div className="tp-page-foot">{3 + pi} / {total} · Generado con Hilonova Studio</div>
+          </article>
+        ))}
 
         {/* página 4: BOM + specs */}
         <article className="tp-page">
@@ -221,7 +215,7 @@ export default function TechPack() {
               <p className="tp-notes">{tp.notes}</p>
             </>
           )}
-          <div className="tp-page-foot">4 / 4 · Fin de la ficha</div>
+          <div className="tp-page-foot">{total} / {total} · Generado con Hilonova Studio</div>
         </article>
       </main>
     </div>
