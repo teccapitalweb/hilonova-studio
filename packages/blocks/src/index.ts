@@ -317,40 +317,30 @@ export function draftPlayeraBasica(m: BodyMeasurements): PatternDoc {
   ];
   back.closed = true;
 
-  // ── manga ──────────────────────────────────────────────────────────────────
-  const sleeve = emptyPiece("Manga", 2);
-  sleeve.fabric = "jersey algodón 180 gsm";
+  // ── manga corta ────────────────────────────────────────────────────────────
+  // cae a ~37 % del largo del brazo (22 cm con el brazo de 60) y su cabeza se ajusta a la sisa
+  const sleeveLen = clamp(largoManga * 0.37, 18, 26);
+  const bicepP = (m.busto ?? m.cadera * 0.92) * 0.3 + 4;
+  const armLen = pathLen([front.nodes[2]!, front.nodes[3]!]) + pathLen([back.nodes[2]!, back.nodes[3]!]);
+  const sleeveRaw = fitSleeve(bicepP, sleeveLen, bicepP * 0.9, armLen + 0.5, sisa * 1.2);
+  const sw = nodesWidth(sleeveRaw);
+  const sOff = bOff + qBusto + 12;
+  const sleeve = mk("Manga", 2, "jersey algodón 180 gsm", shiftNodes(sleeveRaw, sOff - sw.min, 0));
   sleeve.seamAllowance = 1;
   sleeve.grainAngle = 0;
-  const sOff = bOff + qBusto + 12;
-  const anchoManga = (sisa + 2) * 1.3;                   // basado en profundidad de sisa
-  const puno = anchoManga * 0.72;
-  sleeve.nodes = [
-    // copa centro (más alta)
-    node({ x: sOff + anchoManga / 2, y: 0 }),
-    // copa derecha
-    node(
-      { x: sOff + anchoManga, y: sisa * 0.65 },
-      { handleIn: { x: -anchoManga * 0.2, y: -sisa * 0.3 }, handleOut: { x: 0, y: 1 } },
-    ),
-    // puño derecho
-    node({ x: sOff + anchoManga / 2 + puno / 2, y: largoManga }),
-    // puño izquierdo
-    node({ x: sOff + anchoManga / 2 - puno / 2, y: largoManga }),
-    // copa izquierda
-    node(
-      { x: sOff + 0, y: sisa * 0.65 },
-      { handleIn: { x: 0, y: 1 }, handleOut: { x: anchoManga * 0.2, y: -sisa * 0.3 } },
-    ),
-  ];
-  sleeve.closed = true;
+
+  // ── cuello de rib: una tira que se dobla; mide ~85 % del escote para que abrace ────────
+  const neckLen = 2 * (pathLen([front.nodes[0]!, front.nodes[1]!]) + pathLen([back.nodes[0]!, back.nodes[1]!]));
+  const rib = rectPiece("Cuello de rib", { x: sOff + (sw.max - sw.min) + 10, y: 0 }, { x: sOff + (sw.max - sw.min) + 10 + neckLen * 0.85, y: 5 });
+  rib.quantity = 1;
+  rib.fabric = "rib 1x1";
 
   front.nodes[2] = { ...front.nodes[2]!, notch: true };  // piquete hombro
   front.nodes[3] = { ...front.nodes[3]!, notch: true };  // piquete sisa
   back.nodes[3] = { ...back.nodes[3]!, notch: true };
   sleeve.nodes[0] = { ...sleeve.nodes[0]!, notch: true };// cumbre de manga
 
-  doc.pieces = [front, back, sleeve];
+  doc.pieces = [front, back, sleeve, rib];
   return doc;
 }
 
@@ -1421,8 +1411,8 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
     kind: "playera-basica",
     name: "Playera básica",
     tag: "playera · jersey",
-    blurb: "Cuello redondo, manga corta. El caballito de maquila mexicana.",
-    pieces: 3,
+    blurb: "Cuello redondo con cuello de rib, manga corta. El caballito de maquila mexicana.",
+    pieces: 4,
     fields: ["busto", "cintura", "hombro", "sisa", "largoTorso", "largoManga", "cuello"],
     iconPath: "M4 5l4-2h8l4 2-1 4-2-.5V21H7V6.5L5 9z",
   },

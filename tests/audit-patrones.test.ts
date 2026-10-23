@@ -272,3 +272,29 @@ describe("costuras que se cosen entre sí", () => {
     }
   });
 });
+
+describe("playera básica (la foto de referencia es manga corta con cuello de rib)", () => {
+  it("la manga es corta y la cabeza cierra con la sisa en todas las tallas", () => {
+    for (const size of draft("playera-basica").sizes) {
+      const d = gradeDoc(draft("playera-basica"), size);
+      const f = named(d, /^Delantero/)!, b = named(d, /^Espalda/)!, s = named(d, /^Manga/)!;
+      const armhole = direct(f, 2, 3) + direct(b, 2, 3);
+      const cap = plen(samplePath({ ...s, closed: false, nodes: [s.nodes[4]!, s.nodes[0]!, s.nodes[1]!] }, 24));
+      const sl = samplePath(s, 24);
+      const length = Math.max(...sl.map((p) => p.y)) - Math.min(...sl.map((p) => p.y));
+      expect(length, `${size}: largo de manga`).toBeGreaterThan(15);
+      expect(length, `${size}: largo de manga`).toBeLessThan(32);
+      expect(Math.abs(cap - armhole - 0.5), `${size}: cabeza ${cap.toFixed(1)} sisa ${armhole.toFixed(1)}`).toBeLessThanOrEqual(0.9);
+    }
+  });
+
+  it("trae el cuello de rib y mide ~85 % del escote", () => {
+    for (const size of draft("playera-basica").sizes) {
+      const d = gradeDoc(draft("playera-basica"), size);
+      const neck = 2 * (direct(named(d, /^Delantero/)!, 0, 1) + direct(named(d, /^Espalda/)!, 0, 1));
+      const rib = samplePath(named(d, /^Cuello de rib/)!, 24);
+      const len = Math.max(...rib.map((p) => p.x)) - Math.min(...rib.map((p) => p.x));
+      expect(Math.abs(len - neck * 0.85), `${size}: escote ${neck.toFixed(1)} rib ${len.toFixed(1)}`).toBeLessThan(1);
+    }
+  });
+});
