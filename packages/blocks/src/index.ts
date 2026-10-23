@@ -246,6 +246,24 @@ function splitAtY(piece: Piece, y: number): { top: Piece; bottom: Piece } {
   return { top: like(topNodes), bottom: like(bottomNodes) };
 }
 
+/**
+ * Pinza de talle en forma de pez, como línea interna (abierta): no corta la pieza, solo indica dónde
+ * se cose. (ox, oy) es dónde quedó colocado el origen (0, 0) del patrón; x, yTop, yWaist y yBottom
+ * están en las coordenadas del patrón. `w` es lo que se toma en la cintura.
+ */
+function fishDart(name: string, ox: number, oy: number, x: number, yTop: number, yWaist: number, yBottom: number, w: number, quantity = 2): Piece {
+  const pts: Vec2[] = [
+    { x: ox + x, y: oy + yTop },
+    { x: ox + x - w / 2, y: oy + yWaist },
+    { x: ox + x, y: oy + yBottom },
+    { x: ox + x + w / 2, y: oy + yWaist },
+    { x: ox + x, y: oy + yTop },
+  ];
+  const piece = pieceFromPoints(name, pts, { closed: false, smooth: false, quantity });
+  piece.seamAllowance = 0;
+  return piece;
+}
+
 /** Marca con dos piquetes en el borde de la cintura de `front` el pliegue que se dobla (x = cm desde el centro). */
 function markPleat(front: Piece, x: number, width: number): Piece {
   let out = front;
@@ -512,7 +530,21 @@ export function draftFaldaRecta(m: BodyMeasurements): PatternDoc {
   front.nodes = dartAt(front, { x: qCintura * 0.5, y: 0 }, wF, { x: qCintura * 0.5, y: 9 }).nodes;
   back.nodes = dartAt(back, { x: bOff + qCintura * 0.5, y: 0 }, wB, { x: bOff + qCintura * 0.5, y: 12 }).nodes;
 
-  doc.pieces = [front, back];
+  // abertura trasera: cada mitad lleva 3 cm de vista en el centro de la espalda, de 20 cm de alto
+  const vent = Math.min(20, largoF * 0.35);
+  const iHem = back.nodes.findIndex((nd) => Math.abs(nd.at.x - bOff) < 1e-6 && Math.abs(nd.at.y - largoF) < 1e-6);
+  back.nodes.splice(
+    iHem, 1,
+    node({ x: bOff - 3, y: largoF }),
+    node({ x: bOff - 3, y: largoF - vent }),
+    node({ x: bOff, y: largoF - vent }, { notch: true }),
+  );
+
+  const waistband = rectPiece("Pretina", { x: bOff + qCadera + 12, y: 0 }, { x: bOff + qCadera + 12 + m.cintura + 4, y: 8 });
+  waistband.quantity = 1;
+  waistband.fabric = "gabardina stretch";
+
+  doc.pieces = [front, back, waistband];
   return doc;
 }
 
@@ -734,7 +766,14 @@ export function draftBlusaClasica(m: BodyMeasurements): PatternDoc {
   place(cuff, row2);
   place(facing, row2);
 
-  doc.pieces = [front, back, sleeve, collar, stand, cuff, facing];
+  // pinza de talle en forma de pez sobre el delantero (línea interna: no corta, se cose)
+  const anchor = front.nodes[1]!.at; // el centro del escote, que en el patrón es (0, dF)
+  const talle = fishDart(
+    "Pinza de talle", anchor.x, anchor.y - dF, qF * 0.5,
+    sisa + 7, largoT, largoT + 14, clamp((busto - m.cintura) * 0.16, 1.5, 3.5),
+  );
+
+  doc.pieces = [front, back, sleeve, collar, stand, cuff, facing, talle];
   return doc;
 }
 
@@ -948,8 +987,16 @@ export function draftChamarraMezclilla(m: BodyMeasurements): PatternDoc {
     { closed: true, smooth: false, quantity: 2 },
   );
   flap.fabric = F;
+  const sideBag = pieceFromPoints(
+    "Bolsa de bolsillo lateral",
+    [{ x: 0, y: 0 }, { x: 14, y: 0 }, { x: 14, y: 18 }, { x: 7, y: 22 }, { x: 0, y: 18 }],
+    { closed: true, smooth: false, quantity: 2 },
+  );
+  sideBag.fabric = "forro de bolsillo";
+  const sideWelt = rectPiece("Vivo de bolsillo lateral", { x: 0, y: 0 }, { x: 15, y: 4 });
+  sideWelt.quantity = 4; sideWelt.fabric = F;
 
-  doc.pieces = layoutRows([[front, back, sleeve], [collar, cuff, fajaF, fajaB], [pocket, flap]]);
+  doc.pieces = layoutRows([[front, back, sleeve], [collar, cuff, fajaF, fajaB], [pocket, flap, sideBag, sideWelt]]);
   return doc;
 }
 
@@ -1074,6 +1121,15 @@ export function draftPantsJogger(m: BodyMeasurements): PatternDoc {
     extras: ({ cintura, hemTotal }) => [
       withQty(rectPiece("Pretina elástica", { x: 0, y: 0 }, { x: cintura + 2, y: 8 }), 1, "french terry 280 gsm"),
       withQty(rectPiece("Puño de tobillo", { x: 0, y: 0 }, { x: hemTotal * 0.8, y: 9 }), 2, "rib 1x1"),
+      withQty(
+        pieceFromPoints(
+          "Bolsa de bolsillo lateral",
+          [{ x: 0, y: 0 }, { x: 15, y: 0 }, { x: 15, y: 24 }, { x: 8, y: 28 }, { x: 0, y: 24 }],
+          { closed: true, smooth: false },
+        ),
+        2,
+        "forro de bolsillo",
+      ),
     ],
   });
   return withSml(doc);
@@ -1089,7 +1145,7 @@ export function draftFaldaA(m: BodyMeasurements): PatternDoc {
   const qW = (m.cintura + 2) / 4;
   const qH = (m.cadera + 4) / 4;
   const hipY = 18;
-  const qHem = qH + largoF * 0.12;       // vuelo de la A
+  const qHem = qH + largoF * 0.2;        // vuelo de la A (bajo ≈ 1.8 × cintura)
 
   const front = mk("Delantero", 1, F, fullFromHalf([
     node({ x: 0, y: 0 }, { notch: true }),
@@ -1189,6 +1245,16 @@ export function draftVestidoBasico(m: BodyMeasurements): PatternDoc {
   ]);
 
   doc.pieces = layoutRows([[front, back], [facingF, facingB]]);
+
+  // pinzas de talle en forma de pez, una a cada lado (líneas internas: no cortan, se cosen)
+  const origin = front.nodes[0]!.at; // el centro del escote, que en el patrón es (0, dF)
+  const talleW = clamp((t.busto - m.cintura) * 0.14, 1.5, 3);
+  for (const sign of [1, -1]) {
+    doc.pieces.push(fishDart(
+      sign > 0 ? "Pinza de talle derecha" : "Pinza de talle izquierda", origin.x, origin.y - dF,
+      sign * t.qF * 0.45, t.sisa + 6, waistY, waistY + 16, talleW, 1,
+    ));
+  }
   return doc;
 }
 
@@ -1283,8 +1349,8 @@ function draftCamisa(m: BodyMeasurements, name: string, short: boolean): Pattern
     node({ x: 0, y: dF }, { notch: true, handleOut: { x: nF * 0.55, y: 0 } }),
     node({ x: nF, y: 0 }, { notch: true, handleIn: { x: 0, y: dF * 0.55 } }),
     ...armholeNodes(sx, 4.8, t.qF, under, 1),
-    node({ x: t.qF, y: hemY }),
-    node({ x: 0, y: hemY }, { notch: true }),
+    node({ x: t.qF, y: hemY - 6 }, { handleOut: { x: -t.qF * 0.4, y: 5.5 } }),
+    node({ x: 0, y: hemY }, { notch: true, handleIn: { x: t.qF * 0.35, y: 0 } }),
   ]);
   const yoke = mk("Canesú", 2, F, fullFromHalf([
     node({ x: 0, y: dB }, { notch: true, handleOut: { x: nB * 0.55, y: 0 } }),
@@ -1301,8 +1367,8 @@ function draftCamisa(m: BodyMeasurements, name: string, short: boolean): Pattern
       { handleIn: { x: 0, y: -2 }, handleOut: { x: 0, y: 2.5 } },
     ),
     node({ x: t.qB, y: under }, { notch: true, handleIn: { x: -2.5, y: -1.5 } }),
-    node({ x: t.qB, y: hemY }),
-    node({ x: 0, y: hemY }, { notch: true }),
+    node({ x: t.qB, y: hemY - 6 }, { handleOut: { x: -t.qB * 0.4, y: 5.5 } }),
+    node({ x: 0, y: hemY }, { notch: true, handleIn: { x: t.qB * 0.35, y: 0 } }),
   ]));
 
   const bicep = t.busto * 0.285 + 8;
@@ -1480,6 +1546,24 @@ export function draftPantalonCargo(m: BodyMeasurements): PatternDoc {
         F,
       ),
       withQty(rectPiece("Trabilla", { x: 0, y: 0 }, { x: 9, y: 2.5 }), 6, F),
+      withQty(
+        pieceFromPoints(
+          "Bolsa de bolsillo delantero",
+          [{ x: 0, y: 0 }, { x: 16, y: 0 }, { x: 16, y: 20 }, { x: 9, y: 26 }, { x: 0, y: 22 }],
+          { closed: true, smooth: false },
+        ),
+        2,
+        "forro de bolsillo",
+      ),
+      withQty(
+        pieceFromPoints(
+          "Vista de bragueta",
+          [{ x: 0, y: 0 }, { x: 4.5, y: 0 }, { x: 4.5, y: 16 }, { x: 2.5, y: 18 }, { x: 0, y: 16 }],
+          { closed: true, smooth: false },
+        ),
+        1,
+        F,
+      ),
     ],
   });
 }
@@ -1549,8 +1633,8 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
     kind: "falda-recta",
     name: "Falda recta",
     tag: "falda · gabardina",
-    blurb: "Falda tubo con pinzas de cintura, de cintura a rodilla o midi.",
-    pieces: 2,
+    blurb: "Falda tubo con pinzas de cintura, abertura trasera y pretina. 3 piezas.",
+    pieces: 3,
     fields: ["cintura", "cadera", "largoFalda"],
     iconPath: "M7 3h10l1 5-1 13H7L6 8z",
   },
@@ -1558,8 +1642,8 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
     kind: "blusa-clasica",
     name: "Blusa clásica",
     tag: "blusa · popelina",
-    blurb: "Camisera de manga larga con pinza de busto, puño y cuello. 7 piezas, tallas S a XL.",
-    pieces: 7,
+    blurb: "Camisera de manga larga con pinza de busto, pinza de talle, puño y cuello. 8 piezas, tallas S a XL.",
+    pieces: 8,
     fields: ["busto", "cintura", "cadera", "hombro", "sisa", "largoTorso", "largoManga", "cuello"],
     iconPath: "M4 6l5-3 3 3 3-3 5 3-2 5-2-1v10H8V10l-2 1z",
   },
@@ -1567,8 +1651,8 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
     kind: "chamarra-mezclilla",
     name: "Chamarra de mezclilla",
     tag: "chamarra · mezclilla",
-    blurb: "Trucker con faja, bolsillos de pecho con solapa, cuello y puños. 9 piezas.",
-    pieces: 9,
+    blurb: "Trucker con faja, bolsillos de pecho con solapa, bolsillos laterales, cuello y puños. 11 piezas.",
+    pieces: 11,
     fields: ["busto", "cintura", "hombro", "sisa", "largoTorso", "largoManga", "cuello"],
     iconPath: "M3 7l5-3 4 2 4-2 5 3-1 5-2-1v9H6v-9l-2 1z",
     defaults: { largoTorso: 44, largoManga: 62 },
@@ -1597,8 +1681,8 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
     kind: "vestido-basico",
     name: "Vestido básico",
     tag: "vestido · crepé",
-    blurb: "Sin mangas, entallado, con pinza de busto y vistas de escote. 4 piezas.",
-    pieces: 4,
+    blurb: "Sin mangas, entallado, con pinza de busto, pinzas de talle y vistas de escote. 6 piezas.",
+    pieces: 6,
     fields: ["busto", "cintura", "cadera", "hombro", "sisa", "largoTorso", "cuello", "largoFalda"],
     iconPath: "M8 3h8l1 6-3 3 4 9H6l4-9-3-3z",
     defaults: { largoFalda: 60 },
@@ -1628,7 +1712,7 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
     name: "Pants jogger",
     tag: "pants · french terry",
     blurb: "Pierna ahusada con puño de tobillo y pretina elástica.",
-    pieces: 4,
+    pieces: 5,
     fields: ["cintura", "cadera", "tiro", "largo", "muslo", "bajo"],
     iconPath: "M8 3h8l1 7-1 10-3 1-1-8-1 8-3-1-1-10z",
     defaults: { largo: 100, muslo: 62, bajo: 17 },
@@ -1678,7 +1762,7 @@ export const BLOCK_CATALOG: readonly BlockMeta[] = [
     name: "Pantalón cargo",
     tag: "pantalón · twill",
     blurb: "Pierna recta con pinza trasera, bolsillos de fuelle y solapa, pretina y trabillas. 7 piezas.",
-    pieces: 7,
+    pieces: 9,
     fields: ["cintura", "cadera", "tiro", "largo", "muslo", "bajo"],
     iconPath: "M8 3h8l1 8-1 10h-3l-1-8-1 8H8L7 11z M9 12h2v3H9z",
     defaults: { cintura: 84, cadera: 104, tiro: 27, largo: 104, muslo: 62, bajo: 24 },

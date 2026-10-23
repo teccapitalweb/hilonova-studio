@@ -3,13 +3,14 @@
 //   1  Boundary       línea de corte
 //   4  Notch          piquetes
 //   5  Grainline      hilo de tela
+//   6  InternalLine   líneas internas (pinzas de talle, abertura): piezas abiertas dentro de otra
 //   8  Text           anotaciones (nombre, cantidad)
 //  15  Seam allowance línea de margen de costura
 // Las unidades del DXF son las del documento (cm). Cualquier Gerber/Lectra
 // moderno respeta el header "$INSUNITS" para interpretar correctamente.
 
 import type { PatternDoc, Piece, Vec2 } from "@hilonova/geometry";
-import { samplePath, offsetPolyline, gradeDoc, compareSizes, labelPosition } from "@hilonova/geometry";
+import { samplePath, offsetPolyline, gradeDoc, compareSizes, labelPosition, pointInPiece } from "@hilonova/geometry";
 
 const UNIT_CODE: Record<string, number> = { cm: 5, mm: 4, in: 1 };
 
@@ -37,6 +38,7 @@ export function tables(extra: Array<[number, string, number]> = []): string {
     [1, "Boundary", 7],
     [4, "Notch", 1],
     [5, "Grainline", 3],
+    [6, "InternalLine", 2],
     [8, "Text", 7],
     [15, "SeamAllowance", 4],
     ...extra,
@@ -92,6 +94,35 @@ export function text(at: Vec2, value: string, height: number, layer: string): st
     pair(40, fmt(height)) +
     pair(1, value)
   );
+}
+
+/** Línea interna (pieza abierta): va en la capa 6 con el mismo desplazamiento que la pieza que la contiene. */
+function internalEntities(piece: Piece, offset: Vec2): string {
+  const pts = samplePath(piece, 24).map((p) => ({ x: p.x + offset.x, y: p.y + offset.y }));
+  return pts.length < 2 ? "" : polyline(pts, "6_InternalLine", false);
+}
+
+/** La pieza cerrada que contiene una línea interna: la que tiene su punto medio dentro o, si cae en el borde, la más cercana. */
+function hostOf(line: Piece, closed: readonly Piece[]): Piece | null {
+  const pts = samplePath(line, 24);
+  if (pts.length < 2) return null;
+  const mid = pts[Math.floor(pts.length / 2)]!;
+  const inside = closed.find((c) => pointInPiece(c, mid));
+  if (inside) return inside;
+  let best: Piece | null = null;
+  let bd = 2; // cm: más lejos que esto no se considera dentro de la pieza
+  for (const c of closed) {
+    const cp = samplePath(c, 24);
+    for (let i = 0; i < cp.length; i++) {
+      const a = cp[i]!, b = cp[(i + 1) % cp.length]!;
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const l2 = dx * dx + dy * dy;
+      const u = l2 === 0 ? 0 : Math.max(0, Math.min(1, ((mid.x - a.x) * dx + (mid.y - a.y) * dy) / l2));
+      const d = Math.hypot(mid.x - (a.x + u * dx), mid.y - (a.y + u * dy));
+      if (d < bd) { bd = d; best = c; }
+    }
+  }
+  return best;
 }
 
 function pieceEntities(piece: Piece, offset: Vec2, label = ""): string {
@@ -159,12 +190,21 @@ export function exportDxfAama(doc: PatternDoc, opts: DxfOptions = {}): string {
   let entities = pair(0, "SECTION") + pair(2, "ENTITIES");
 
   let cursorX = 0;
-  for (const piece of doc.pieces) {
-    entities += pieceEntities(piece, { x: cursorX, y: 0 });
+  const closed = doc.pieces.filter((p) => p.closed);
+  const placed = new Map<string, Vec2>();
+  for (const piece of closed) {
+    const offset = { x: cursorX, y: 0 };
+    placed.set(piece.id, offset);
+    entities += pieceEntities(piece, offset);
     // avanzar el cursor horizontal según el ancho de la pieza
     const pts = samplePath(piece, 12);
     const w = Math.max(...pts.map((p) => p.x)) - Math.min(...pts.map((p) => p.x));
     cursorX += w + gap;
+  }
+  // las líneas internas van junto a su pieza
+  for (const line of doc.pieces.filter((p) => !p.closed)) {
+    const host = hostOf(line, closed);
+    if (host) entities += internalEntities(line, placed.get(host.id)!);
   }
   entities += pair(0, "ENDSEC");
 
@@ -186,7 +226,9 @@ export function exportDxfGraded(doc: PatternDoc, opts: DxfOptions = {}): string 
     const graded = gradeDoc(doc, size);
     let cursorX = 0;
     let maxH = 0;
-    for (const piece of graded.pieces) {
+    const closed = graded.pieces.filter((p) => p.closed);
+    const placed = new Map<string, Vec2>();
+    for (const piece of closed) {
       const pts = samplePath(piece, 12);
       if (pts.length < 2) continue;
       const minX = Math.min(...pts.map((p) => p.x));
@@ -194,9 +236,16 @@ export function exportDxfGraded(doc: PatternDoc, opts: DxfOptions = {}): string 
       const w = Math.max(...pts.map((p) => p.x)) - minX;
       const h = Math.max(...pts.map((p) => p.y)) - minY;
       // cada pieza se normaliza a su esquina para que las tallas no se encimen
-      entities += pieceEntities(piece, { x: cursorX - minX, y: cursorY - minY }, ` - talla ${size}`);
+      const offset = { x: cursorX - minX, y: cursorY - minY };
+      placed.set(piece.id, offset);
+      entities += pieceEntities(piece, offset, ` - talla ${size}`);
       cursorX += w + gap;
       maxH = Math.max(maxH, h);
+    }
+    for (const line of graded.pieces.filter((p) => !p.closed)) {
+      const host = hostOf(line, closed);
+      const offset = host ? placed.get(host.id) : undefined;
+      if (offset) entities += internalEntities(line, offset);
     }
     cursorY += maxH + gap * 3;
   }

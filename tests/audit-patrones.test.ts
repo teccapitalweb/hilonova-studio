@@ -185,9 +185,12 @@ describe("costuras que se cosen entre sí", () => {
   ];
 
   /** Costado: del fondo de la sisa (o la cadera) hasta el bajo, con las pinzas cerradas. */
+  /** El nodo del bajo en el costado: el más bajo entre los que están en el lado de afuera (los ruedos curvos son más altos de lado). */
   function hemIndex(ns: Piece["nodes"]): number {
+    const maxX = Math.max(...ns.map((n) => n.at.x));
     let h = -1;
     ns.forEach((n, k) => {
+      if (n.at.x < maxX - 3) return;
       if (h < 0 || n.at.y > ns[h]!.at.y + 1e-6 || (Math.abs(n.at.y - ns[h]!.at.y) < 0.6 && n.at.x > ns[h]!.at.x)) h = k;
     });
     return h;
@@ -372,5 +375,73 @@ describe("pantalones y shorts: las piezas que muestran las fotos de referencia",
       const w = Math.max(...p.map((q) => q.x)) - Math.min(...p.map((q) => q.x));
       expect(Math.abs(w - ((defaultMeasurementsFor(kind).cintura ?? 80) + 4)), kind).toBeLessThan(0.1);
     }
+  });
+});
+
+describe("el resto de prendas según las fotos de referencia", () => {
+  const count = (d: PatternDoc, name: string) => d.pieces.filter((p) => p.name === name).reduce((a, p) => a + p.quantity, 0);
+
+  it("falda recta: pretina y abertura trasera de 3 cm", () => {
+    const d = draft("falda-recta");
+    expect(count(d, "Pretina")).toBe(1);
+    const b = samplePath(back(d), 24);
+    const hem = Math.max(...b.map((p) => p.y));
+    // en la abertura la espalda mide 3 cm más que arriba de ella
+    expect(widthAt(b, hem - 3) - widthAt(b, hem - 30)).toBeGreaterThan(2.7);
+    expect(widthAt(b, hem - 3) - widthAt(b, hem - 30)).toBeLessThan(3.3);
+    expect(back(d).nodes.filter((n) => n.notch).length).toBeGreaterThanOrEqual(2); // cadera + tope de la abertura
+  });
+
+  it("falda en A: el bajo mide entre 1.6 y 2.1 veces la cintura (en la foto, ~1.9)", () => {
+    for (const size of draft("falda-a").sizes) {
+      const d = gradeDoc(draft("falda-a"), size);
+      const h = Math.max(...samplePath(front(d), 24).map((p) => p.y)) - Math.min(...samplePath(front(d), 24).map((p) => p.y));
+      const ratio = circ(d, h - 1) / circ(d, 1);
+      expect(ratio, size).toBeGreaterThan(1.6);
+      expect(ratio, size).toBeLessThan(2.1);
+    }
+  });
+
+  it("blusa y vestido: las pinzas de talle son líneas internas que caen dentro del delantero", () => {
+    const inside = (piece: Piece, line: Piece) => {
+      const host = samplePath(piece, 24);
+      return samplePath(line, 24).every((q) => {
+        let ins = false;
+        for (let i = 0, j = host.length - 1; i < host.length; j = i++) {
+          const a = host[i]!, b = host[j]!;
+          if (a.y > q.y !== b.y > q.y && q.x < ((b.x - a.x) * (q.y - a.y)) / (b.y - a.y) + a.x) ins = !ins;
+        }
+        return ins;
+      });
+    };
+    for (const [kind, name, n] of [["blusa-clasica", "Pinza de talle", 1], ["vestido-basico", "Pinza de talle", 2]] as Array<[BlockKind, string, number]>) {
+      const d = draft(kind);
+      const lines = d.pieces.filter((p) => !p.closed && p.name.startsWith(name));
+      expect(lines, kind).toHaveLength(n);
+      for (const l of lines) expect(inside(front(d), l), `${kind}: ${l.name}`).toBe(true);
+    }
+  });
+
+  it.each(["camisa-hombre", "camisa-manga-corta"] as BlockKind[])("%s: el ruedo es curvo (los costados quedan 5-7 cm más arriba que el centro)", (kind) => {
+    for (const size of draft(kind).sizes) {
+      const d = gradeDoc(draft(kind), size);
+      for (const p of [front(d), back(d)]) {
+        const ns = p.nodes;
+        const maxY = Math.max(...ns.map((n) => n.at.y));
+        const center = ns.find((n) => Math.abs(n.at.y - maxY) < 1e-6)!;
+        const maxX = Math.max(...ns.map((n) => n.at.x));
+        const side = ns.filter((n) => n.at.x > maxX - 1).reduce((a, n) => (n.at.y > a.at.y ? n : a));
+        expect(center.at.y - side.at.y, `${kind} ${size} ${p.name}`).toBeGreaterThan(5);
+        expect(center.at.y - side.at.y, `${kind} ${size} ${p.name}`).toBeLessThan(7);
+      }
+    }
+  });
+
+  it("bolsillos que faltaban: jogger (laterales), cargo (delanteros y bragueta), chamarra (laterales con vivo)", () => {
+    expect(count(draft("pants-jogger"), "Bolsa de bolsillo lateral")).toBe(2);
+    expect(count(draft("pantalon-cargo"), "Bolsa de bolsillo delantero")).toBe(2);
+    expect(count(draft("pantalon-cargo"), "Vista de bragueta")).toBe(1);
+    expect(count(draft("chamarra-mezclilla"), "Bolsa de bolsillo lateral")).toBe(2);
+    expect(count(draft("chamarra-mezclilla"), "Vivo de bolsillo lateral")).toBe(4);
   });
 });

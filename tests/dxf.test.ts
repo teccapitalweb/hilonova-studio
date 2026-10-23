@@ -4,7 +4,7 @@ import { BLOCK_CATALOG, defaultMeasurementsFor, draftBlock, type BlockKind } fro
 import { distToPoly, parseDxf, polyArea, type DxfPoly } from "./helpers";
 
 const docOf = (k: BlockKind) => draftBlock(k, defaultMeasurementsFor(k));
-const LAYERS = ["1_Boundary", "4_Notch", "5_Grainline", "8_Text", "15_SeamAllowance"];
+const LAYERS = ["1_Boundary", "4_Notch", "5_Grainline", "6_InternalLine", "8_Text", "15_SeamAllowance"];
 
 /** Pares (contorno, margen) de las piezas cerradas, en el orden en que se escribieron. */
 function pairs(polys: DxfPoly[]): Array<{ boundary: DxfPoly; seam: DxfPoly }> {
@@ -81,7 +81,10 @@ describe.each([
     const closed = e.doc.pieces.filter((p) => p.closed).length;
     const sizes = e.graded ? e.doc.sizes.length : 1;
     expect(d.lines.filter((l) => l.layer === "5_Grainline")).toHaveLength(closed * sizes);
-    expect(d.texts).toHaveLength(e.doc.pieces.length * sizes);
+    // las líneas internas (pinzas de talle, abertura) no llevan rótulo: van en la capa 6, junto a su pieza
+    expect(d.texts).toHaveLength(closed * sizes);
+    const internal = e.doc.pieces.filter((p) => !p.closed).length;
+    expect(d.polys.filter((p) => p.layer === "6_InternalLine")).toHaveLength(internal * sizes);
     expect(pairs(d.polys)).toHaveLength(closed * sizes);
   });
 
@@ -124,3 +127,33 @@ describe("todas las prendas se exportan", () => {
     }
   });
 });
+
+describe("líneas internas (pinzas de talle, abertura del polo) en el DXF", () => {
+  it.each(["blusa-clasica", "vestido-basico", "polo"] as BlockKind[])("%s: van en la capa 6, dentro de su pieza, en talla base y graduado", (kind) => {
+    const doc = docOf(kind);
+    const sizes = doc.sizes.length;
+    const internal = doc.pieces.filter((p) => !p.closed).length;
+    expect(internal).toBeGreaterThan(0);
+    for (const [dxf, expected] of [[exportDxfAama(doc), internal], [exportDxfGraded(doc), internal * sizes]] as const) {
+      const d = parseDxf(dxf);
+      const lines = d.polys.filter((p) => p.layer === "6_InternalLine");
+      expect(lines).toHaveLength(expected);
+      const boundaries = d.polys.filter((p) => p.layer === "1_Boundary");
+      for (const l of lines) {
+        // el punto de en medio de la línea cae dentro (o sobre el borde) de alguna pieza
+        const mid = l.pts[Math.floor(l.pts.length / 2)]!;
+        const ok = boundaries.some((b) => distToPoly(mid, b.pts) < 0.5 || pointInPolyLocal(mid, b.pts));
+        expect(ok, `${kind}: línea interna fuera de toda pieza`).toBe(true);
+      }
+    }
+  });
+});
+
+function pointInPolyLocal(p: { x: number; y: number }, poly: ReadonlyArray<{ x: number; y: number }>): boolean {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const a = poly[i]!, b = poly[j]!;
+    if (a.y > p.y !== b.y > p.y && p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x) inside = !inside;
+  }
+  return inside;
+}

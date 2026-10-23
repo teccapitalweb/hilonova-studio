@@ -16,10 +16,11 @@ const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.
 describe("selección múltiple", () => {
   it("seleccionar todas, alternar con Ctrl y limpiar", () => {
     get().selectAllPieces();
-    expect(selectionOf(get())).toHaveLength(7);
+    const total = pieces().length;
+    expect(selectionOf(get())).toHaveLength(total);
     const first = pieces()[0]!.id;
     get().toggleSelectPiece(first);
-    expect(selectionOf(get())).toHaveLength(6);
+    expect(selectionOf(get())).toHaveLength(total - 1);
     expect(selectionOf(get())).not.toContain(first);
     get().toggleSelectPiece(first);
     expect(selectionOf(get())).toContain(first);
