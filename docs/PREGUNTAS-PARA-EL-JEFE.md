@@ -20,15 +20,17 @@ Se propone **un solo plan con un solo precio**: **$490 al mes** más IVA, con to
 - **¿El precio lleva IVA incluido o se suma?** ________
 - **¿Se ofrece después un plan de equipo con varios usuarios y roles?** Sí / No
 
-## 3. Código de descuento para los alumnos del curso
+## 3. Cupón para los alumnos del curso
 
-Los alumnos pagan el mismo plan con un **código de descuento de un solo uso que vale 24 horas**.
+Todos pagan el plan de $490 desde el primer día. **Solo los alumnos del curso** reciben un cupón de **un solo uso**, que deben canjear **dentro de las 24 horas** desde que lo reciben. Con el cupón tienen **1 mes con el programa completo**, pero solo pueden hacer **3 exportaciones en total** (DXF, PDF, SVG, ficha técnica o trazo; el respaldo de sus proyectos no cuenta). Después del mes, para seguir usando el programa, pagan.
 
-- **¿De cuánto es el descuento?** ________ % o $________
-- **¿Aplica solo al primer pago, a los primeros ____ meses, o siempre?** ________
-- **¿Desde cuándo cuentan las 24 horas?** Desde que se le entrega el código / desde que lo abre.
-- **¿Cómo le llega el código al alumno?** Lo envía el curso al terminar / se genera cuando lo pide: ________
-- **Si el código vence, ¿cómo pide otro?** ________
+- **¿Se aprueba un mes con 3 exportaciones?** Sí / No / Otro: ________ mes(es) y ________ exportaciones.
+- **¿Qué pasa el día 31 si no pagó?** (Se recomienda: los proyectos se conservan solo para verlos y el respaldo siempre se puede descargar.) ________
+- **¿Se pide tarjeta para el mes gratis?** (Se recomienda que no.) Sí / No
+- **¿Desde cuándo cuentan las 24 horas?** Desde que se le entrega el cupón / desde que lo abre.
+- **¿Cómo le llega el cupón al alumno?** Lo envía el curso al terminar / se genera cuando lo pide: ________
+- **Si el cupón vence, ¿cómo pide otro?** ________
+- **¿El cupón se da a todos los alumnos o solo a quienes terminan el curso?** ________
 
 ## 4. Cómo se paga
 
@@ -44,5 +46,5 @@ Los alumnos pagan el mismo plan con un **código de descuento de un solo uso que
 
 ## Lo que yo haría si no hay preferencia
 
-El plan único de $490 al mes con código de descuento para alumnos, cobro con tarjeta por Stripe y cuenta de usuario
+El plan único de $490 al mes con un cupón de un mes y 3 exportaciones para alumnos, cobro con tarjeta por Stripe y cuenta de usuario
 real. Es lo más rápido y lo más fácil de tener funcionando antes del 9 de noviembre.

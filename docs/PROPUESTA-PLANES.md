@@ -28,7 +28,7 @@ Solo se debe poner en un plan lo que el programa ya hace o lo que se puede const
 
 ## 2. Plan propuesto: uno solo, con un solo precio
 
-Decisión del 23 de octubre: **un solo plan con un solo precio** (el original, $490 al mes), sin precios por partes (nada de precio de lanzamiento, plan de aprendiz ni meses gratis incluidos). Los alumnos del curso pagan **el mismo plan con un código de descuento**.
+Decisión del 23 de octubre: **un solo plan con un solo precio** (el original, $490 al mes), sin precios por partes (nada de precio de lanzamiento, plan de aprendiz ni meses gratis incluidos). Los alumnos del curso reciben un cupón de **un mes con 3 exportaciones** (ver abajo); todos los demás pagan el plan normal.
 
 | | **Estudio** |
 |---|---|
@@ -45,15 +45,19 @@ Decisión del 23 de octubre: **un solo plan con un solo precio** (el original, $
 
 **Por qué $490:** es el precio original más bajo de la pantalla de planes. Los programas profesionales (Gerber AccuMark, Lectra Modaris) se venden por cotización anual y cuestan mucho más; CLO 3D (otro tipo de programa) aparece entre US$25 y US$60 al mes según fuentes poco fiables.
 
-### Código de descuento para alumnos del curso
+### Cupón para alumnos del curso: un mes con 3 exportaciones
 
-Cómo funcionaría (se puede hacer con los códigos promocionales de Stripe, que permiten limitar cada código a un solo uso y ponerle fecha de vencimiento):
-- Cada alumno recibe **su propio código**, de **un solo uso**.
-- **Vale 24 horas** desde que se le entrega; después ya no sirve y se pide uno nuevo en el curso.
-- Se escribe al momento de pagar. El plan y su precio son los mismos para todos.
-- El código solo existe cuando hay cobro (Stripe) y cuentas reales; hoy la pantalla solo lo explica, no lo valida.
+Todos pagan el plan de $490 desde el primer día. Solo los alumnos del curso reciben un cupón:
+- **1 mes con el programa completo, sin pagar** (editor, graduación, trazo, ficha técnica, las 17 prendas).
+- **Con un límite: 3 exportaciones en total** durante ese mes. Cuenta como exportación cada archivo que sale del programa (DXF, PDF, SVG, ficha técnica o trazo). El respaldo de los proyectos **no** cuenta.
+- El cupón es de **un solo uso** por alumno y hay que **canjearlo dentro de las 24 horas** desde que se recibe; si vence, se pide otro en el curso.
+- Después del mes, para seguir usando el programa se paga el plan.
 
-Lo que hay que decidir: **cuánto es el descuento**, **si aplica solo al primer pago, a los primeros meses o siempre**, y cómo le llega el código al alumno (lo envía el curso al terminar, o se genera al pedirlo). Con un descuento del 30 % solo en el primer pago, por ejemplo, el primer cobro sería $343 más IVA (ejemplo, no una recomendación).
+**Por qué funciona:** el alumno aprende y practica todo el mes sin límites, y se topa con el tope justo cuando quiere llevarse algo a la fábrica (exportar). Ahí es cuando le conviene pagar el segundo mes.
+
+**Cómo se haría:** con los cupones de Stripe (permiten un solo uso, fecha de vencimiento y periodo de prueba de un mes). Contar las exportaciones requiere cuentas reales y un servidor: un contador en el navegador se podría borrar, así que esto se construye junto con las cuentas y el cobro. Hoy la pantalla solo lo explica, no lo aplica.
+
+**Lo que hay que decidir:** qué pasa el día 31 (se recomienda que los proyectos se conserven solo para verlos y que el respaldo siempre se pueda descargar, en vez de bloquear todo), si se pide tarjeta para el mes gratis (se recomienda que no) y cómo le llega el cupón al alumno.
 
 ## 3. Costos de operarlo
 
@@ -64,7 +68,6 @@ Hoy (todo local) el costo es $0. Al cobrar y tener cuentas hay costos reales.
 | Precio | Comisión de Stripe | Te queda |
 |---|---|---|
 | $490 | ≈ $20.6 + IVA ≈ $23.9 | ≈ $466 |
-| $343 (con 30 % de descuento, ejemplo) | ≈ $15.4 + IVA ≈ $17.9 | ≈ $325 |
 
 Es alrededor del 5 % del precio (más en los pagos chicos por el cargo fijo de $3). Pago con OXXO o transferencia (SPEI) tienen otras tarifas.
 
@@ -76,7 +79,7 @@ Es alrededor del 5 % del precio (más en los pagos chicos por el cargo fijo de $
 
 Con un tipo de cambio supuesto de $18 a $20 por dólar, los costos fijos serían del orden de **$600 a $1,000 al mes** al inicio.
 
-**Punto de equilibrio aproximado (solo servicios, sin mi trabajo):** con $1,000 de costos fijos y $466 netos por cada suscripción de $490, hacen falta **3 suscriptores** que paguen el precio completo (4 si entran con descuento en el primer pago).
+**Punto de equilibrio aproximado (solo servicios, sin mi trabajo):** con $1,000 de costos fijos y $466 netos por cada suscripción de $490, hacen falta **3 suscriptores** que paguen el precio completo. Los alumnos en su mes gratis no pagan ni generan comisión.
 
 ## 4. Lo que hay que construir para cumplir esta propuesta
 
@@ -84,7 +87,7 @@ En este orden (de menor a mayor trabajo):
 1. **Pantalla de planes con el plan único** y el aviso del código de descuento. (Hecho.)
 2. **Cuentas reales** (correo y contraseña o Google), base de datos y guardado en la nube. (Grande. Depende del jefe.)
 3. **Cobro con Stripe**: suscripción mensual con renovación; el cobro avisa al sistema y se activa o se corta el acceso. (Grande.)
-4. **Código de descuento** de un solo uso con vencimiento de 24 horas, con los códigos promocionales de Stripe, y la forma de entregárselo al alumno. (Mediano; va junto con el cobro.)
+4. **Cupón del mes gratis** de un solo uso con vencimiento de 24 horas (cupones de Stripe), **contador de 3 exportaciones** por alumno y la forma de entregarle el cupón. (Mediano; va junto con las cuentas y el cobro.)
 5. **Tallas 38 a 44**, solo si se quiere ofrecer más de 28–36. (Poco trabajo; no está probado con los patrones base.)
 6. **Facturación CFDI** y publicación en internet con dominio propio.
 7. **Cuentas de equipo con roles**, como plan aparte, más adelante.
@@ -92,8 +95,8 @@ En este orden (de menor a mayor trabajo):
 ## 5. Decisiones que necesita tomar el jefe
 
 1. ¿Se aprueba el plan único a $490 al mes (más IVA o IVA incluido)?
-2. **Código de descuento:** ¿de cuánto es y aplica al primer pago, a unos meses o siempre?
-3. ¿Cómo le llega el código al alumno y quién lo genera?
+2. **Cupón de alumnos:** ¿1 mes con 3 exportaciones? ¿Qué pasa el día 31? ¿Se pide tarjeta?
+3. ¿Cómo le llega el cupón al alumno y quién lo genera?
 4. ¿Cobro con tarjeta por Stripe, además de OXXO o transferencia?
 5. ¿Quién atenderá el soporte (correo) y con qué tiempo de respuesta?
 6. ¿Se necesita factura (CFDI) automática desde el inicio?

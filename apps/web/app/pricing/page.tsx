@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import SaasNav from "../(saas)/SaasNav";
 import { PLANS, useSession, updatePlan, type PlanId } from "../lib/auth";
+import { EXPORT_KINDS, STUDENT_OFFER } from "../lib/oferta";
 import "../(saas)/saas.css";
 
 function Check() {
@@ -80,18 +81,30 @@ export default function PricingPage() {
           <h2>¿Tomaste el curso?</h2>
           <div className="faq-grid">
             <div>
-              <h4>Descuento para alumnos</h4>
+              <h4>Un mes gratis</h4>
               <p>
-                Al terminar el curso recibes un código de descuento. El precio del plan es el mismo para todos; el código
-                solo lo pueden usar los alumnos.
+                Al terminar el curso recibes un cupón. Con él tienes {STUDENT_OFFER.freeMonths} mes con el programa
+                completo, sin pagar.
               </p>
             </div>
             <div>
-              <h4>Un solo uso, 24 horas</h4>
+              <h4>{STUDENT_OFFER.exports} exportaciones</h4>
               <p>
-                El código sirve una vez y vence 24 horas después de recibirlo. Se escribe al pagar. Si vence, se pide
-                uno nuevo en el curso. El monto del descuento se confirma antes de activar el cobro.
+                Durante ese mes lo puedes usar todo, y puedes sacar {STUDENT_OFFER.exports} exportaciones en total
+                ({EXPORT_KINDS.join(", ")}). Tu respaldo no cuenta. Para seguir usando el programa después del mes,
+                se paga el plan.
               </p>
+            </div>
+            <div>
+              <h4>Un solo uso, {STUDENT_OFFER.redeemHours} horas</h4>
+              <p>
+                El cupón se canjea una sola vez y hay que hacerlo dentro de las {STUDENT_OFFER.redeemHours} horas
+                desde que lo recibes; si vence, se pide uno nuevo en el curso.
+              </p>
+            </div>
+            <div>
+              <h4>Para todos los demás</h4>
+              <p>El plan cuesta ${PLANS[0]!.priceMxn.toLocaleString("es-MX")} al mes desde el primer día, sin mes gratis.</p>
             </div>
           </div>
         </section>

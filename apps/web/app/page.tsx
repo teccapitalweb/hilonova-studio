@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ScrollReveal from "./components/ScrollReveal";
 import { NavCta, HeroCta } from "./LandingAuthCta";
+import { STUDENT_OFFER } from "./lib/oferta";
 
 /** path reutilizable del delantero de pantalón */
 const PANT =
@@ -380,7 +381,9 @@ export default function HomePage() {
           </div>
         </div>
         <p style={{ textAlign: "center", fontSize: 13, opacity: 0.75, marginTop: 14 }}>
-          ¿Tomaste el curso? Recibes un código de descuento de un solo uso, válido 24 horas desde que lo recibes.
+          ¿Tomaste el curso? Recibes un cupón de un solo uso, para canjear en {STUDENT_OFFER.redeemHours} horas: te da{" "}
+          {STUDENT_OFFER.freeMonths} mes con el programa completo y {STUDENT_OFFER.exports} exportaciones. Los demás pagan el
+          plan desde el primer día.
           <br />
           Propuesta en revisión: el cobro todavía no está activo.
         </p>
