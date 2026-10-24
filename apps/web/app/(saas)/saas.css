@@ -948,3 +948,4 @@
 .gate-btn:disabled { opacity: .6; cursor: wait; }
 .gate-card p.gate-small { font-size: 13px; margin-top: 14px; }
 .gate-link { background: none; border: 0; padding: 0; color: var(--ink-2); font: inherit; text-decoration: underline; cursor: pointer; }
+.gate-btn-link { display: flex; align-items: center; justify-content: center; text-decoration: none; }

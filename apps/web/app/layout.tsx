@@ -25,7 +25,7 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "Hilonova — Patronaje digital para maquila",
   description:
-    "Del patrón al corte, sin fricción. Diseña, gradúa y exporta DXF-AAMA en un solo flujo.",
+    "Del patrón al corte, sin fricción. Diseña, gradúa y traza tus patrones desde el navegador y exporta PDF, SVG o DXF.",
 };
 
 // Inyectamos el basePath en una variable CSS para que la .brand .mk pueda

@@ -21,23 +21,24 @@ Se propone **un solo plan con un solo precio**: **$490 al mes** más IVA, con to
 - **¿Se ofrece después un plan de equipo con varios usuarios y roles?** Sí / No
 - **¿Quién atenderá el soporte por WhatsApp que dice la tarjeta (236 120 7101), y con qué horario y tiempo de respuesta?** (Si nadie lo va a atender, se quita.) ________
 
-## 3. Cupón para los alumnos del curso
+## 3. Acceso para los alumnos del curso
 
-Todos pagan el plan de $490 desde el primer día. **Solo los alumnos del curso** reciben un cupón de **un solo uso**, que deben canjear **dentro de las 24 horas** desde que lo reciben. Con el cupón tienen **1 mes con el programa completo**, pero solo pueden hacer **3 exportaciones en total** (DXF, PDF, SVG, ficha técnica o trazo; el respaldo de sus proyectos no cuenta). Después del mes, para seguir usando el programa, pagan.
+*(Decidido el 23 de octubre: sin límite de exportaciones, sin tarjeta, y el negocio da el acceso a mano. No se anuncia en las páginas públicas.)*
 
-- **¿Se aprueba un mes con 3 exportaciones?** Sí / No / Otro: ________ mes(es) y ________ exportaciones.
-- **¿Qué pasa el día 31 si no pagó?** (Se recomienda: los proyectos se conservan solo para verlos y el respaldo siempre se puede descargar.) ________
-- **¿Se pide tarjeta para el mes gratis?** (Se recomienda que no.) Sí / No
-- **¿Desde cuándo cuentan las 24 horas?** Desde que se le entrega el cupón / desde que lo abre.
-- **¿Cómo le llega el cupón al alumno?** Lo envía el curso al terminar / se genera cuando lo pide: ________
-- **Si el cupón vence, ¿cómo pide otro?** ________
-- **¿El cupón se da a todos los alumnos o solo a quienes terminan el curso?** ________
+Todos pagan el plan de $490 desde el primer día. **Los alumnos del curso** reciben **1 mes con el programa completo**: el negocio les activa el acceso a mano en Firebase (con fecha de fin a los 30 días), sin tarjeta ni cobro. Al vencer, para seguir usando el programa, pagan.
+
+- **¿Se aprueba un mes de acceso para los alumnos?** Sí / No / Otro: ________ mes(es).
+- **¿Qué pasa el día 31 si no pagó?** (Hoy: ve «Activa tu plan»; sus proyectos siguen en su cuenta y el respaldo siempre se puede descargar.) ________
+- **¿Quién activa el acceso de cada alumno y cuándo?** (Toma unos 2 minutos por alumno.) ________
+- **¿El acceso se da a todos los alumnos o solo a quienes terminan el curso?** ________
+- **¿Se menciona el acceso en el folleto del curso?** (Hoy no aparece.) Sí / No
 
 ## 4. Cómo se paga
 
-- **¿Con tarjeta (Stripe), con código de acceso, o las dos?** ________
-- **¿Ya existe una cuenta de Stripe de la empresa?** Sí (quién la maneja: ________) / No
-- **¿Se necesita factura (CFDI)?** Sí / No.
+*(Decidido el 23 de octubre: tarjeta con un enlace de pago de Stripe, con la cuenta de Bioorigen; el acceso lo da el negocio a mano al recibir el pago. Sin plan Blaze.)*
+
+- **¿Quién activa el acceso cuando llega un pago, y en cuánto tiempo?** (Stripe avisa por correo; activarlo toma unos 2 minutos.) ________
+- **¿Se necesita factura (CFDI)?** Sí / No. **¿El precio de $490 lleva IVA aparte (se cobra $568.40) o incluido?** ________
 - **¿Se ofrece también pago anual?** No por ahora (un solo precio mensual) / Sí, con este descuento: ________
 
 ## 5. Fechas
@@ -45,7 +46,6 @@ Todos pagan el plan de $490 desde el primer día. **Solo los alumnos del curso**
 - **¿Los alumnos deben poder usar el software desde el 9 de noviembre?** Sí / No
 - **¿Quién publica el software en internet (dónde se aloja) y con qué dirección?** ________
 
-## Lo que yo haría si no hay preferencia
+## Lo que ya quedó decidido
 
-El plan único de $490 al mes con un cupón de un mes y 3 exportaciones para alumnos, cobro con tarjeta por Stripe y cuenta de usuario
-real. Es lo más rápido y lo más fácil de tener funcionando antes del 9 de noviembre.
+El plan único de $490 al mes, cobro con tarjeta por Stripe (cuenta de Bioorigen) con acceso dado a mano, un mes de acceso para alumnos sin tarjeta, y cuentas de usuario reales con Firebase. Los pasos están en `docs/COBRO-PASOS.md`.

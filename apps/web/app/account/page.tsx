@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import SaasNav from "../(saas)/SaasNav";
 import { signOut, useSession, findPlan } from "../lib/auth";
-import { STATUS_LABEL } from "../lib/billing-core";
-import { billingErrorMessage, openBillingPortal, startCheckout, usePlanStatus } from "../lib/billing";
+import { goToPayment, portalUrl, usePlanStatus } from "../lib/billing";
 import { useLibrary } from "../lib/library";
 import "../(saas)/saas.css";
 
@@ -16,21 +15,7 @@ export default function AccountPage() {
   const session = useSession();
   const router = useRouter();
   const items = useLibrary();
-  const planStatus = usePlanStatus();
-  const [billingBusy, setBillingBusy] = useState(false);
-  const [billingError, setBillingError] = useState<string | null>(null);
-
-  async function billingAction(fn: () => Promise<void>) {
-    setBillingBusy(true);
-    setBillingError(null);
-    try {
-      await fn();
-    } catch (err) {
-      setBillingBusy(false);
-      setBillingError(billingErrorMessage(err));
-      console.warn("cobro falló:", err);
-    }
-  }
+  const planState = usePlanStatus();
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -145,44 +130,31 @@ export default function AccountPage() {
           {/* facturación */}
           <section className="acc-card">
             <h2>Facturación</h2>
-            {planStatus.state === "disabled" ? (
+            {planState === "disabled" ? (
               <>
                 <p>Método de pago y recibos.</p>
-                <div className="acc-row"><span>Método</span><span className="v">—</span></div>
-                <div className="acc-row"><span>Próximo cargo</span><span className="v">—</span></div>
+                <div className="acc-row"><span>Estado</span><span className="v">Acceso completo (versión de pruebas)</span></div>
                 <p className="acc-foot-note">El cobro todavía no está activo.</p>
               </>
             ) : (
               <>
-                <p>Tu suscripción y tus recibos.</p>
+                <p>Tu plan y tus recibos.</p>
                 <div className="acc-row">
                   <span>Estado</span>
                   <span className="v">
-                    {planStatus.state === "loading" || planStatus.state === "unknown"
-                      ? "Comprobando…"
-                      : planStatus.via === "cortesia"
-                        ? "Acceso activo"
-                        : planStatus.subscription
-                          ? (STATUS_LABEL[planStatus.subscription.status] ?? planStatus.subscription.status)
-                          : "Sin plan"}
+                    {planState === "active" ? "Acceso activo" : planState === "inactive" ? "Sin plan activo" : "Comprobando…"}
                   </span>
                 </div>
-                {planStatus.subscription?.currentPeriodEnd && planStatus.via === "suscripcion" && (
-                  <div className="acc-row">
-                    <span>{planStatus.subscription.cancelAtPeriodEnd ? "Termina el" : "Próximo cargo"}</span>
-                    <span className="v">{new Date(planStatus.subscription.currentPeriodEnd).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}</span>
-                  </div>
+                {planState === "inactive" && (
+                  <button className="btn-primary-pill" style={{ marginTop: 12 }} onClick={() => goToPayment(session.user.id, session.user.email)}>
+                    Activar plan
+                  </button>
                 )}
-                {billingError && <div className="auth-error" role="alert"><span>{billingError}</span></div>}
-                {planStatus.subscription ? (
-                  <button className="btn-primary-pill" style={{ marginTop: 12 }} disabled={billingBusy} onClick={() => billingAction(openBillingPortal)}>
-                    {billingBusy ? "Abriendo…" : "Administrar suscripción"}
-                  </button>
-                ) : planStatus.state === "inactive" ? (
-                  <button className="btn-primary-pill" style={{ marginTop: 12 }} disabled={billingBusy} onClick={() => billingAction(startCheckout)}>
-                    {billingBusy ? "Abriendo…" : "Activar plan"}
-                  </button>
-                ) : null}
+                {planState === "active" && portalUrl() && (
+                  <a className="btn-primary-pill" style={{ marginTop: 12, display: "inline-block" }} href={portalUrl()} target="_blank" rel="noopener">
+                    Administrar suscripción
+                  </a>
+                )}
                 <p className="acc-foot-note">Desde «Administrar suscripción» puedes cambiar tu tarjeta, ver recibos y cancelar.</p>
               </>
             )}

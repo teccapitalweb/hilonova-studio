@@ -47,7 +47,7 @@ Mientras `apps/web/app/lib/firebase-config.ts` esté vacío, el programa funcion
 - **Aviso de privacidad y términos:** ya existen en `/privacidad` y `/terminos` (se abren desde el registro). Por decisión del negocio no llevan razón social, domicilio ni correo de contacto: el aviso dice que HiloNova es el responsable y que se le escribe por los medios que publica en su sitio. Si se quiere un aviso con todos los datos de identificación del responsable, hay que agregarlos y que un abogado revise el texto.
 - **Todas las cuentas tienen hoy el plan completo gratis.** El control de quién pagó o canjeó un cupón se construye en el servidor (pasos 4 y 5).
 - **Versión de Next.js:** la 15.1.6 tiene una vulnerabilidad conocida (CVE-2025-66478). Hay que subir a una versión corregida antes de publicar.
-- **Cloud Functions y Stripe** necesitan el plan **Blaze** de Firebase (pago por uso, pide tarjeta; con poco tráfico casi no se paga). El registro y el guardado de patrones funcionan en el plan gratis.
+- **Cobro:** se hace con un enlace de pago de Stripe y acceso dado a mano; **no necesita el plan Blaze** (ver `docs/COBRO-PASOS.md`).
 
 ## Cómo se probó aquí
 

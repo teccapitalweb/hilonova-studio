@@ -1,5 +1,5 @@
 // Modal de exportación — Fase 4.
-// Formatos: DXF-AAMA (industrial), SVG (vectorial), PDF A4 mosaico (casero).
+// Formatos: DXF estilo AAMA (en validación), SVG (vectorial), PDF A4 mosaico (casero).
 // La descarga se hace del lado del cliente creando un Blob y disparando un <a>.
 
 "use client";
@@ -23,10 +23,10 @@ interface FormatMeta {
 const FORMATS: FormatMeta[] = [
   {
     id: "dxf",
-    label: "DXF-AAMA",
+    label: "DXF (estilo AAMA)",
     ext: "dxf",
     mime: "application/dxf",
-    blurb: "El estándar de intercambio. Lo abre Gerber, Lectra y cualquier CAD industrial, con capas limpias.",
+    blurb: "Para llevar el patrón a otros programas de patronaje, con capas estilo AAMA. Todavía está en validación: revisa cómo abre en tu programa antes de producir.",
   },
   {
     id: "pdf",

@@ -319,7 +319,7 @@ function ExportButton() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button className="st-btn-export" onClick={() => setOpen(true)} title="Exportar DXF-AAMA, PDF o SVG">
+      <button className="st-btn-export" onClick={() => setOpen(true)} title="Exportar PDF, SVG o DXF">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
           <path d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>

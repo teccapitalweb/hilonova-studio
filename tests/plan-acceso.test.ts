@@ -1,48 +1,30 @@
-// Quién puede usar el programa cuando el cobro está encendido (regla pura) y que viene apagado por seguridad.
+// Quién puede usar el programa cuando el cobro está encendido (reglas puras), el enlace de pago y que viene apagado.
 
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { ENTITLED_STATUSES, OFFLINE_GRACE_DAYS, entitlementOf, withinGrace } from "../apps/web/app/lib/billing-core";
+import { OFFLINE_GRACE_DAYS, hasAccess, paymentUrl, whatsappUrl, withinGrace } from "../apps/web/app/lib/billing-core";
 import { BILLING } from "../apps/web/app/lib/billing-config";
 
 const NOW = new Date("2026-11-01T12:00:00.000Z");
 const day = 86_400_000;
 
-describe("entitlementOf", () => {
-  it.each(["active", "trialing", "past_due"])("la suscripción «%s» da acceso", (status) => {
-    expect(entitlementOf({ status }, null, NOW)).toEqual({ entitled: true, via: "suscripcion" });
+describe("hasAccess", () => {
+  it("sin documento de acceso no hay acceso", () => {
+    expect(hasAccess(null, NOW)).toBe(false);
+    expect(hasAccess(undefined, NOW)).toBe(false);
   });
 
-  it.each(["canceled", "unpaid", "incomplete", "incomplete_expired", "paused"])("la suscripción «%s» no da acceso", (status) => {
-    expect(entitlementOf({ status }, null, NOW)).toEqual({ entitled: false, via: null });
+  it("un acceso sin fecha no vence (pago recibido, cortesía)", () => {
+    expect(hasAccess({ note: "pago de enero" }, NOW)).toBe(true);
+    expect(hasAccess({ until: null }, NOW)).toBe(true);
   });
 
-  it("sin suscripción ni acceso dado a mano no hay acceso", () => {
-    expect(entitlementOf(null, null, NOW).entitled).toBe(false);
-    expect(entitlementOf(undefined, undefined, NOW).entitled).toBe(false);
-  });
-
-  it("un acceso dado a mano sin fecha no vence", () => {
-    expect(entitlementOf(null, { note: "venta por WhatsApp" }, NOW)).toEqual({ entitled: true, via: "cortesia" });
-    expect(entitlementOf(null, { until: null }, NOW).entitled).toBe(true);
-  });
-
-  it("un acceso dado a mano con fecha vale hasta esa fecha", () => {
-    expect(entitlementOf(null, { until: new Date(NOW.getTime() + day).toISOString() }, NOW).entitled).toBe(true);
-    expect(entitlementOf(null, { until: new Date(NOW.getTime() - day).toISOString() }, NOW).entitled).toBe(false);
+  it("un acceso con fecha vale hasta esa fecha (alumnos: un mes)", () => {
+    expect(hasAccess({ until: new Date(NOW.getTime() + day).toISOString() }, NOW)).toBe(true);
+    expect(hasAccess({ until: new Date(NOW.getTime() - day).toISOString() }, NOW)).toBe(false);
   });
 
   it("una fecha que no se entiende NO regala el acceso", () => {
-    expect(entitlementOf(null, { until: "mañana" }, NOW).entitled).toBe(false);
-  });
-
-  it("una suscripción cancelada con un acceso a mano vigente sí entra (cortesía)", () => {
-    expect(entitlementOf({ status: "canceled" }, { until: null }, NOW)).toEqual({ entitled: true, via: "cortesia" });
-  });
-
-  it("los estados con acceso son los mismos que las funciones consideran «suscripción existente»", () => {
-    const core = readFileSync(new URL("../firebase/functions/billing-core.js", import.meta.url), "utf8");
-    for (const s of ENTITLED_STATUSES) expect(core).toContain(`"${s}"`);
+    expect(hasAccess({ until: "mañana" }, NOW)).toBe(false);
   });
 });
 
@@ -56,8 +38,39 @@ describe("sin conexión", () => {
   });
 });
 
+describe("enlace de pago", () => {
+  const link = "https://buy.stripe.com/test_abc123";
+
+  it("lleva el correo y la cuenta, para que el pago diga de quién es", () => {
+    const u = new URL(paymentUrl(link, "KVkESNzPcMWKOmOsuCUJzFghKOY2", "ana@taller.mx"));
+    expect(u.origin + u.pathname).toBe(link);
+    expect(u.searchParams.get("prefilled_email")).toBe("ana@taller.mx");
+    expect(u.searchParams.get("client_reference_id")).toBe("KVkESNzPcMWKOmOsuCUJzFghKOY2");
+  });
+
+  it("si la cuenta trae caracteres que Stripe no acepta, no la manda (el correo basta)", () => {
+    const u = new URL(paymentUrl(link, "u:raro/1", "ana@taller.mx"));
+    expect(u.searchParams.has("client_reference_id")).toBe(false);
+    expect(u.searchParams.get("prefilled_email")).toBe("ana@taller.mx");
+  });
+
+  it("sin enlace configurado devuelve vacío", () => {
+    expect(paymentUrl("", "uid", "a@x.mx")).toBe("");
+  });
+
+  it("el mensaje de WhatsApp va codificado", () => {
+    const u = whatsappUrl("522361207101", "Hola, mi correo es a+b@x.mx");
+    expect(u.startsWith("https://wa.me/522361207101?text=")).toBe(true);
+    expect(decodeURIComponent(u.split("text=")[1]!)).toBe("Hola, mi correo es a+b@x.mx");
+  });
+});
+
 describe("interruptor del cobro", () => {
-  it("viene apagado: hasta publicar y probar las funciones, todas las cuentas entran como hoy", () => {
+  it("viene apagado: hasta crear el enlace de pago y probarlo, todas las cuentas entran como hoy", () => {
     expect(BILLING.enabled).toBe(false);
+  });
+
+  it("el WhatsApp es el del folleto del curso", () => {
+    expect(BILLING.whatsapp).toBe("522361207101");
   });
 });

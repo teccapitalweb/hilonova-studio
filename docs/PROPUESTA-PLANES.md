@@ -1,6 +1,6 @@
 # Propuesta de planes y costos de HiloNova Studio
 
-> **Actualización del 23 de octubre de 2026:** se decidió cobrar con la cuenta de Stripe de Bioorigen, **sin límite de exportaciones** (no se puede hacer cumplir de forma segura en el navegador) y el cupón de alumnos será un **código de promoción de Stripe** (primer mes gratis, un solo uso, con vencimiento). Los detalles y los pasos están en `docs/COBRO-PASOS.md`; lo que diga abajo sobre «3 exportaciones» quedó superado.
+> **Actualización del 23 de octubre de 2026:** se decidió cobrar con la cuenta de Stripe de Bioorigen, **sin límite de exportaciones** (no se puede hacer cumplir de forma segura en el navegador) y el acceso de alumnos lo da el negocio **a mano** por un mes (sin tarjeta). El cobro es un enlace de pago de Stripe, **sin plan Blaze ni servidor propio**. Los detalles y los pasos están en `docs/COBRO-PASOS.md`; lo que diga abajo sobre «3 exportaciones» quedó superado.
 
 
 Fecha: 23 de octubre de 2026. Es una **propuesta para decidir**, no algo ya construido: hoy el cobro, las cuentas y los límites por plan no existen.

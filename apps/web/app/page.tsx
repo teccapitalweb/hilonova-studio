@@ -70,17 +70,17 @@ export default function HomePage() {
                 al corte, <span className="accent">sin fricción.</span>
               </h1>
               <p className="sub">
-                Dibuja desde medidas, gradúa todas las tallas, optimiza el trazo y exporta en
-                DXF-AAMA listo para tu Gerber o Lectra. Todo en un solo lugar.
+                Dibuja desde medidas, gradúa tus tallas, traza el acomodo de corte y exporta en PDF, SVG o DXF.
+                Todo en un solo lugar, desde el navegador.
               </p>
               <div className="hero-cta">
                 <HeroCta />
                 <Link className="btn btn-ghost" href="/studio">Ver el editor</Link>
               </div>
               <div className="hero-stats">
-                <div className="stat-pill"><b>−12%</b><span>merma de tela</span></div>
-                <div className="stat-pill"><b>28–44</b><span>tallas graduadas</span></div>
-                <div className="stat-pill"><b>DXF-AAMA</b><span>nativo</span></div>
+                <div className="stat-pill"><b>17</b><span>prendas base</span></div>
+                <div className="stat-pill"><b>S–XL · 28–36</b><span>tallas graduadas</span></div>
+                <div className="stat-pill"><b>PDF · SVG · DXF</b><span>exportación</span></div>
               </div>
             </div>
 
@@ -88,7 +88,6 @@ export default function HomePage() {
               <div className="prod-canvas">
                 <img src={asset("/img/hero-piece.jpg")} alt="Pieza de patrón de pantalón de mezclilla con anotaciones técnicas" />
               </div>
-              <div className="chip c4">aprovechado <b>83%</b></div>
             </div>
           </div>
         </div>
@@ -97,12 +96,11 @@ export default function HomePage() {
       {/* ===================== STRIP ===================== */}
       <section className="strip">
         <div className="wrap strip-in">
-          <span className="lbl">Compatible con tu planta:</span>
-          <span className="strip-tag">Gerber</span>
-          <span className="strip-tag">Lectra</span>
-          <span className="strip-tag">DXF <b>AAMA/ASTM</b></span>
-          <span className="strip-tag">Plotter HPGL</span>
-          <span className="strip-tag">PDF mosaico</span>
+          <span className="lbl">Exporta a:</span>
+          <span className="strip-tag">PDF mosaico A4</span>
+          <span className="strip-tag">PDF 1:1 para plotter</span>
+          <span className="strip-tag">SVG</span>
+          <span className="strip-tag">DXF <b>(en validación)</b></span>
         </div>
       </section>
 
@@ -119,7 +117,7 @@ export default function HomePage() {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 7h18M3 12h12M3 17h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
             </div>
             <div className="vbig">1 flujo</div>
-            <h3>De la medida al DXF</h3>
+            <h3>De la medida al patrón</h3>
             <p>Mete medidas y el sistema dibuja el bloque con reglas reales de patronaje. Lo afinas con curvas, pinzas y piquetes de precisión.</p>
           </div>
           <div className="vcard">
@@ -127,14 +125,14 @@ export default function HomePage() {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 20 20 4M9 20 20 9M14 20 20 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
             </div>
             <h3>Graduación por reglas</h3>
-            <p>Define los deltas una vez y obtén el nido de tallas completo, de la 28 a la 44, fiel en toda la escala.</p>
+            <p>Cada prenda trae sus reglas de graduación y obtienes el nido de tallas completo (S–XL, XS–XXL o 28–36); también puedes ajustarlo nodo por nodo.</p>
           </div>
           <div className="vcard">
             <div className="vic">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="12" rx="1.5" stroke="currentColor" strokeWidth="2" /><path d="M6 10h3v4H6z" fill="currentColor" /></svg>
             </div>
             <h3>Trazo y consumo</h3>
-            <p>Acomoda al ancho real de tu tela y mide consumo y aprovechamiento. Menos merma, costeo más fino.</p>
+            <p>Acomoda al ancho real de tu tela y mide el consumo y el aprovechamiento por talla para costear mejor.</p>
           </div>
         </div>
       </section>
@@ -146,7 +144,7 @@ export default function HomePage() {
             <span className="eyebrow">Librería de bloques</span>
             <h2>Prendas listas para arrancar.</h2>
           </div>
-          <Link className="btn btn-light" href="/pricing">Ver todas</Link>
+          <Link className="btn btn-light" href="/app/new">Ver todas</Link>
         </div>
         <div className="pcards">
           <div className="pcard">
@@ -155,7 +153,7 @@ export default function HomePage() {
             <div className="pc-foot">
               <div>
                 <h4>Pantalón denim</h4>
-                <div className="meta">5 piezas · 28–44</div>
+                <div className="meta">10 piezas</div>
               </div>
               <div className="rate">★ base</div>
             </div>
@@ -166,7 +164,7 @@ export default function HomePage() {
             <div className="pc-foot">
               <div>
                 <h4>Jacket denim</h4>
-                <div className="meta">8 piezas · S–XXL</div>
+                <div className="meta">14 piezas</div>
               </div>
               <div className="rate">★ base</div>
             </div>
@@ -177,7 +175,7 @@ export default function HomePage() {
             <div className="pc-foot">
               <div>
                 <h4>Camisa chambray</h4>
-                <div className="meta">6 piezas · S–XL</div>
+                <div className="meta">9 piezas</div>
               </div>
               <div className="rate">★ base</div>
             </div>
@@ -196,7 +194,7 @@ export default function HomePage() {
           <div className="sc-top">
             <div className="dots"><i /><i /><i /></div>
             <span className="t">Jean Slim · Delantero · cm</span>
-            <span className="r">● DXF-AAMA listo</span>
+            <span className="r">● DXF en validación</span>
           </div>
           <div className="sc-body">
             <div className="sc-rail">
@@ -207,7 +205,6 @@ export default function HomePage() {
             </div>
             <div className="sc-canvas">
               <div className="sc-chip" style={{ left: 16, top: 16 }}>80.0 cm</div>
-              <div className="sc-chip" style={{ right: 16, bottom: 16 }}>aprovechado <b>83%</b></div>
               <svg viewBox="0 0 520 420" preserveAspectRatio="xMidYMid meet" aria-label="Patrón graduado en el editor">
                 <g transform="translate(150,30)">
                   <path d={PANT} transform="translate(205,170) scale(0.9) translate(-205,-170)" fill="none" stroke="#3FB5C9" strokeWidth="1.5" opacity=".7" />
@@ -351,7 +348,7 @@ export default function HomePage() {
         <div className="steps">
           <div className="stepc"><div className="num">1</div><h3>Mete las medidas</h3><p>Cintura, cadera, tiro y largo. El sistema dibuja el bloque base al instante.</p></div>
           <div className="stepc"><div className="num">2</div><h3>Ajusta y gradúa</h3><p>Afina las curvas y genera el nido de tallas completo con tus reglas.</p></div>
-          <div className="stepc"><div className="num">3</div><h3>Traza y exporta</h3><p>Optimiza el trazo y manda DXF-AAMA o PDF directo a tu maquila.</p></div>
+          <div className="stepc"><div className="num">3</div><h3>Traza y exporta</h3><p>Acomoda el trazo y exporta PDF, SVG o DXF para tu maquila.</p></div>
         </div>
       </section>
 
@@ -359,8 +356,8 @@ export default function HomePage() {
       <section className="sec wrap" id="precios">
         <div className="sec-head center">
           <span className="eyebrow">Precios</span>
-          <h2>Un plan por cada tamaño de taller.</h2>
-          <p>Empieza en minutos, crece cuando lo necesites. Sin instalación, sin contratos atados.</p>
+          <h2>Un plan, un precio.</h2>
+          <p>Todo el programa incluido. Sin instalación: funciona en el navegador.</p>
         </div>
         <div className="pricing" style={{ gridTemplateColumns: "minmax(0, 440px)", justifyContent: "center" }}>
           <div className="plan pop">
@@ -381,31 +378,6 @@ export default function HomePage() {
         <p style={{ textAlign: "center", fontSize: 13, opacity: 0.75, marginTop: 14 }}>
           El cobro todavía no está activo.
         </p>
-      </section>
-
-      {/* ===================== TESTIMONIAL =====================
-          PENDIENTE DE REEMPLAZAR POR TESTIMONIO REAL de piloto. El actual
-          es contenido de muestra para evaluar maquetación: no citar como
-          cliente real hasta tener autorización por escrito del taller. */}
-      <section className="sec wrap">
-        <div className="quote">
-          <div className="ph">
-            <img src={asset("/img/testimonio.jpg")} alt="Patronista en taller de mezclilla revisando una graduación impresa" />
-          </div>
-          <blockquote>
-            <span className="eyebrow" style={{ marginBottom: 14 }}>● Piloto en pruebas</span>
-            <p>
-              “Antes graduar de la 28 a la 44 nos tomaba una tarde completa a mano,
-              y cada corrida le dejaba un dolor de cabeza al cortador. Con Hilonova
-              bajamos la merma unos puntos y entregamos el DXF listo para Gerber el
-              mismo día: la gente de corte deja de rehacer y vuelve a confiar en el
-              trazo.”
-            </p>
-            <div className="who">
-              <b>Taller piloto · Torreón</b> · nombre y cargo por confirmar
-            </div>
-          </blockquote>
-        </div>
       </section>
 
       {/* ===================== CTA ===================== */}
@@ -442,22 +414,14 @@ export default function HomePage() {
               <a href="#precios">Precios</a>
               <Link href="/studio">Editor</Link>
             </div>
-            <div className="foot-col" id="recursos">
-              <h4>Recursos</h4>
-              <a href="#">Guías</a>
-              <a href="#">DXF-AAMA</a>
-              <a href="#">Soporte</a>
-            </div>
             <div className="foot-col">
-              <h4>Empresa</h4>
-              <a href="#">Hilonova</a>
-              <a href="#">Contacto</a>
-              <a href="#">Blog</a>
+              <h4>Contacto</h4>
+              <a href="https://wa.me/522361207101" target="_blank" rel="noopener">WhatsApp</a>
             </div>
             <div className="foot-col">
               <h4>Legal</h4>
-              <a href="#">Privacidad</a>
-              <a href="#">Términos</a>
+              <Link href="/privacidad">Privacidad</Link>
+              <Link href="/terminos">Términos</Link>
             </div>
           </div>
           <div className="foot-bar">

@@ -214,7 +214,7 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
       <h3>Empieza tu primer patrón.</h3>
       <p>
         Un patrón arranca desde medidas: cintura, cadera, tiro, largo. El sistema dibuja el
-        bloque, lo gradúa talla por talla y lo exporta en DXF-AAMA.
+        bloque, lo gradúa talla por talla y lo exporta en PDF, SVG o DXF.
       </p>
       <button className="btn-primary-pill" onClick={onCreate}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">

@@ -26,16 +26,8 @@ service cloud.firestore {
                             && request.resource.data.updatedAt is string;
       allow delete: if request.auth != null && request.auth.uid == uid;
     }
-    // Cobro: cada persona solo LEE lo suyo. Quien escribe aquí son las funciones de cobro (con permisos de
-    // administrador, que no pasan por estas reglas) y, a mano, el negocio desde la consola de Firebase.
-    match /customers/{uid} {
-      allow read: if request.auth != null && request.auth.uid == uid;
-      allow write: if false;
-      match /subscription/{id} {
-        allow read: if request.auth != null && request.auth.uid == uid;
-        allow write: if false;
-      }
-    }
+    // Acceso al programa: cada persona solo LEE el suyo. Quien lo da es el negocio, a mano, desde la consola de
+    // Firebase (la consola no pasa por estas reglas); nadie puede escribirlo desde el programa.
     match /access/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;
       allow write: if false;
