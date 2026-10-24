@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 110
+> Rama: `dev/mvp-9-nov` · Commits: 112
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,39 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## docs: documentar todo lo hecho del 22 al 24 de octubre y poner al día el traspaso
+
+- Commit: `694a5b8`
+- Fecha: 2026-10-24
+- Autor: wh505010@gmail.com
+
+Qué: se agrega docs/CAMBIOS-OCT-2026.md, la bitácora completa de punta a punta (estado en una mirada, cronología por áreas con los
+commits, experimentos descartados, decisiones, lo que falta, cómo trabajar y comprobar). Se reescribe HANDOFF.md (antes decía que la
+autenticación era de mentira, que se usaría Supabase y que había 4 prendas y 3 planes) con la estructura real, las decisiones
+vigentes (Firebase sin Blaze, nube, cobro con enlace de Stripe y acceso a mano, plan único, reglas de honestidad), lo que funciona,
+lo que falta y los gotchas. Se actualizan README.md (estado, rutas, fases 13 a 17, pendiente, despliegue), CLAUDE.md (stack y reglas
+de trabajo), docs/MAPA-DE-PAGINAS.md (sección 8) y docs/ANALISIS-CUMPLIMIENTO.md (nota de actualización: cuentas, nube, cobro, 667
+pruebas).
+Por qué: el negocio pidió dejar todo documentado antes de subir los cambios; varios documentos describían un estado que ya no existe.
+Verificación: 667 pruebas pasan; los hashes y los números (17 prendas, 667 pruebas, 31 hojas del mosaico, Next 15.1.12) se tomaron del
+historial de git y de las corridas de pruebas de este trabajo. Es solo documentación: no cambia código.
+Archivos: HANDOFF.md, README.md, CLAUDE.md, docs/{CAMBIOS-OCT-2026,MAPA-DE-PAGINAS,ANALISIS-CUMPLIMIENTO}.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `ddb8104`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## fix: la guía del lienzo vacío se puede cerrar
 
