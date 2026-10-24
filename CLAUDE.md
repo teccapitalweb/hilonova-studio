@@ -2,10 +2,11 @@
 
 ## Qué es
 
-SaaS **B2B** de **patronaje digital** para maquilas y talleres de confección
+Programa web de **patronaje digital** para maquilas, talleres y alumnos de confección
 (cliente: consultora **Hilonova**). El patronista mete medidas, el sistema traza
-el bloque base, lo gradúa, acomoda el trazo y exporta **DXF-AAMA** (intercambio
-con Gerber/Lectra) + PDF mosaico/plotter. Pieza piloto: **mezclilla/denim**.
+el bloque base (17 prendas), lo gradúa, acomoda el trazo y exporta PDF (mosaico,
+1:1 para plotter, ficha técnica), SVG y **DXF estilo AAMA (en validación, aún sin
+probar en Gerber/Lectra)**. Pieza piloto: **mezclilla/denim**.
 
 - **Web primero.** Escritorio (Tauri) reutilizará el motor en fase posterior.
 - **Fuera de alcance:** cursos / LMS / certificados. Eso es otro proyecto.
@@ -19,11 +20,14 @@ con Gerber/Lectra) + PDF mosaico/plotter. Pieza piloto: **mezclilla/denim**.
   IBM Plex Sans, IBM Plex Mono).
 - `packages/geometry`: **el corazón**. TS puro, sin UI, serializable. Aquí van
   curvas, offset de costura, graduación, undo/redo (Fase 1+).
-- `packages/blocks`: reglas de patronaje por medidas (denim primero).
-- `packages/export`: DXF-AAMA, SVG, PDF.
+- `packages/blocks`: reglas de patronaje por medidas (17 prendas).
+- `packages/export`: DXF, SVG, PDF mosaico, ficha técnica, trazo.
 
-Backend previsto (fases siguientes): **Supabase** (Postgres + Auth + Storage,
-multi-tenant con RLS por organización) y **Stripe** (pagos; evaluar Mercado Pago).
+Backend: **Firebase** (Authentication + Firestore, plan gratis; **sin Blaze**, sin
+funciones en la nube). Cuentas reales, patrones guardados en `users/{uid}/patterns`.
+Cobro: **enlace de pago de Stripe + acceso dado a mano** (`access/{uid}`), con el
+interruptor `lib/billing-config.ts` apagado hasta probarlo. Detalle y decisiones en
+`HANDOFF.md` y `docs/CAMBIOS-OCT-2026.md`.
 
 ## Convenciones
 
@@ -33,7 +37,13 @@ multi-tenant con RLS por organización) y **Stripe** (pagos; evaluar Mercado Pag
 - Diseño: marca Hilonova elevada (navy/teal, bronce, salvia, crema). Dos mundos:
   **estudio claro** (producto/landing) y **taller oscuro** (editor/trazo/ficha).
   Nada de look "IA genérica".
-- No incluir secretos de `.env` en reportes, prompts ni commits.
+- No incluir secretos de `.env` ni llaves de Stripe en reportes, prompts ni commits
+  (la configuración **pública** de Firebase sí puede ir en el código).
+- Cada commit documentado (*Qué / Por qué / Verificación / Archivos*) y regenerar
+  `docs/COMMITS.md` con `node scripts/commit-log.mjs`.
+- Nada se publica ni se sube a `main` sin que el negocio lo pida; las páginas no
+  prometen lo que el programa no hace (hay pruebas que lo vigilan).
+- Textos al usuario en español sencillo.
 
 ## Comandos
 
@@ -42,4 +52,5 @@ pnpm install
 pnpm dev          # web en http://localhost:4321
 pnpm build
 pnpm typecheck
+pnpm test         # 667 pruebas (Vitest)
 ```

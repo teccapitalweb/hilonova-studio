@@ -1,228 +1,160 @@
 # Handoff — Hilonova Studio
 
 Guía rápida para quien agarre el proyecto después. Léela antes de abrir el
-editor.
+editor. Lo que se hizo entre el 22 y el 24 de octubre de 2026, con todos los
+detalles, está en **[docs/CAMBIOS-OCT-2026.md](./docs/CAMBIOS-OCT-2026.md)**.
 
 ## Qué es
 
-SaaS **B2B** de patronaje digital para maquilas/talleres de confección en
-México. El patronista mete medidas, el sistema traza el bloque base, lo gradúa
-por talla, acomoda el trazo y exporta **DXF-AAMA** (intercambio con
-Gerber/Lectra) + PDF mosaico + Tech Pack PDF.
+Programa web de **patronaje digital** para maquilas, talleres y alumnos de
+confección en México. El patronista mete medidas, el sistema traza el bloque
+base (17 prendas), lo gradúa por talla, acomoda el trazo con consumo de tela y
+exporta PDF (mosaico A4, 1:1 para plotter, ficha técnica), SVG y **DXF estilo
+AAMA** (en validación: todavía no se prueba en Gerber/Lectra).
 
-Web primero (Next.js 15). Escritorio (Tauri) reutilizará el motor en una
-fase posterior. Cursos / academia están **fuera de alcance** — es otro
-proyecto.
+Web primero (Next.js 15). Escritorio (Tauri) reutilizaría el motor en una fase
+posterior. Cursos / academia están **fuera de alcance** — es otro proyecto
+(`hilonova-web`, hilonovamx.com).
+
+Piezas del ecosistema (ver `docs/MAPA-DE-PAGINAS.md`):
+- **`hilonova-studio`** (este repo): el programa.
+- **`HiloNova-CAD`**: la página de venta; el programa compilado vive en su carpeta `programa/` (se genera con `scripts/publicar-en-cad.mjs`).
+- **`hilonova-web`**: sitio de formación, no se tocó.
 
 ## Cómo arrancar
 
 ```bash
 git clone https://github.com/teccapitalweb/hilonova-studio.git
 cd hilonova-studio
+git checkout dev/mvp-9-nov
 pnpm install
-pnpm dev          # web en http://localhost:4321
+pnpm dev          # http://localhost:4321
+pnpm test         # 667 pruebas
 ```
 
-Node ≥ 20 y pnpm ≥ 11 (viene fijado en `packageManager`).
-
-Un `pnpm dev` básico ya te da la landing en `/`, el flujo de signup en
-`/auth/signup`, el dashboard en `/app`, y el editor en `/studio`.
+Node ≥ 20 y pnpm ≥ 11 (viene fijado en `packageManager`). En Windows el
+`pnpm` no siempre está en el PATH: se usa `corepack pnpm …`.
 
 ## Decisiones clave que ya tomamos
 
-Nada de esto es sagrado, pero cambiarlo tiene efectos:
-
-1. **Auth es mock sobre `localStorage`.** La API de `apps/web/app/lib/auth.ts`
-   es la que se migrará a Supabase: su firma pública (`signUp`, `signIn`,
-   `useSession`, `signOut`, `signInWithProvider`) ya está pensada para que
-   la implementación cambie sin tocar las páginas.
-2. **Biblioteca de patrones también `localStorage`** (misma lógica — ver
-   `apps/web/app/lib/library.ts`). Guarda documentos serializados con
-   `@hilonova/geometry`.
-3. **El motor (`@hilonova/geometry`) NO conoce React.** TypeScript puro,
-   serializable. Esto es a propósito: el shell de escritorio Tauri usará
-   el mismo paquete sin cambios.
-4. **Zustand para estado del editor** (`apps/web/app/studio/store.ts`).
-   Todas las mutaciones del documento pasan por `apply(next)` encima de un
-   historial inmutable, así `undo/redo` funciona siempre.
-5. **Puerto dev `4321`** fijado en `apps/web/package.json`.
-6. **GitHub Pages estático** con `NEXT_PUBLIC_BASE_PATH=/hilonova-studio`.
-   El workflow está en `.github/workflows/pages.yml` — no lo toques salvo
-   que sepas qué haces.
-7. **No commitear nada de `.env`** — no hay nada por ahora, pero cuando
-   venga Supabase los Service Role Keys etc. van a env vars.
+1. **Cuentas con Firebase** (Authentication + Firestore, plan gratis Spark).
+   La configuración **pública** vive en `apps/web/app/lib/firebase-config.ts`
+   (no es secreta; protegen las reglas de `firebase/firestore.rules`). Si esa
+   configuración estuviera vacía, el programa entra en «modo de prueba» (cuenta
+   solo en el navegador). **Sin plan Blaze**: no hay funciones en la nube.
+2. **Patrones: navegador primero, nube después.** `lib/library.ts` guarda en
+   `localStorage` (`library-raw.ts`) y `lib/cloud.ts` copia cada cambio a
+   Firestore `users/{uid}/patterns/{id}` (cola, mezcla por fecha, separación
+   entre cuentas). Materiales, «Mis piezas» y preferencias siguen solo en el
+   navegador.
+3. **Cobro con enlace de pago de Stripe + acceso a mano.** El interruptor
+   `apps/web/app/lib/billing-config.ts` (`enabled`) viene **apagado**: mientras
+   lo esté, todas las cuentas entran gratis. Con él encendido, `PlanGate` pide
+   «Activa tu plan» a quien no tenga un documento `access/{uid}` en Firestore
+   (lo crea el negocio a mano). Ver `docs/COBRO-PASOS.md`.
+4. **Un solo plan «Completo»: $490 MXN al mes, 1 usuario.** Sin planes por
+   partes ni límite de exportaciones. El acceso de alumnos lo da el negocio a
+   mano por 30 días y **no se anuncia** en páginas públicas.
+5. **El motor (`@hilonova/geometry`) NO conoce React.** TypeScript puro,
+   serializable (para un futuro shell de escritorio).
+6. **Zustand para el estado del editor** (`apps/web/app/studio/store.ts`).
+   Toda mutación del documento pasa por `apply(next)` sobre un historial
+   inmutable (undo/redo).
+7. **Puerto dev `4321`.** GitHub Pages estático con `NEXT_PUBLIC_BASE_PATH`.
+   El workflow `.github/workflows/pages.yml` **solo se dispara al subir a
+   `main`**; las ramas de trabajo no publican nada.
+8. **Honestidad ante todo:** ninguna página promete lo que el programa no hace
+   (hay pruebas que lo vigilan: `portada-honesta`, `legal`, `oferta`).
+9. **No commitear secretos.** `.env*` está ignorado. Las llaves de Stripe (si
+   algún día hay funciones) irían como secretos de Firebase, nunca en el código.
 
 ## Estructura — qué está dónde
 
 ```
 packages/
-├─ geometry/src/
-│  ├─ vec.ts            Vec2 helpers
-│  ├─ bezier.ts         Cubic Bézier (de Casteljau), samplePath, bounds
-│  ├─ doc.ts            PatternDoc / Piece / Node + mutaciones inmutables
-│  ├─ piece.ts          Shoelace area, offset-stroke utilities
-│  ├─ history.ts        Undo/redo (commit/undo/redo/canUndo/canRedo)
-│  ├─ offset.ts         Offset de contorno para margen de costura
-│  └─ index.ts          Re-exports + utilidades de unidades (cm/mm/in)
-│
-├─ blocks/src/index.ts  BLOCK_CATALOG, draftBlock, graduateBlock,
-│                       4 drafts: pantalón denim, pantalón vestir,
-│                       playera básica, falda recta.
-│
-└─ export/src/
-   ├─ dxf.ts            Export DXF-AAMA/ASTM D6673 (layers 1,4,5,8,15)
-   ├─ svg.ts            Export SVG limpio
-   ├─ pdf.ts            PDF A4 mosaico (tiled) para imprimir en casa
-   └─ techpack.ts       Tech Pack PDF multi-página (cover+medidas+flats+BOM)
+├─ geometry/src/   vec, bezier, doc (PatternDoc/Piece/Node/TechPackMeta), edit,
+│                  grade, history, offset, piece, sizes
+├─ blocks/src/     BLOCK_CATALOG (17 prendas), draftBlock, reglas de tallaje
+└─ export/src/     dxf (R12, capas estilo AAMA, internas en capa 6), svg,
+                   pdf (mosaico A4 con hoja de instrucciones), techpack, marker
 
 apps/web/app/
-├─ page.tsx             Landing
-├─ (saas)/
-│  ├─ layout.tsx        Layout del área autenticada
-│  ├─ SaasNav.tsx       Nav superior (hilonova · Patrones · Precios · Cuenta)
-│  └─ saas.css          Estilos del shell SaaS + auth
-│
-├─ auth/
-│  ├─ AuthAside.tsx     Aside premium con gradiente + stitch animado + hilos
-│  ├─ SsoButtons.tsx    Google / Apple SSO (mock)
-│  ├─ signin/page.tsx
-│  └─ signup/page.tsx
-│
-├─ app/
-│  ├─ page.tsx          Dashboard: hero + stats + biblioteca con thumbnails
-│  └─ new/              "Elige un bloque" — galería visual
-│
-├─ account/page.tsx     Cuenta: plan, perfil, cambiar plan
-├─ pricing/page.tsx     Planes
-│
-├─ studio/              EDITOR CAD (el corazón)
-│  ├─ page.tsx          Entry
-│  ├─ Shell.tsx         TopBar + rail + 3 vistas (editor/trazo/ficha) + HUD nido
-│  ├─ Canvas.tsx        Canvas 2D con pan/zoom/snap, dibuja piezas + nido
-│  ├─ Trazo.tsx         Vista de nesting (acomodo en tela)
-│  ├─ TechPack.tsx      Vista Ficha: form + preview A4 en vivo
-│  ├─ MeasurementSilhouette.tsx   Siluetas SVG del panel de medidas
-│  ├─ ExportModal.tsx   Modal export (DXF/SVG/PDF/TechPack)
-│  ├─ store.ts          Zustand store del editor
-│  ├─ nest.ts           buildNest() para dibujar tallas superpuestas
-│  ├─ nesting.ts        Algoritmo shelf-packing para el trazo
-│  └─ studio.css        Todos los estilos del editor (oscuro)
-│
-└─ lib/
-   ├─ auth.ts           Mock de auth (localStorage)
-   ├─ library.ts        Mock de biblioteca de patrones
-   └─ paths.ts          withBase() para GitHub Pages basePath
+├─ page.tsx             Portada del programa (sin cifras ni promesas sin respaldo)
+├─ (saas)/              Nav superior (Patrones · Cuenta) + estilos
+├─ auth/                signin/signup (correo+contraseña, Google), AuthAside, SsoButtons
+├─ app/                 Panel «Tus patrones» y galería «Elige un bloque» (17 fotos)
+├─ account/             Cuenta y facturación (estado del acceso)
+├─ terminos/ privacidad/ + legal/   Textos legales (sin datos de la empresa)
+├─ components/          PlanGate («Activa tu plan»), ScrollReveal
+├─ studio/              EDITOR: Shell, Canvas, Graduacion, Trazo, Produccion, TechPack,
+│                       Proyectos, Materiales, Libreria, Reportes, Config, Ayuda,
+│                       ExportModal, store, nesting, estilos
+└─ lib/                 auth, auth-errors, firebase, firebase-config, cloud,
+                        cloud-merge, library, library-raw, billing, billing-core,
+                        billing-config, collection, materials, pieces, prefs, paths
 
-scripts/
-└─ remove-bg.mjs        Convierte las imágenes fuente (jpg/png/webp) a PNG
-                        transparentes con flood-fill + detección de huecos
-                        interiores + limpieza de islas. Usa @cwasm/webp
-                        (puro wasm, sin binarios nativos).
+firebase/               firebase.json (emulador de Authentication) y firestore.rules
+scripts/                commit-log.mjs (bitácora), publicar-en-cad.mjs, remove-bg.mjs
+tests/                  21 archivos, 667 pruebas (Vitest)
+docs/                   CAMBIOS-OCT-2026, COMMITS, ANALISIS-CUMPLIMIENTO, COBRO-PASOS,
+                        FIREBASE-PASOS, MAPA-DE-PAGINAS, PROPUESTA-PLANES,
+                        PREGUNTAS-PARA-EL-JEFE, prueba-gerber/
 ```
 
-## Flujo típico del patronista
+## Flujo típico
 
-1. Entra a `/auth/signup` → crea cuenta mock (va a `/app`)
-2. Dashboard vacío → click **"Nuevo patrón"** → `/app/new`
-3. Elige un bloque de la galería (pantalón denim / vestir / playera / falda)
-4. Se guarda en `localStorage` y abre en `/studio?id=...`
-5. En el **tab Editor**: ajusta medidas con el panel visual (hover sobre un
-   campo ilumina la medida en la silueta), ve el patrón redibujarse al
-   instante. Toggle el **HUD "Nido de tallas"** abajo-izquierda para ver
-   las N tallas superpuestas en colores.
-6. En el **tab Trazo**: ve cómo se acomodan las piezas en el ancho de tela
-   (150 cm denim estándar) con % de aprovechamiento.
-7. En el **tab Ficha**: llena referencia, cliente, temporada, BOM,
-   especificaciones; preview A4 en vivo a la derecha.
-8. Click **Exportar** → DXF (para Gerber/Lectra), PDF mosaico (para
-   imprimir en casa), PDF Tech Pack (para la maquila), o SVG.
+1. `/auth/signup`: crea la cuenta (correo y contraseña, o Google) → llega un correo de verificación.
+2. `/app`: panel «Tus patrones» → «Nuevo patrón» → elige una de las 17 prendas (o «En blanco»).
+3. `/studio?id=…`: editor. Pestañas **Diseño · Graduación · Trazo · Producción** y menú lateral (Proyectos, Materiales, Librería, Reportes, Configuración).
+4. Se guarda solo (navegador) y, con cuenta, en la nube; el editor dice «en la nube».
+5. **Exportar**: PDF mosaico A4, ficha técnica PDF, SVG, DXF (y desde Trazo: DXF/PDF 1:1/SVG del trazo).
 
 ## Qué funciona de verdad
 
-- Motor de geometría: curvas Bézier, offset de costura, undo/redo, serialize/deserialize.
-- 4 bloques paramétricos reales con reglas de graduación propias.
-- Export DXF-AAMA validado con layers correctos.
-- Export PDF mosaico A4 (~2.3 MB para un pantalón) y SVG (~14 KB).
-- Tech Pack PDF multi-página (~55 KB).
-- Nesting shelf-packing con cálculo de utilización.
-- SaaS mock funcional end-to-end (signup → editor → export).
+- Motor, 17 prendas con pinzas, graduación automática y manual, trazo y reportes, ficha técnica, variantes de modelo, verificación de costuras.
+- Cuentas reales (probadas por el negocio) y guardado de patrones en la nube (probado con nube de mentira).
+- PDFs verificados visualmente; DXF validado en estructura (no en Gerber).
 
-## Qué NO funciona todavía (o es mock)
+## Qué NO está terminado
 
-- **Auth real** — todo vive en `localStorage.hilonova.session.v1`.
-- **Supabase / backend** — no hay backend. Nada se persiste al servidor.
-- **Stripe / pagos** — no hay cobros, los planes son solo UI.
-- **Google / Apple SSO real** — los botones hacen `signInWithProvider` mock
-  que crea una sesión fake con un email predeterminado.
-- **Compartir patrones** entre usuarios del taller.
-- **Más bloques** (chamarra, vestido, pants, blusa). El catálogo está hecho
-  para extenderse: añadir a `BLOCK_CATALOG` y a `draftBlock()` en
-  `packages/blocks/src/index.ts`.
-- **Herramientas internas del editor**: no se pueden agregar pinzas,
-  bolsillos ni líneas internas manualmente. Solo mover nodos existentes y
-  marcar piquetes.
-
-## Dónde seguir — fases propuestas
-
-Están ordenadas por valor comercial, no por dificultad:
-
-1. **Supabase + Stripe real** → el SaaS deja de ser demo.
-   - Migrar `apps/web/app/lib/auth.ts` manteniendo la firma pública.
-   - Agregar `pattern_items` table con RLS por `org_id`.
-   - Stripe Checkout para los 3 planes.
-2. **Editor con más herramientas** (pinzas, bolsillos, líneas internas,
-   rotar/mover/escalar piezas). Requiere ampliar los `Tool` del store y
-   nuevos path tools en `Canvas.tsx`.
-3. **Más bloques** del catálogo mexicano: pants deportivos, blusa manga
-   larga, vestido A, chamarra denim.
-4. **Compartir patrón** con enlace privado dentro de la organización.
-5. **Shell de escritorio Tauri** reutilizando `@hilonova/geometry`.
+- **Probar el guardado en la nube con Firestore real** y confirmar que las reglas de `patterns` están publicadas.
+- **Cobro:** falta crear el enlace de pago en Stripe, ponerlo en `billing-config.ts` y encender `enabled`. Los textos dicen «más IVA» pero Stripe quedó con IVA incluido: confirmar y unificar.
+- **Validación del maestro costurero** y **prueba del DXF en Gerber** (`docs/prueba-gerber/`).
+- **Vista 3D**: descartada por ahora.
+- **Sincronizar** materiales, «Mis piezas» y preferencias en la nube.
+- **Otros navegadores y tableta**: solo se ha probado en Chrome de escritorio.
+- **Revisión legal** de términos y privacidad; dominio y publicación.
 
 ## Convenciones
 
 - Scope `@hilonova/*`, enlazados con `workspace:*`.
-- El motor (`geometry`) **no importa React** ni DOM — para que corra en
-  Tauri sin cambios.
-- Paleta: navy `#14192A` / `#1F2A48` / `#0D1428`, accent `#F0662C` /
-  `#FF7E45`. Dos mundos: estudio claro (producto/landing) y taller oscuro
-  (editor/trazo).
-- Fuentes: Bricolage Grotesque (display) + Plus Jakarta Sans (texto) +
-  IBM Plex Mono (datos). Vía `next/font`.
-- No crear archivos `.md` nuevos sin razón — este monorepo trata de
-  mantener el root limpio.
+- El motor (`geometry`) **no importa React** ni DOM.
+- Paleta: navy `#14192A` / `#1F2A48` / `#0D1428`, accent `#F0662C` / `#FF7E45`.
+  Dos mundos: estudio claro (producto) y taller oscuro (editor).
+- Fuentes: Bricolage Grotesque + Plus Jakarta Sans + IBM Plex Mono (`next/font`).
+- Textos en español sencillo; nada se promete sin respaldo.
+- **Cada commit documentado** (*Qué / Por qué / Verificación / Archivos*) y `node scripts/commit-log.mjs` para regenerar `docs/COMMITS.md`.
 
 ## Gotchas conocidos
 
-- **`demoJeanDoc()` fue removido** del store para evitar el "flash de
-  denim" al abrir una playera. Si lo necesitas de nuevo, está en
-  `@hilonova/blocks` pero el store usa `draftBlock(blockKind, ...)`.
-- **`.studio-body--trazo` modifier** se usa también para la vista Ficha
-  (no solo Trazo). La CSS usa `.studio-body.studio-body--trazo` doble
-  para ganarle a los media queries de la grilla por defecto.
-- **El `blockKind` vive en el `PatternDoc`** (campo opcional). Si lo pierdes,
-  el store cae a `"pantalon-denim"` como default.
-- **jimp 1.6 no decodifica webp.** Para procesar webp usa `@cwasm/webp`
-  como hace `scripts/remove-bg.mjs`.
-- **Dev server imprime errores de HMR viejos** (`MeasurementsButton is not
-  defined`, `photoPath is not defined`) en el console del browser al navegar
-  por `/studio`. Son artefactos del cache tras refactors; un reload limpio
-  los resuelve y no indican bugs reales.
+- **`pnpm dev` y `publicar-en-cad.mjs` comparten `.next`:** parar el servidor antes de publicar y reiniciarlo después. Para un segundo servidor de pruebas: `NEXT_DIST_DIR=.next-test`.
+- **Next regenera `apps/web/tsconfig.json`** al correr; descartar ese cambio (`git checkout apps/web/tsconfig.json`).
+- **Windows:** avisos «LF will be replaced by CRLF» son normales; nombres de archivo sin distinguir mayúsculas (`Ayuda.tsx` vs `ayuda.ts` chocan).
+- **Probar cuentas sin tocar el Firebase real:** emulador de Authentication (`firebase/firebase.json`, no necesita Java). El de Firestore sí necesita Java (no instalado).
+- **Las capturas del navegador integrado salen en blanco al desplazarse** en algunas páginas: verificar leyendo el texto de la página.
+- **El `blockKind` vive en el `PatternDoc`**; si se pierde, el store cae a `pantalon-denim`.
+- **jimp no decodifica webp:** `scripts/remove-bg.mjs` usa `@cwasm/webp`.
+- **La puerta «Activa tu plan» es del lado del navegador:** frena al usuario común, no a un programador.
 
-## Branch y commits
+## Ramas y commits
 
-Trabajamos directo en `main`. El workflow de Pages dispara en cada push.
-
-Para commits, el convenio hasta ahora:
-- `feat(web): ...` nuevas features del app
-- `feat(blocks): ...` motor de patronaje
-- `fix(studio): ...` bugs del editor
-- `chore: ...` tooling, deps, configs
-- `style(web): ...` solo estilos
-
-Si vas a hacer cambios grandes, abre una rama y PR. Si son fixes pequeños,
-commit directo a main está bien.
+El trabajo está en la rama **`dev/mvp-9-nov`** (programa) y **`dev/conectar-con-studio`**
+(página de CAD). `main` no se toca hasta que el negocio decida publicar: el
+workflow de Pages dispara al subir a `main`. Convenio de commits:
+`feat:` / `fix:` / `refactor:` / `docs:` / `test:` / `chore:`, con el cuerpo
+*Qué / Por qué / Verificación / Archivos*.
 
 ## Contacto
 
-Lo construyó Miguel con Claude Code. Si tienes dudas sobre decisiones
-pasadas, el histórico está en los commits y en este archivo.
+Lo construyó Miguel con Claude Code. Dudas de decisiones pasadas: `docs/CAMBIOS-OCT-2026.md`
+y el histórico de commits (`docs/COMMITS.md`).

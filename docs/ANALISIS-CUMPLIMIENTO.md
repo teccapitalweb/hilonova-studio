@@ -3,6 +3,8 @@
 Fecha: 23 de octubre de 2026. Rama local `dev/mvp-9-nov` (nada subido a internet).
 Todo lo que dice "verificado" se comprobó en el código o en la app; lo que dice "no verificado" nadie lo ha probado todavía.
 
+> **Actualización del 24 de octubre de 2026:** este análisis se escribió el 23 por la mañana. Desde entonces: hay **cuentas reales** (Firebase) y **guardado en la nube**; el cobro quedó como **enlace de pago de Stripe + acceso a mano** (apagado, falta crear el enlace), así que «App web con Stripe» pasa de «simulación» a «programado, sin probar con Stripe real»; los PDF se corrigieron; hay 667 pruebas (no 560). Lo demás (patrones, preguntas al maestro costurero, riesgos) sigue vigente. Resumen de todo: `CAMBIOS-OCT-2026.md`.
+
 Cómo leer el estado de cada punto:
 - **CUMPLE**: está hecho y probado.
 - **PARCIAL**: existe, pero con límites que se explican.

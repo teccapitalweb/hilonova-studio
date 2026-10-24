@@ -102,3 +102,15 @@ Se decidió trabajar con **HiloNova CAD** (la página de venta) y **HiloNova Stu
 **Para publicarlo hay que decidir la dirección:** con un dominio propio (por ejemplo `software.hilonovamx.com`) basta la ruta `/programa` y se publica la carpeta `HiloNova-CAD` tal cual. Si se publica en una carpeta (por ejemplo `usuario.github.io/HiloNova-CAD/`), se vuelve a generar con `node scripts/publicar-en-cad.mjs "" /HiloNova-CAD/programa`.
 
 **Pendiente antes de publicar:** la portada propia del programa (la de `hilonova-studio`) sigue con frases que no son ciertas, pero ya no se publica dentro de CAD (su lugar lo toma la página de CAD). Los botones "Continuar con Google" y "Continuar con Apple" de entrar y crear cuenta no son reales: crean una cuenta de mentira con un nombre inventado. Hay que quitarlos o conectarlos de verdad cuando existan las cuentas.
+
+## 8. Actualización del 24 de octubre
+
+Desde que se escribió lo anterior cambió esto (detalle en `CAMBIOS-OCT-2026.md`):
+
+- **Cuentas reales** con Firebase en lugar de cuentas de mentira; los botones falsos de Google/Apple se quitaron (Apple queda fuera).
+- **Patrones guardados también en la nube.**
+- **Términos y privacidad** existen (`/terminos`, `/privacidad`).
+- **Panel sin «Precios»**: la página `/pricing` se eliminó; el precio está en la página de CAD y en la portada del programa.
+- **La portada propia del programa** ya no tiene frases sin respaldo. La página pública es la de CAD.
+- **El cobro** será un enlace de pago de Stripe con acceso dado a mano (sin Blaze); sigue apagado.
+- **La carpeta `programa/` de CAD** se regenera con `node scripts/publicar-en-cad.mjs`.
