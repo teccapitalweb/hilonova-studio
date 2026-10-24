@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 106
+> Rama: `dev/mvp-9-nov` · Commits: 108
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,38 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## feat: panel sin «Precios», sin «Plan Completo» ni «Asientos del plan» (un solo plan)
+
+- Commit: `b3540f0`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: del menú de arriba se quita «Precios» y del menú de la cuenta «Plan (…)»; del panel «Tus patrones» se quitan la insignia
+«Plan Completo» y la tarjeta «Asientos del plan» (quedan «Patrones guardados» y «Última edición», que se reparten el ancho); de
+la cuenta se quita «Cambiar plan» y del registro «Cambiar». Como ya nada lleva a la página de precios, se elimina /pricing y sus
+estilos (el precio está en la página de CAD y en la portada del programa). El texto del panel vacío dice PDF, SVG o DXF.
+Por qué: hay un solo plan y esas opciones ya no tenían sentido; el negocio pidió quitarlas.
+Verificación: revisado en el navegador con una cuenta de prueba del emulador: menú «Patrones · Cuenta», menú de cuenta «Cuenta ·
+Cerrar sesión», dos tarjetas de estadísticas, cero enlaces a /pricing en el panel y la cuenta; 666 pruebas pasan (nueva: el panel
+no tiene precios ni cambio de plan) y los tipos compilan.
+Archivos: apps/web/app/{(saas)/SaasNav.tsx,(saas)/saas.css,(saas)/layout.tsx,app/page.tsx,account/page.tsx,auth/signup/page.tsx},
+pricing/ (eliminado), tests/{oferta,portada-honesta}.test.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `2431dd8`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## refactor: cobro con enlace de pago de Stripe y acceso a mano (sin Blaze); corregir frases falsas; subir Next.js
 
