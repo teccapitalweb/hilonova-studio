@@ -40,3 +40,16 @@ describe("pantallas del programa", () => {
     expect(read("app/page.tsx")).not.toContain("DXF-AAMA");
   });
 });
+
+describe("panel «Tus patrones»", () => {
+  it("no tiene precios ni cambio de plan: hay un solo plan", () => {
+    const nav = read("(saas)/SaasNav.tsx");
+    const panel = read("app/page.tsx");
+    const cuenta = read("account/page.tsx");
+    const registro = read("auth/signup/page.tsx");
+    for (const src of [nav, panel, cuenta, registro]) expect(src).not.toContain("/pricing");
+    expect(nav).not.toContain("Precios");
+    expect(panel).not.toMatch(/PlanBadge|Asientos del plan/);
+    expect(cuenta).not.toContain("Cambiar plan");
+  });
+});

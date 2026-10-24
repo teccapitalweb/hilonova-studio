@@ -1,4 +1,4 @@
-// Layout compartido del shell SaaS (/auth, /app, /account, /pricing).
+// Layout compartido del shell SaaS (/auth, /app, /account).
 // Importa la hoja saas.css con la paleta del producto (más densa que la landing).
 
 import "./saas.css";

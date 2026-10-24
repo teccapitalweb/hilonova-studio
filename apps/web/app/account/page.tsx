@@ -78,9 +78,6 @@ export default function AccountPage() {
                 </h2>
                 <p>{plan.blurb}</p>
               </div>
-              <Link href="/pricing" className="btn-primary-pill" style={{ padding: "9px 16px", fontSize: 13 }}>
-                Cambiar plan
-              </Link>
             </div>
             <div className="acc-usage">
               <div className="acc-usage-row">

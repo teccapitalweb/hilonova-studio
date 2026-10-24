@@ -15,7 +15,7 @@ describe("plan único", () => {
 
 describe("el acceso de alumnos no se anuncia en las páginas públicas", () => {
   const read = (p: string) => readFileSync(new URL(`../apps/web/app/${p}`, import.meta.url), "utf8");
-  it.each(["page.tsx", "pricing/page.tsx", "legal/TerminosContent.tsx"])("%s no muestra cifras ni descuento", (file) => {
+  it.each(["page.tsx", "legal/TerminosContent.tsx"])("%s no muestra cifras ni descuento", (file) => {
     const src = read(file);
     expect(src).not.toContain("STUDENT_OFFER");
     expect(src).not.toMatch(/cup[oó]n|mes gratis|descuento|3 exportaciones|24 horas/i);

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import PlanGate from "../components/PlanGate";
 import SaasNav from "../(saas)/SaasNav";
-import { useSession, findPlan } from "../lib/auth";
+import { useSession } from "../lib/auth";
 import { useLibrary, deleteItem, saveItem } from "../lib/library";
 import { samplePath, deserialize, type Piece, type PatternDoc } from "@hilonova/geometry";
 import "../(saas)/saas.css";
@@ -44,7 +44,6 @@ function Dashboard() {
     );
   }
 
-  const plan = findPlan(session.org.plan);
   const filtered = items.filter((it) => it.name.toLowerCase().includes(q.toLowerCase().trim()));
 
   return (
@@ -66,7 +65,6 @@ function Dashboard() {
             </p>
           </div>
           <div className="dash-hero-side">
-            <PlanBadge planName={plan.name} planId={plan.id} />
             <button className="btn-primary-pill" onClick={createNew}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                 <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
@@ -79,7 +77,6 @@ function Dashboard() {
         {/* ─── stat cards ─────────────────────────────── */}
         <section className="dash-stats">
           <StatCard label="Patrones guardados" value={String(items.length)} hint={items.length === 0 ? "crea tu primero" : "en tu biblioteca"} />
-          <StatCard label="Asientos del plan" value={`${session.org.seats}`} hint={`plan ${plan.name}`} />
           <StatCard label="Última edición" value={items[0] ? relativeTime(items[0].updatedAt) : "—"} hint={items[0] ? items[0].name : "aún sin actividad"} />
         </section>
 
@@ -173,17 +170,6 @@ function Dashboard() {
 }
 
 // ─── componentes del dashboard ─────────────────────────────────────────────
-
-function PlanBadge({ planName, planId }: { planName: string; planId: string }) {
-  return (
-    <Link href="/pricing" className={`plan-badge plan-${planId}`}>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-        <path d="M12 2 15 9l7 .8-5.3 4.7L18.2 22 12 18 5.8 22 7.3 14.5 2 9.8 9 9z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-      </svg>
-      Plan {planName}
-    </Link>
-  );
-}
 
 function StatCard({ label, value, hint }: { label: string; value: string; hint: string }) {
   return (

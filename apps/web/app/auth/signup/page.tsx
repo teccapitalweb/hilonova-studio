@@ -81,7 +81,6 @@ function SignUpForm() {
           <p className="subtitle">
             Plan <span className="plan-chip-inline">{planMeta.name}</span>
             {planMeta.priceMxn !== null ? ` · $${planMeta.priceMxn.toLocaleString("es-MX")} MXN/mes` : " · A medida"}.
-            {" "}<Link href="/pricing" style={{ color: "var(--ink-2)" }}>Cambiar</Link>
           </p>
 
           <SsoButtons onError={setError} />
