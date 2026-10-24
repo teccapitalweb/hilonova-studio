@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 104
+> Rama: `dev/mvp-9-nov` · Commits: 106
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,47 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## refactor: cobro con enlace de pago de Stripe y acceso a mano (sin Blaze); corregir frases falsas; subir Next.js
+
+- Commit: `b769471`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: (1) Se quita todo lo del plan Blaze: se eliminan las funciones en la nube (firebase/functions) y sus pruebas; el código
+de esa versión automática queda en el historial (commit dbb8955). El cobro pasa a ser un enlace de pago de Stripe: «Activa
+tu plan» manda al enlace con el correo y la cuenta ya puestos, Stripe avisa por correo al negocio y este da acceso con un
+documento access/{uid} en Firestore (con fecha opcional; alumnos: 30 días, sin tarjeta). El interruptor sigue apagado
+(billing-config.ts: enabled false, con paymentLink, portalLink y whatsapp). La pantalla avisa «Gracias por tu pago» al volver
+de Stripe y ofrece avisar por WhatsApp. Las reglas de Firestore dejan solo access de lectura para su dueño. (2) Portada del
+programa sin frases falsas: se quitan «−12 % de merma», «28–44 tallas», «DXF-AAMA nativo», la franja de compatibilidad con
+Gerber, Lectra y plotter HPGL, el 83 % de aprovechamiento de muestra, el testimonio inventado y los enlaces muertos; las
+piezas por prenda salen del programa (10, 14 y 9); el pie enlaza a WhatsApp, privacidad y términos. El panel, la pantalla de
+exportar, los metadatos y la ayuda dejan de prometer «DXF-AAMA» y dicen que el DXF está en validación. (3) Next.js sube de
+15.1.6 a 15.1.12 (la 15.1.6 tiene una vulnerabilidad conocida, CVE-2025-66478; la 15.1.12 ya no está marcada como
+vulnerable). (4) Se actualizan COBRO-PASOS, FIREBASE-PASOS, PROPUESTA-PLANES y PREGUNTAS-PARA-EL-JEFE con las decisiones.
+Por qué: el negocio no quiere Blaze y pidió corregir todo lo que estuviera mal.
+Verificación: 666 pruebas pasan (nuevas: acceso por documento y fecha, enlace de pago con correo y cuenta, WhatsApp, interruptor
+apagado, portada sin frases falsas); tipos sin errores; build de producción correcto con Next 15.1.12; la portada revisada en el
+navegador (0 frases falsas, 0 enlaces muertos). NO probado: el pago real en Stripe (falta crear el enlace de pago).
+Archivos: apps/web/app/{page.tsx,layout.tsx,app/page.tsx,account/page.tsx,components/PlanGate.tsx,studio/{ExportModal,Shell}.tsx,
+lib/{billing,billing-core,billing-config}.ts,(saas)/saas.css}, apps/web/package.json, pnpm-lock.yaml, firebase/{firebase.json,
+firestore.rules}, tests/{plan-acceso,portada-honesta}.test.ts (cobro.test.ts eliminado), docs/*.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `69ebd64`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## feat: cobro con Stripe (funciones propias, pantalla «Activa tu plan» y estado en la cuenta), apagado hasta probarlo
 
