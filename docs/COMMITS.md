@@ -1,7 +1,7 @@
 # Bitácora de commits — Hilonova Studio
 
 > Generado con `node scripts/commit-log.mjs`. No editar a mano.
-> Rama: `dev/mvp-9-nov` · Commits: 108
+> Rama: `dev/mvp-9-nov` · Commits: 110
 
 ## Cómo se documenta un commit
 
@@ -21,6 +21,35 @@ Después de commitear, correr `node scripts/commit-log.mjs` y commitear la
 bitácora como `docs: actualizar bitácora`.
 
 ---
+
+## fix: la guía del lienzo vacío se puede cerrar
+
+- Commit: `e152827`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: la guía «Tu lienzo está vacío» ahora tiene una × arriba a la derecha y un botón «Entendido, cerrar». Al cerrarla se acuerda
+(hilonova.emptyguide.hidden.v1) y no vuelve a salir; la guía completa sigue disponible en «Ayuda» → «Patrón en blanco». Antes solo
+desaparecía al dibujar o agregar una pieza y tapaba el lienzo mientras tanto.
+Por qué: el usuario preguntó cómo quitarla después de leerla; no había forma.
+Verificación: en el navegador, con un patrón en blanco: aparece con la × y el botón; al cerrar desaparece y tras recargar sigue
+cerrada. Prueba nueva en tests/ayuda.test.ts; 667 pruebas pasan y los tipos compilan.
+Archivos: apps/web/app/studio/{Ayuda.tsx,studio.css}, tests/ayuda.test.ts
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+## docs: actualizar bitácora de commits
+
+- Commit: `6f412e1`
+- Fecha: 2026-10-23
+- Autor: wh505010@gmail.com
+
+Qué: regeneración de docs/COMMITS.md.
+Por qué: mantener el registro al día.
+Verificación: generado por scripts/commit-log.mjs.
+Archivos: docs/COMMITS.md
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 ## feat: panel sin «Precios», sin «Plan Completo» ni «Asientos del plan» (un solo plan)
 
