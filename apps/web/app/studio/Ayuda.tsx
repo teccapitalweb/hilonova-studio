@@ -133,15 +133,35 @@ export function HelpButton() {
   );
 }
 
-/** Guía sobre un lienzo vacío (un patrón en blanco sin piezas todavía). */
+const GUIDE_HIDDEN_KEY = "hilonova.emptyguide.hidden.v1";
+
+/** Guía sobre un lienzo vacío (un patrón en blanco sin piezas todavía). Se puede cerrar; la guía completa sigue en «Ayuda». */
 export function EmptyGuide() {
   const router = useRouter();
   const setTool = useEditor((s) => s.setTool);
   const setLibOpen = useEditor((s) => s.setLibOpen);
   const [more, setMore] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => {
+    try {
+      setHidden(window.localStorage.getItem(GUIDE_HIDDEN_KEY) === "1");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  function close() {
+    setHidden(true);
+    try {
+      window.localStorage.setItem(GUIDE_HIDDEN_KEY, "1");
+    } catch {
+      /* ignore */
+    }
+  }
+  if (hidden) return null;
   return (
     <div className="st-empty-guide">
       <div className="st-empty-card">
+        <button className="st-empty-x" onClick={close} aria-label="Cerrar la guía" title="Cerrar la guía">×</button>
         <h3>Tu lienzo está vacío</h3>
         <p>Empieza tu patrón de una de estas tres formas:</p>
         <ol>
@@ -166,9 +186,12 @@ export function EmptyGuide() {
             </span>
           </li>
         </ol>
-        <button className="st-empty-more" onClick={() => setMore(true)}>
-          ¿Cómo se usa un patrón en blanco? Ver guía completa
-        </button>
+        <div className="st-empty-foot">
+          <button className="st-empty-more" onClick={() => setMore(true)}>
+            ¿Cómo se usa un patrón en blanco? Ver guía completa
+          </button>
+          <button className="st-act" onClick={close} title="No volver a mostrar esta guía (sigue disponible en Ayuda)">Entendido, cerrar</button>
+        </div>
         {more && <HelpModal onClose={() => setMore(false)} start="blanco" />}
       </div>
     </div>

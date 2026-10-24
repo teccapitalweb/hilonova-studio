@@ -1,5 +1,6 @@
 // Ayuda dentro de la app y el patrón en blanco.
 
+import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it } from "vitest";
 import { emptyDoc, rectPiece } from "@hilonova/geometry";
 import { defaultMeasurementsFor, draftBlock } from "@hilonova/blocks";
@@ -80,5 +81,16 @@ describe("patrón en blanco en el editor", () => {
     expect(get().libOpen).toBe(true);
     get().setLibOpen(false);
     expect(get().libOpen).toBe(false);
+  });
+});
+
+describe("guía del lienzo vacío", () => {
+  const src = readFileSync(new URL("../apps/web/app/studio/Ayuda.tsx", import.meta.url), "utf8");
+
+  it("se puede cerrar y se acuerda de que se cerró", () => {
+    expect(src).toContain('aria-label="Cerrar la guía"');
+    expect(src).toContain("Entendido, cerrar");
+    expect(src).toContain("hilonova.emptyguide.hidden.v1");
+    expect(src).toMatch(/if \(hidden\) return null/);
   });
 });

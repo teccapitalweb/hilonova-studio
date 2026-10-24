@@ -1224,6 +1224,14 @@ select.st-input option { background-color: #1a2540; color: #EAF2FF; }
 .st-empty-card ol { margin: 0; padding-left: 20px; display: grid; gap: 12px; font-size: 14px; line-height: 1.45; }
 .st-empty-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
 .st-empty-btns .st-act { margin-top: 0; }
+.st-empty-card { position: relative; }
+.st-empty-x {
+  position: absolute; top: 8px; right: 10px; width: 28px; height: 28px; border-radius: 8px; border: 0; cursor: pointer;
+  background: transparent; color: #b4bfdc; font-size: 22px; line-height: 1;
+}
+.st-empty-x:hover { background: rgba(255,255,255,.08); color: #fff; }
+.st-empty-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+.st-empty-foot .st-empty-more { margin-top: 0; }
 .st-empty-more {
   margin-top: 14px; background: none; border: 0; padding: 0; cursor: pointer; font: inherit; font-size: 13px;
   color: var(--accent-2, #FF7A3D); text-decoration: underline;
